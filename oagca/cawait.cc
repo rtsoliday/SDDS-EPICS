@@ -662,7 +662,7 @@ void StringEventHandler(struct event_handler_args event) {
   long index;
   index = *((long *)event.usr);
   dbrValue = (struct dbr_time_string *)event.dbr;
-  sprintf(waitFor[index].stringValue, "%s", (char *)dbrValue->value);
+  snprintf(waitFor[index].stringValue, sizeof(waitFor[index].stringValue), "%s", (char *)dbrValue->value);
   ;
 }
 
@@ -817,7 +817,7 @@ long waitForEventPVA(PVA_OVERALL *pva, double timeLimit, double interval, long i
     term = -1;
     for (j = 0; j < waitFors; j++) {
       if ((pva->isConnected[j]) && (pva->pvaData[j].numMonitorReadings > 0)) {
-        if ((pva->pvaData[j].fieldType == epics::pvData::scalar)) {
+        if (pva->pvaData[j].fieldType == epics::pvData::scalar) {
           term = 1;
           if (waitFor[j].flags & SAME_AS_GIVEN) {
             term = !strcmp(pva->pvaData[j].monitorData[0].stringValues[0], waitFor[j].sameAs);
