@@ -1,5 +1,6 @@
 #include "pvaSDDS.h"
 #include <unordered_map>
+#include <cinttypes>
 
 typedef std::unordered_multimap<std::string, long> Mymap;
 typedef std::unordered_multimap<std::string, long>::iterator MymapIterator;
@@ -1212,7 +1213,7 @@ long PrepPut(PVA_OVERALL *pva, long index, int64_t value) {
       //if (pva->pvaData[index].putData[0].stringValues[0])
       //free(pva->pvaData[index].putData[0].stringValues[0]);
     }
-    snprintf(buffer, sizeof(buffer), "%lld", value);
+    snprintf(buffer, sizeof(buffer), "%" PRId64, value);
     pva->pvaData[index].putData[0].stringValues[0] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
     strcpy(pva->pvaData[index].putData[0].stringValues[0], buffer);
   }
@@ -1259,7 +1260,7 @@ long PrepPut(PVA_OVERALL *pva, long index, int64_t *value, long length) {
       pva->pvaData[index].putData[0].stringValues = (char **)malloc(sizeof(char *) * length);
     }
     for (i = 0; i < length; i++) {
-      snprintf(buffer, sizeof(buffer), "%lld", value[i]);
+      snprintf(buffer, sizeof(buffer), "%" PRId64, value[i]);
       pva->pvaData[index].putData[0].stringValues[i] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
       strcpy(pva->pvaData[index].putData[0].stringValues[i], buffer);
     }
