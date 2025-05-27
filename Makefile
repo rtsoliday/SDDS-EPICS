@@ -38,6 +38,7 @@ DIRS += $(SDDS_REPO)/fftpack
 DIRS += $(SDDS_REPO)/matlib
 DIRS += $(SDDS_REPO)/mdbcommon
 DIRS += oagca
+DIRS += runcontrol
 
 .PHONY: all $(DIRS) clean distclean
 
@@ -74,6 +75,8 @@ $(SDDS_REPO)/matlib: $(SDDS_REPO)/fftpack
 $(SDDS_REPO)/mdbcommon: $(SDDS_REPO)/matlib
 	$(MAKE) -C $@
 oagca: $(SDDS_REPO)/mdbcommon
+	$(MAKE) -C $@
+runcontrol: oagca
 	$(MAKE) -C $@
 
 clean:
