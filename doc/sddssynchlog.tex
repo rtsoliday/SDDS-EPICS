@@ -1,0 +1,253 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddssynchlog
+%
+\subsection{sddssynchlog}
+\label{sddssynchlog}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddssynchlog+ Reads values of process variables synchronously
+and writes them to an output file.  Synchronism is imposed by
+requiring that all PVs generated callbacks occur within the number of
+seconds given by the -synchInterval argument.
+\item {\bf example 1:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+
+The linac bpms and MV200 PVs are synchonously monitored using the
+command below.  One might wish to monitor these PVs determine if linac
+beam position and transverse size at a flag are correlated.  The
+output file will contain 100 aligned samples of the PV data and should
+therefore take 16.67 seconds assuming the linac is running at 6 Hz.
+Alignment of process variable data is accepted and written to the
+output file if and only if the PV time stamps are withing +/- 1/6 Hz =
+0.08 seconds.  Data acquisition stops after 100 samples are acquired
+or a -timelimit of 20 seconds has elapsed.  Note, it is absolutely
+required that the scalar synchronous PV file listed below
+(synchPVs.mon) contain at least a single PV.  This is true even if one
+wishes only to synchronously acquire waveform process variables.
+\begin{verbatim}
+sddssynchlog synchPVs.mon synchPVs.sdds -samples=100 -synchInterval=0.08 
+-timelimit=20,seconds -verbose
+\end{verbatim}
+where the contents of the file \verb+synchPVs.mon+ are
+\begin{verbatim}
+SDDS1
+&description &end
+&column
+ name = ControlName,  type = string, &end
+&column
+ name = ControlType,  type = string, &end
+&column
+ name = ReadbackUnits,  type = string, &end
+&column
+ name = ReadbackName,  type = string, &end
+&data
+ mode = ascii, no_row_counts=1 &end
+! page number 1
+L2:PM1:BPM.CX  pv mm L2:PM1:BPM.XPOS 
+L2:PM1:BPM.CY  pv mm L2:PM1:BPM.YPOS 
+L2:PM2:BPM.CX  pv mm L2:PM2:BPM.XPOS 
+L2:PM2:BPM.CY  pv mm L2:PM2:BPM.YPOS 
+LI:VD1:x:raw:cal:sigmaM pv Pixels LVid:xRawSigma 
+LI:VD1:y:raw:cal:sigmaM pv Pixels LVid:yRawSigma 
+...
+
+\end{verbatim}
+\item {\bf example 2:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+
+The scalar linac bpm and MV200 PVs are synchonously monitored along
+with LCLS bpm data waveforms using the command below.  The command is
+identical to that in example 1 except for the additional waveform file
+command which that specifies a file containing waveform PV data.
+\begin{verbatim}
+sddssynchlog synchPVs.mon synchPVs.sdds -waveformData=LCLS.wmon
+-samples=100 -synchInterval=0.08 -timelimit=20,seconds -verbose
+\end{verbatim}
+where the contents of the file \verb+LCLS.wmon+ are
+\begin{verbatim}
+SDDS1
+&parameter name=WaveformLength, type=long, &end
+&column
+ name=WaveformPV, type=string,  &end
+&column
+ name=WaveformName, type=string,  &end
+&data mode=ascii, &end
+! page number 1
+128
+                   9
+PAD:K211:1:CH0_RAW_WF PAD:K211:1:CH0_RAW_WF 
+PAD:K211:1:CH1_RAW_WF PAD:K211:1:CH1_RAW_WF 
+PAD:K211:1:CH2_RAW_WF PAD:K211:1:CH2_RAW_WF 
+PAD:K211:2:CH0_RAW_WF PAD:K211:2:CH0_RAW_WF 
+PAD:K211:2:CH1_RAW_WF PAD:K211:2:CH1_RAW_WF 
+PAD:K211:2:CH2_RAW_WF PAD:K211:2:CH2_RAW_WF 
+PAD:K211:3:CH0_RAW_WF PAD:K211:3:CH0_RAW_WF 
+PAD:K211:3:CH1_RAW_WF PAD:K211:3:CH1_RAW_WF 
+PAD:K211:3:CH2_RAW_WF PAD:K211:3:CH2_RAW_WF 
+...
+\end{verbatim}
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+sddssynchlog <input> <output> [-slowData=<input>]
+[-waveformData=<filename>] -samples=<number> [-timeLimit=<value>[,<units>]]
+-eraseFile [-pendIOTime=<seconds>] [-connectTimeout=<seconds>]
+[-verbose] [-comment=<parameterName>,<text>]
+[-synchInterval=<seconds>] [-precision={single|double}]
+[-saveTimeStamps=<filename>] [-steps=<int>] [-interval=<value>[,<units>]] 
+
+Logs numerical data for the process variables named in the ControlName
+column of <input> to an SDDS file <output>.  Synchronism is imposed by
+requiring that all PVs generated callbacks within the number of seconds
+given by the -synchInterval argument.
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:}\par
+The input file is an SDDS file with a few data columns required:
+\begin{itemize}
+        \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
+                or devices to be monitored. Both column names are equivalent.
+        \item {\tt Message} --- Optional string column for the device read message. If a row entry in
+                column {\tt ControlName} is a process variable, then the corresponding entry
+                in {\tt Message} should be a null string. 
+        \item {\tt ReadbackName} --- Optional string column for the names of the data columns in the 
+                output file. If absent, process variable or device name is used.
+        \item {\tt ReadbackUnits} --- Optional string column for the units fields of the data columns in the 
+                output file.If absent, units are null.
+        \item {\tt ScaleFactor} --- Optional double column for a factor with which to multiply
+                values of the readback in the output file.
+\end{itemize}
+
+\item {\bf waveformData file:} \par The waveformData file is an
+optional input file specified on the command line which lists waveform
+PVs to be synchronously logged along with the scalar PVs in the input
+file.
+\begin{itemize}
+        \item {\tt WaveformPV} --- Required string column containing the names of the waveform
+                process variables to be monitored.
+        \item {\tt WaveformName} --- Optional string column for the names of the waveform data
+                columns in the output file.
+        \item {\tt WaveformLength} --- Required long parameter giving the number of waveform elements 
+                to be acquired.  It can be less than the maximum number of waveform elements.
+\end{itemize}
+
+\item {\bf slowData file:} \par The slowData file is an optional input
+file specified on the command line which lists scalar PVs to be slow
+(read non-synchronously) logged along with the synchronously logged
+scalar or waveform PVs in the input and waveform PV files.  This feature is
+convenient if one wishes to log PVs for system information purposes instead of
+correlation analysis (such as beam current, vacuum pressure etc.).  This file has
+the same columns as the input file.
+
+\item {\bf output file:}\par The output file contains one data column
+for each process variables named in the input file if no waveformData
+file is specified. By default, the data type is float (single
+precision).  If an optional waveformData file is specified, the
+structure of the output file changes.  In this case, the column data
+are the waveform PVs and the scalar PVs in the input and slowData
+files are parameters.  Each page contains waveform and scalar PV data
+for a single sample of the total number of samples acquired.  The
+total number of pages equal the number of samples specified in
+-samples if all samples are able to be collected (ie. timeLimit is not
+exceeded during acquisition).  Time columns and other miscellaneous
+columns are defined:
+\begin{itemize}
+        \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
+        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        for time axis labeling.
+        \item {\tt Sample} --- Long column for sample number.
+\end{itemize}
+Many time-related parameters are defined in the output file:
+\begin{itemize}
+        \item {\tt TimeStamp} --- String parameter for time stamp for file.
+        \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
+                is appended to an existing file, the new data is written to a new
+                page. The {\tt PageTimeStamp} value for the new page is the creation
+                date of the new page. The {\tt TimeStamp} value for the new page is the creation 
+                date of the very first page.
+        \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
+        \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
+        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+\end{itemize}
+\end{itemize}
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+        \item {\tt -samples} --- Specifies the number of samples to attempt.  If synchronism problems
+                are encountered, fewer samples will appear in the output.
+        \item {\tt -timeLimit} --- Specifies maximum time to wait for data collection.
+        \item {\tt -eraseFile} --- Specifies erasing the file <output> if it exists already.
+        \item {\tt -pendIOtime=<value>} --- Obsolete.
+        \item {\tt -connectTimeout=<value>} --- Specifies maximum time in seconds to wait for a connection before
+                issuing an error message. 60 is the default.
+        \item {\tt -verbose} --- Specifies printing of possibly useful data to the standard output.
+        \item {\verb+-comment=<parameterName>,<text>+} ---
+                Gives the parameter name for a comment to be placed in the SDDS output file,
+                along with the text to be placed in the file.
+        \item {\tt -synchInterval} --- Specifies the time spread allowed for callbacks from the PVs being logged.
+                If any PV fails to callback within the specified interval, the data for
+                that sample is discarded.
+        \item {\tt -slowData} --- Specifies an sddsmonitor-type input file giving the names of PVs to be
+                acquired at a "slow" rate, i.e., without synchronization.  Data for these PVs
+                are interpolated linearly to get values at each time sample of the synchronous
+                data.
+        \item {\tt -waveformData} --- Specifies an sddswmonitor-type input file giving the names of waveform PVs to
+                be synchronously logged.  If this option is given, the output file is changed
+                so that waveform data is stored in columns while scalar data is stored in
+                parameters.
+        \item {\tt -saveTimeStamps} --- Specifies the name of a file to which to write raw time-stamp data for the
+                synchronously-acquired channels.  This can be useful in diagnosing the source
+                of poor sample alignment.
+        \item {\tt -precision} Specifies PV data to be either single or double precision.  Default is double precision.  
+        \item {\tt -steps} specifies how many synchlogs will be taken with -samples of data, default is 1.
+        \item {\tt -interval} specifies the waiting time between two synchlog steps.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddsmonitor}
+    \item \progref{sddswmonitor}
+    \item \progref{sddsvmonitor}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: M. Borland, ANL} 
+\end{itemize}

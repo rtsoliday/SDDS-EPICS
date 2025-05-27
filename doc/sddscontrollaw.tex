@@ -1,0 +1,343 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsmonitor
+%
+\subsection{sddscontrollaw}
+\label{sddscontrollaw}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddscontrollaw+ performs simple feedback on process variables.
+The input file defines a gain matrix in a simple control law equation. The set of process variables for
+measurement are given by the names of the numerical data columns, and the set
+of process variables for control are given by a string column. By default,
+the feedback tries to regulate the values of the measurement to zero.
+The output file is a log of all process variables during the feedback.
+For robustness, a file of tests for a set of process variables may be defined 
+so that the feedback may be suspended when any tests fail.
+
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The trajectory of the LTP beamline and the energy of the linac upstream of the LTP
+beamline is controlled with this command:
+\begin{verbatim}
+sddscontrollaw LTP.InvR12 LTPfeedback.out -interval=5 -steps=3600 \
+        -gain=0.75 -warning
+\end{verbatim}
+where the contents of the file \verb+LTP.InvR12+ are
+\begin{verbatim}
+SDDS1
+&column
+ name = "CorrectorNames",  type = "string", &end
+! LTP:PH* are readbacks of beam position monitors
+&column
+ name = "LTP:PH1",  type = "double", &end
+&column             
+ name = "LTP:PH2",  type = "double", &end
+&column             
+ name = "LTP:PH3",  type = "double", &end
+&column             
+ name = "LTP:PH4",  type = "double", &end
+&data
+ mode = ascii, &end
+! LTP:H[124] are dipole steering magnets.
+LTP:H1          1.45e-01  7.95e-02  1.84e-01 -3.70e-02 
+LTP:H2          0.00e-00  2.12e-01  3.34e-01  8.39e-02 
+! Sled timing controls the linac energy.
+L5:SledTiming   0.00e-00  0.00e-00  8.25e-03  9.45e-03 
+LTP:H4          0.00e-00  0.00e-00 -9.81e-03  1.44e-01 
+\end{verbatim}
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddscontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>]
+       [<outputfile>] [-infiniteLoop] [-pendIOTime] 
+       [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | 
+       -dailyFiles] [-controlQuantityDefinition=<file>]
+       [-gain={<real-value>|PVname=<name>}]
+       [-interval={<real-value>|PVname=<name>}] [-steps=<integer=value>]
+       [-updateInterval=<integer=value>]
+       [{-integration | -proportional}]
+       [-holdPresentValues] [-offsets=<offsetFile>]
+       [-PVOffsets=<filename>] 
+       [-average={<number>|PVname=<name>}[,interval=<seconds>]] 
+       [-despike[=neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>][,pvthreshold=<pvname][,file=<filename>][,countLimit=<integer>][,startThreshold=<value>,endThreshold=<value>,stepsThreshold=<integer>][,rampThresholdPV=<string>]]
+       [-deltaLimit={value=<value>|file=<filename>}]
+       [-readbackLimit={value=<value>|minValue=<value>,maxValue=<value>|file=<filename>}]
+       [-actionLimit={value=<value>|file=<filename>}]
+       [-testValues=<SDDSfile>] [-statistics=<filename>[,mode=<full|brief>]] 
+       [-auxiliaryOutput=matrixFile=<file>,controlQuantityDefinition=<file>,
+           filterFile=<file>],controlLogFile=<file>[,mode=<integral|propotional>] 
+       [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>
+       [-runControlDescription={string=<string>|parameter=<string>}]
+       [-launcherPV=<pvname>]
+       [-verbose] [-dryRun] [-warning]
+       [-servermode=pid=<file>,command=<file>]
+       [-controlLogFile=<file>] 
+       [-glitchLogFile=file=<string>,[readbackRmsThreshold=<value>][,controlRmsThreshold=<value>][,rows=<integer]]
+       [-CASecurityTest] [-waveforms=<filename>,<type>]
+
+Perform simple feedback on APS control system process variables using ezca calls.
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:} \par
+The input file is an SDDS file with a string column and at least one numerical column. 
+The first string column encountered gives the list of 
+control process variables, the other string columns being ignored.
+The names of the numerical columns are the measurement process variables. 
+The numerical data columns form a matrix which will be used in a simple
+control-law equation such as
+\begin{equation}
+{\bf u_n} = - K {\bf x_n}
+\end{equation}
+or
+\begin{equation}
+{\bf u_n} = {\bf u_{n-1}} - K {\bf x_n}.
+\end{equation}
+The quantity $x_n$ is the vector of measurement process variable
+values at step $n$, $K$ is the matrix, $u_n$ is the vector of control
+process variables calculated to reduce the values of the measurement
+process variables on the next iteration.  The first equation refers to
+proportional control, while the second one refers to integral
+control. For trajectory or orbit correction in accelerators, where
+$x_n$ are beam position monitor readbacks, and $u_n$ are steering
+magnet setpoints, one chooses the integral control equation.
+
+\item {\bf control quantity definition file:} \par An optional control
+quantity definition file may be specified. This file allows one to use
+names in the matrix input file that are not really process variables,
+but more simplified and descriptive names.  This situation can occur
+if the matrix file is obtained from postprocessing of
+\verb+sddsexperiment+ output data, a common way to generate
+the correction matrix empirically.  The control quantity definition
+file is a cross-reference file which \verb+sddscontrollaw+ uses to
+match the input file names to real PV names.  Two columns are
+required:
+\begin{itemize}
+        \item {\tt SymbolicName} --- String. Data must match all column
+                names in the input file, and string column data in the input file.
+        \item {\tt ControlName} --- String. Corresponding PV names.
+\end{itemize}
+
+\item {\bf test values file:} \par
+To make \verb+sddscontrollaw+ more robust, one can implement tests on any process variable,
+not necessarily those involved in the feedback itself. If any of the tests fail, then the 
+feedback is suspended until the test suceeds. The test consist of checking whether a process 
+variable is within a specified range or not. The \verb+testValues+ file has three required columns and
+one optional one:
+\begin{itemize}
+        \item {\tt ControlName} --- Required string column. PV names to test.
+        \item {\tt MinimumValue}, {\tt MaximumValue} --- Required double columns. Defines
+                a valid range for corresponding PVs. An error is generated when
+                {\tt MinimumValue} $>$ {\tt MaximumValue}.
+        \item {\tt SleepTime} --- Optional double. Specifies sleep (or pause) time before
+                attempting another test.
+\end{itemize}
+
+\item {\bf output log file:} \par
+The output file contains one data column for each process variables defined in the input file.
+By default, the data type is float (single precision). One row is written at every time step.
+
+Two time columns and a step column are defined: 
+\begin{itemize}
+        \item {\tt Time} --- Double. Elapsed time of readback since the start of epoch.
+        \item {\tt ElapsedTime} --- Double. Elapsed time of readback since the start of execution.
+        \item {\tt TimeOfDay} --- Double. System time in units of hours. The time does not wrap around at 24 hours.
+        \item {\tt Step} --- Long. Step number.
+\end{itemize}
+
+There are two parameters defined:
+\begin{itemize}
+        \item {\tt TimeStamp} --- String. Time stamp for file.
+        \item {\tt Gain} --- Double. Gain factor specified on the commandline.
+\end{itemize}
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+        \item {\tt {\em inputfile}} --- gain matrix in sdds format.
+        \item {\tt {\em outputfile}} --- optional file in which the readback and
+               control variables are printed at every step.
+        \item {\tt -searchPath=<string>} --- the directory path for the input files.
+        \item {\tt -actuatorColumn} -- String column in the input file to be used for
+               actuator names. The default is the first string column
+               of the input file.
+        \item {\tt -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]} --- The output is sent to the file <SDDSoutputfile>-<N>, where <N> is
+               the smallest positive integer such that the file does not already 
+               exist. By default, four digits are used for formating <N>, so that
+               the first generation number is 0001.  If a row limit or time limit
+               is given, a new file is started when the given limit is reached.
+        \item {\tt -dailyFiles} --- The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,
+               where YYYY=year, JJJ=Julian day, and MMDD=month+day.  A new file is
+               started after midnight. Only one of dailyFiles and generations may be provided.
+        \item {\tt -controlQuantityDefinition=<file>}
+               a cross-reference file which matches the simplified
+               names used in the inputfile to PV names.
+               Column names are SymbolicName and controlName.
+        \item {\tt -gain=<real-value>|PVname=<name>} --- quantity multiplying the inputfile matrix.
+               If the gain matrix is the inverse response matrix
+               then this should be less than one. Can be provided by a real value or a PV name (the value will be read from the PV).
+        \item {\tt -interval=<real-value>|PVname=<name>} --- time interval between each correction. Can be provided by a real value or a PV name (the value will be read from the PV)
+        \item {\tt -steps=<integer=value>} ---  total number of corrections.
+        \item {\tt -updateInterval=<integer=value>} --- number of steps between each outputfile updates.
+        \item {\tt -integral | -proportional} --- 
+               switch the control law to either integral or proportional
+               control;  use integral control for orbit correction; 
+               the default control law is integral control.
+        \item {\tt -holdPresentValues} ---
+               causes regulation of the readback variables to the
+               values at the start of the running.
+\begin{equation}
+{\bf u_n} = - K ({\bf x_n} - {\bf x_0})
+\end{equation}
+or
+\begin{equation}
+{\bf u_n} = {\bf u_{n-1}} - K ({\bf x_n} - {\bf x_0}).
+\end{equation}
+where $x_0$ is the vector of initial values of measurement PVs (i.e. values before running the program)
+        \item {\tt -offsets=<offsetFile>} --- Gives a file of offset values to be subtracted from the
+               readback values to obtain the values to be held to zero.
+               Expected to contain at least two columns: ControlName and Offset. 
+        \item {\tt -PVOffsets=<filename>} --- Gives a file of offset PVs to be read and their values are 
+               subtracted from the readback values of the primary readbacks.
+               Expected to contain at least two columns: ControlName (the names 
+               of the primary readbacks), OffsetControlName (the name of 
+               the offset PVs). 
+        \item {\tt -auxiliaryOutput=matrixFile=<file>,controlQuantityDefinition=<file>,filterFile=<file>,controlLogFile=<file>[,mode=<integral|propotional>]} ---
+                reads in an additional matrix to calculate values for PVs  
+               (not necessarily corrector PVs) based 
+               on the correction that is being done. The formula 
+               y = (gain) M (delta\_C) is used for integral mode and 
+               y = (gain) M (C) for proportional mode. Time filtering 
+               is available through a filter file with 
+               a0, b0, a1, etc, coefficients. 
+               A control quantity definition file for the matrix 
+               is available as option. The default mode is integral, if 
+               mode=propotional is given, proporptional control will be applied. 
+        \item {\tt -verbose} --- prints extra information.
+        \item {\tt -dryRun} --- readback variables are read, but the control variables
+               aren't changed.
+        \item {\tt -average=<number>|PVname=<name>[,interval=<seconds>]} ---  number of readbacks to average before making a correction.
+               Default interval is one second. Units of the specified 
+               interval is seconds. The total time for averaging will
+               not add to the time between corrections.
+        \item {\tt -testValues=<filename>} --- sdds format file containing minimum and maximum values
+               of PV's specifying a range outside of which the feedback
+               is temporarily suspended. Column names are ControlName,
+               MinimumValue, MaximumValue. Optional column names are 
+               SleepTime, ResetTime, Despike, and GlitchLog.
+        \item {\tt -deltaLimit=value=<value>|file=<filename>} --- Specifies maximum change made in one step for any actuator,
+               either as a single value or as a column of values (column name
+               DeltaName) from a file. The calculated change vector is scaled
+               to enforce these limits, if necessary.
+        \item {\tt -readbackLimit=value=<value>|minValue=<value>,maxValue=<value>|file=<filename>} --- Specifies the maximum negative and positive error to
+               recognize for each PV. The values can be speficied
+               as a single value, as two values, or as columns of
+               values in a file (clumns should be minValue and maxValue).
+        \item {\tt -actionLimit=value=<value>|file=<filename>} --- Specifies minimum values in readback before any action is
+               taken, either as a single value or as a column of values
+               (column name ActionLimit) from a file.
+        \item {\tt -warning} --- prints warning messages.
+        \item {\tt -pendIoTime=<real-value>} --- specifies maximum time to wait for connections and
+               return values.  Default is 30.0s 
+        \item {\tt -runControlPV=string=<string>|parameter=<string>,pingTimeout=<value>} --- specifies a string parameter in <inputfile> whose value
+               is a runControl PV name.
+        \item {\tt -runControlDescription=string=<string>|parameter=<string>} ---
+               specifies a string parameter in <inputfile> whose value
+               is a runControl PV description record.
+        \item {\tt -despike=[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>][,pvthreshold=<pvname>][,file=<filename>][,countLimit=<integer>][,startThreshold=<value>,endThreshold=<value>,stepsThreshold=<integer>][,rampThresholdPV=<string>]} ---
+                specifies despiking of readback variables,
+               under the assumption
+               that consecutive readbacks are nearest neighbors. If a file is
+               specified, then the PVs with column Despike value of 0 will not
+               get despiked. If the testsValues file has a Despike column defined,
+               the test PVs with a nonzero value for Despike will get despiked
+               with the same option parameters. If countLimit is greater than 0
+               and there are more than N readings outside the despiking threshold,
+               then no despiking is done.
+               If startThreshold, endThreshold and stepsThreshold 
+               are provided, then ramp the despiking threshold from startThreshold to 
+               endThreshold over stepsThreshold correction steps. It then remains at 
+               endThreshold, unless the threshold pv is given with -despike.  
+               In that case, the threshold can be changed via the PV.
+               If rampThresholdPV is provided, the threshold will be reramped whenever 
+               the value of rampThresholdPV is no-zero and it is reset to 0 after reramping.
+        \item {\tt -servermode=pid=<file>,command=<file>}     allows one to change the commandline options while the program is
+               running. Program reads the command file for new options whenever
+               SIGUSR1 is received, and exits when SIGUSR2 is received.
+               The process id is stored in file specified by pid.
+        \item {\tt -controlLogFile=<file>} --- At each change of actuators, the old and new values of the actuators
+               are written to this file. The previous instance of the file 
+               is over-written at the same time.
+        \item {\tt -glitchLogFile=file=<string>,[readbackRmsThreshold=<value>][,controlRmsThreshold=<value>][,rows=<integer]} ---
+                  Readback and control data values
+               are written at each glitch event defined by the
+               by the RMS thresholds specified as sub-options.
+        \item {\tt -CASecurityTest} --- checks the channel access write permission of the control PVs.
+               If at least one PV has a write restriction then the program suspends
+               the runcontrol record.
+        \item {\tt -waveforms=<filename>,<type>} --- the waveform file name, and the type of
+               waveforms. <type>=readback, offset, actuator or ffSetpoint or test.
+               The waveform file contains "WaveformPV" parameter, 
+               "DeviceName" and "Index" columns, which is the index of DeviceName in 
+               the vector. Note that for actuators, if the reading and writing name are
+               different, two paramters "ReadWaveformPV" and "WriteWaveformPV" 
+               should be given. For testing waveforms, there are two additional required columns: 
+               MaximumValue and MinimumValue, and one optional short column - Ignore: 
+               which set the flags of whether ignore the pvs in the waveform. If Ignore column 
+               does not exist, then the readbacks and controls will consider to be testing pvs 
+               in the waveforms.        
+    \end{itemize}
+
+\item {\bf examples:}
+     \begin{flushleft}{\tt \bf
+        sddscontrollaw sddscontrollaw.inv2 -searchPath=/home/oxygen/OAG/sddsEpicsTests -interval=1 -steps=10 -gain=.75 \\
+         -controlQuantityDefinition=sddscontrollaw.cqdf -testValues=sddscontrollaw.test -despike -average=3,interval=.1 -verbose
+     }\end{flushleft}
+
+      \begin{flushleft}{\tt \bf
+     sddscontrollaw sddscontrollaw.inv -searchPath=/home/oxygen/OAG/sddsEpicsTests  -interval=1 -steps=15 -gain=1.2 -holdPresentValues -verbose
+      }\end{flushleft}
+
+     \begin{flushleft}{\tt \bf
+     sddscontrollaw sddscontrollaw.inv -searchPath=/home/oxygen/OAG/sddsEpicsTests  -interval=1 -steps=15 -gain=1.1 -offsets=sddscontrollaw.offsets -verbose
+     }\end{flushleft}
+        
+\item {\bf see also:}
+ 
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%    
+    \begin{itemize}
+    \item \progref{sddsexperiment}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: L. Emery, H. Shang, R. Soliday, ANL}
+\end{itemize}

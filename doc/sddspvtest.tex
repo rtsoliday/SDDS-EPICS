@@ -1,0 +1,119 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsmonitor
+%
+\subsection{sddspvtest}
+\label{sddspvtest}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddspvtest+ tests the process variable given by the inputfile are out-of-range
+or not and sets the number of out-of-range process variables to a control PV.   
+
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+\begin{verbatim}
+sddspvtest linac.sdds -time=20 -runControlPV={string=shang:ControlLawRC,pingTimeout=4}\
+  -runControlDescription=string=hi
+\end{verbatim}
+where the contents of the file \verb+linac.sdds+ are
+\begin{verbatim}
+SDDS1
+&description text="Namecapture BURT Request File", contents="BURT Request", &end
+&column name=ControlName, type=string,  &end
+&column name=MaximumValue, type=double,  &end
+&column name=MinimumValue, type=double,  &end
+&data mode=ascii, &end
+! page number 1
+linac
+                  10
+soliday:PM1:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM1:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM2:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM2:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM3:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM3:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM4:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM4:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM5:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM5:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+.......
+
+\end{verbatim}
+
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddspvtest <inputFile> [-pvOutput=<pvName>] 
+  [-time=<timeToRun>,<timeUnits>] [-interval=<timeInterval>,<timeUnits>] 
+  [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,
+  pingInterval=<value>] 
+  [-runControlDescription={string=<string>|parameter=<string>}] 
+  [-pendIOtime=<value>] [-verbose] [-testValues=<file>[,limit=<number>]]
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:} \par
+The variable input file is an SDDS file with one string column: ControlName, which is required
+and gives the list of control correctors (process variables or knobs). It also contains two double
+double columns: MaximumValue and MinimumValue, which are also required.
+seconds between two settings of the correctors.
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+%
+        \item {\tt -pvOutput} --- optional. the output pv name for storing the testing results
+               of PVs in the input. If it is not given,the results are printed out.
+        \item {\tt -time} ---required. Total time for testing process variable.
+               Valid time units are seconds,minutes,hours, or days. 
+         \item {\tt -interval} ---optional. Desired time interval for testing, the units are same as time.
+        \item {\tt -runControlPV} --- specifies the runControl PV record. string|parameter is required,
+                pingInterval and pingTimeout are optional.
+        \item {\tt -runControlDescription} ---specifies a string parameter whose value is a runControl
+                PV description record.
+        \item {\tt -verbose} -- print out messages. 
+        \item {\tt -pendIOtime} -- sets the maximum time to wait for return of each value.
+        \item {\tt -testValues<file>,[limit=<number>]} --
+           file is sdds format file containing minimum and maximum values of PV's specifying
+           a range outside of which the feedback is temporarily suspended. Column names are
+           ControlName, MinimumValue, MaximumValue. Optional column names are SleepTime, 
+           ResetTime. limits is the maixum number of failure times. The program will be
+           terminated when the continuous failure times reaches the limit.
+    \end{itemize}
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddscontrollaw}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: H. Shang, ANL}
+\end{itemize}

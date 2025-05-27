@@ -1,0 +1,174 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for burtrb
+%
+\subsection{burtrb}
+\label{burtrb}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+burtrb+ reads values of process variables and writes them to a file.
+An input file lists the process variables to be read.
+The output file (also called a snapshot file) can be used by program \verb+burtwb+
+to restore the process variables.
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The state of the APS storage ring is saved in the snapshot file SR.snp using the 
+request file SR.req:
+\begin{verbatim}
+burtrb -f SR.req -o SR.snp
+\end{verbatim}
+where the contents of the file \verb+SR.req+ are
+\begin{verbatim}
+SDDS1
+&column
+ name = ControlType,  type = string, &end
+&column
+ name = ControlName,  type = string, &end
+&data
+ mode = "ascii", no_row_counts=1 &end
+pv      S1A:Q1:CurrentAO        
+pv      S1A:Q2:CurrentAO
+...
+\end{verbatim}
+Note that the header contain the minimal amount of information. There may be situations
+where more columns need to be defined, as described elswhere in this manual.
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: burtrb -f req1 {req2 ...} {-l logfile} {-o outfile} {-d} {-v}
+	{-c ... comments ...} {-k keyword1 ... keywordn}
+	{-r retry count} {-sdds or -nosdds} {-Dname{=def}}
+	{-Ipathname}
+
+where
+
+  -f req1 {req2 ...} - Request filenames. This is the only switch
+  	that is not optional.  You must specify at least one request
+  	file.
+
+  -l logfile - Log filename. The name of the file where all logging
+  	messages (e.g. error messages, reports of process variables
+  	that were not found) go.  The default is stderr.
+
+  -o outfile - Snapshot filename.  The name of the file where the
+  	snapshot information goes.  The default is stdout.
+
+  -d - Debug.  Save the files created by processing the request
+  	files with the C preprocessor.  The default is to delete these
+  	files.
+
+  -v - Verbose.  This increases the amount of information displayed
+  	in the logfile.
+
+  -c ... comments ... - Comments.  Adds comments to the header of
+  	the snapshot file.
+
+  -k keyword1 ... keywordn - Keywords.  Adds keywords to the header
+  	of the snapshot file.
+
+  -r retry count - Number of additional attempts to wait for
+  	connections.  The program will attempt to find all the process
+  	variables.  If it is unsuccessful, it will try this many more
+  	times to establish connections.  The default value is 0.
+
+  -sdds or -nosdds - SDDS/non-SDDS snapshot file.  Explicitly
+  	specifying that the generated snapshot file will be 
+  	SDDS/non-SDDS compliant.  The default is to adopt the SDDS
+  	type from the input(s).  If there is a heterogeneous set of
+  	inputs (some SDDS and some non-SDDS), the default is to produce
+  	and SDDS compliant snapshot file.
+
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:} \par
+The input file is an SDDS file with at least two columns:
+\begin{itemize}
+        \item {\tt ControlName} --- Required string column for the process variable or device names.
+        \item {\tt ControlType} --- Required string column for the control name type. For a 
+                process variable name use ``pv''; for a device name use ``dev''.
+\end{itemize}
+The optional columns are:
+\begin{itemize}
+        \item {\tt BackupMsg} --- String column for the device read message if the {\tt ControlType} value is ``dev''. 
+                This column is transfered to the output file. 
+                If this column is absent then the default read message is ``read'', and the column {\tt BackupMsg} is created in the output file.
+        \item {\tt RestoreMsg} --- String column for the device set message if the {\tt ControlType} value is ``dev''.
+                This column is transfered to the output file. 
+                If this column is absent then the default read message is ``read'', and the column {\tt RestoreMsg} is created in the output file.
+\end{itemize}
+
+\item {\bf output file:} \par
+The output file contains the same columns as the input file plus additional ones:
+\begin{itemize}
+        \item {\tt ValueString} --- String column containing the readback value as a ASCII
+        string.  
+        \item {\tt Lineage} --- String column containing the composite device
+        name. In the case that a composite device was given as a control name in the input
+        file, \verb+burtrb+ will expand the composite device in its atomic devices, and
+        write one row per atomic device in the output file with the same {\tt Lineage}
+        value for each.  If the control name in the input file was a process variable or
+        an atomic device then the lineage is the character ``-''. (A quirk of program
+        \verb+burtrb+ is the use of the character ``-'' for the equivalent of the empty
+        string. A preferred way to specify a empty string would be simply ``'', but this
+        hasn't been implemented in \verb+burtrb+.)  
+        \item {\tt BackupMsg} --- String
+        column. If not specified in the input file, the default device read message is
+        written to this column.  
+        \item {\tt RestoreMsg} --- String column. If not
+        specified in the input file, the default device write message is written to this
+        column.
+\end{itemize}
+Defined parameters in the output file are:
+\begin{itemize}
+        \item {\tt TimeStamp} --- String giving the date.
+        \item {\tt BurtComment} --- String given at the comment command line option.
+\end{itemize}
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+%
+        \item {\tt -f file1 [file2] ...} --- Request files.
+        \item {\tt -o outfile} --- Output file. If option is not present then stdout is the default.
+        \item {\tt -c comment} --- A comment string to be added to the output file.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{burtwb}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: N. Karonis, ANL} 
+\item {\bf manual page: L. Emery, ANL} 
+\end{itemize}

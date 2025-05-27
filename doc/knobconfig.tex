@@ -1,0 +1,169 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+%
+% Substitute the program name for knobconfig
+%
+\subsection{knobconfig}
+\label{knobconfig}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+knobconfig+ assigns knobs to devices
+according to the input file. Knob assignments are active
+only during program execution.
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+Knobs are assigned for tune adjustment of the APS storage ring with this
+command:
+\begin{verbatim}
+knobconfig SR_tunes.cokn
+\end{verbatim}
+where file \verb+SR_tunes.cokn+ contains weights for the various
+quadrupole magnets necessary for independent tune adjustments.
+Part of the first data set of the file \verb+SR_tunes.cokn+
+is shown below:
+\begin{verbatim}
+SDDS1
+&description 
+        text="Knob Assignment Specification" 
+        contents="knob assignment specification" 
+&end 
+&parameter name=ControlName, type=string  &end 
+&parameter name=KnobDescription, type=string  &end
+&parameter name=ControlType,  type=string &end 
+&parameter name=ControlUnits,  type=string &end 
+&parameter name=Gain type=double &end 
+&column name=ControlName type=string &end 
+&column name=Weight type=double &end 
+&data   mode=ascii, &end 
+S:NUx:fine              ! ControlName
+Triplet knob for x tune (0.0005/click)  ! KnobDescription
+dev                     ! ControlType
+?                       ! ControlUnits
+0.5                     ! Gain
+240                     ! number of rows
+S1A:Q1  1.488923268326000e-03
+S1A:Q2  5.958927747443000e-03
+S1A:Q3  4.242561180246000e-03
+S1B:Q3  4.242561180246000e-03
+S1B:Q2  5.958927747443000e-03
+S1B:Q1  1.488923268326000e-03
+S2A:Q1  1.488923268326000e-03
+S2A:Q2  5.958927747443000e-03
+...
+\end{verbatim}
+
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: knobconfig spec-file
+purpose:	Configures knobs.
+		Assigns knobs to devices and process variables
+		according to spec-file. Assignments are active
+		only during program execution. In general, it 
+		is best not to run this utility in background.
+Sample spec-file. Note that ControlMessage parm is optional:
+SDDS1 
+&description 
+        text="Knob Assignment Specification" 
+        contents="knob assignment specification" 
+&end 
+&parameter name=ControlName 
+           type=string  
+&end 
+&parameter name=ControlType 
+           type=string 
+&end 
+&parameter name=ControlMsg 
+           type=string 
+&end 
+&parameter name=ControlUnits 
+           type=string 
+&end 
+&parameter name=Gain 
+           type=double 
+&end 
+&column name=ControlName 
+        type=string 
+&end 
+&column name=Weight 
+        type=double 
+&end 
+&data   mode=ascii 
+        no_row_counts=1 
+&end 
+COMPDEVICENAME 
+dev 
+set 
+tune 
+0.01 
+P:Q1  1.0000 
+P:Q2  1.1134 
+ 
+PTB:Q3 
+dev 
+set 
+Amps 
+0.1 
+ 
+PTB:Q4:CurrentAO 
+pv 
+- 
+Amps 
+0.1 
+ 
+\end{verbatim}
+
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:}\par
+Each data set in the input file defines the weights of the devices controlled
+by one knob. 
+The required parameters are:
+\begin{itemize}
+        \item {\tt ControlName} --- String. The name of the composite device.
+        \item {\tt ControlType} --- String. Descibes the type of control name.
+                The only valid value is "\verb+dev+".
+        \item {\tt Gain} --- Double. Factor by which to multiply the 
+                {\tt Weight} column values of each constituent of the
+                composite device.
+\end{itemize}
+An optional parameter is
+\begin{itemize}
+        \item {\tt ControlMsg} --- String. The device message to be used. The
+        default value is "set".
+\end{itemize}
+The parameters \verb+KnobDesciption+ and \verb+Units+ may be implemented in future versions
+of \verb+knobconfig+. For now, they may be defined as a data preparation aid.
+The required columns are:
+\begin{itemize}
+        \item {\tt ControlName} --- String column of names of atomic devices.
+        \item {\tt Weight} --- Double column of relative weights of each atomic device.
+        Multiplied with the \verb+Gain+, these are the values by which each device
+        setpoints will be changed by one tick of the knob.
+\end{itemize}
+\end{itemize}
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    None.
+
+\item {\bf author: C. Saunders, ANL} 
+\end{itemize}

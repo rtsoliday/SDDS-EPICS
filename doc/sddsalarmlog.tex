@@ -1,0 +1,188 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsalarmlog
+%
+\subsection{sddsalarmlog}
+\label{sddsalarmlog}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddsalarmlog+ logs changes of alarm status for process variables named in an input file.
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The status of the positron accumulator ring process variables are logged
+for a one day duration.
+\begin{verbatim}
+sddsalarmlog PAR.alog  PAR.alog.sdds -timeDuration=1,day 
+\end{verbatim}
+where the file \verb+PAR.alog+ is the input file containing the names of the
+process variables, and the file \verb+PAR.alog.out+ is the output file.
+
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddsalarmlog <input> <output> 
+-timeDuration=<realValue>[,<time-units>]
+[{-append[=recover] | -eraseFile | -generations[=digits=<integer>][,delimiter=<string>} |
+ -dailyFiles[=verbose]]
+[-pendEventTime=<seconds>] [-durations] [-explicit[=only]] [-verbose]
+[-comment=<parameterName>,<text>] 
+\end{verbatim}
+
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:}\par
+The input file is an SDDS file with the required string column {\tt ControlName}
+which contains the names of the process variables whose status is to be monitored.
+
+\item {\bf output file:}\par
+The output file contains information on the process variable alarm status
+change, such as the time of occurence, the alarm designation, the severity of the alarm, and the
+row location of the previous alarm status change.
+
+In order to save disk space {\tt sddsalarmlog} logs integer codes
+(indexes) instead of the actual string values for the control name,
+the alarm status and the alarm severity. The integer codes are indices
+into one of three string arrays written to the output file. The logging information
+can be recovered using SDDS tool sddsderef. 
+
+As an option, and for a direct interpretation of the output file, the control
+name, alarm status and alarm severity can be written explicitly as
+string columns with or without the integer codes. However this
+option uses up a lot more disk space.
+
+In either case the following columns are defined:
+\begin{itemize}
+        \item {\tt PreviousRow} --- Long column of row numbers. For each 
+        process variables alarm status change, the row location of the 
+        previous alarm status change is written.                
+        \item {\tt TimeOfDay} --- Float column of system time in units of hours. 
+        The time does not wrap around at 24 hours.
+\end{itemize}
+
+By default these columns are defined (except when the option {\tt -explicit=only} is specified):
+\begin{itemize}
+        \item {\tt ControlNameIndex} --- Long column indicating the process variable whose
+        alarm status changed. The value of this data is the index into the string array 
+        {\tt ControlNameString}, which is the list of all process variables monitored.
+        \item {\tt AlarmStatusIndex} --- Short column indicating the alarm status.
+         The value of this data is the index into the string array 
+        {\tt AlarmStatusString}, which is the list of all possible alarm status values.
+        \item {\tt AlarmSeverityIndex} --- Short column indicating the alarm status.
+        The value of this data is the index into the string array 
+        {\tt AlarmSeverityString}, which is the list of all possible alarm severity values.
+\end{itemize}
+
+These columns are created by the option {\tt -explicit}:
+\begin{itemize}
+        \item {\tt ControlName} --- String column for the process variable whose alarm
+        status just changed.
+        \item {\tt AlarmStatus} --- String column for the alarm status. 
+        \item {\tt AlarmSeverity} --- String column for the alarm severity. 
+\end{itemize}
+
+This column is created with option {\tt -durations}:
+\begin{itemize}
+        \item {\tt Duration} --- String column for the duration of the previous alarm state.
+\end{itemize}
+
+These arrays are created by default except when the option {\tt -explicit=only} is specified:
+\begin{itemize}
+        \item {\tt ControlNameString} --- String colunm of all process variables to be monitored.
+        \item {\tt AlarmStatusString} --- String colunm of all possible alarm status values.
+        \item {\tt AlarmSeverityString} --- String colunm of all possible alarm severity values.
+\end{itemize}
+
+These parameters are defined:
+\begin{itemize}
+        \item {\tt InputFile} --- String parameter for the name of the input file.
+        \item {\tt TimeStamp} --- String parameter for time stamp for file.
+        \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
+                is appended to an existing file, the new data is written to a new
+                page. The {\tt PageTimeStamp} value for the new page is the creation
+                date of the new page. The {\tt TimeStamp} value for the new page is the creation 
+                date of the very first page.
+        \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
+        \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
+        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+\end{itemize}
+\end{itemize} % end of itemized files
+
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+%
+        \item {\tt -timeDuration=<realValue>[,<time-units>]} ---  Specifies time duration for logging.
+                The default time units are seconds; one may also specify days, hours, or minutes.
+        \item {\tt -append[=recover]} ---Specifies appending to the file <output> if it exists already.
+                If the recover qualifier is given, recovery of a corrupted file
+                is attempted using sddsconvert, at the risk of loss of some of the
+                data already in the file.
+        \item {\tt -eraseFile} --- If the output file already exists, then it will be overwritten
+                by \verb+sddsalarmlog+.
+        \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
+                The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
+                   the smallest positive integer such that the file does not already
+                   exist.   By default, four digits are used for formating \verb+<N>+, so that
+                   the first generation number is 0001.
+        \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time, in seconds.
+                The default is 10 .
+        \item {\tt -durations} --- Specifies including state duration in output.
+        \item {\tt -connectTimeout} --- Specifies maximum time in seconds to wait for a connection before
+                issuing an error message. 60 is the default.
+        \item {\tt -explicit[=only]} ---  Specifies that explicit columns with control name, alarm status,
+                and alarm severity strings be output in addition to the integer
+                codes.  If the "only" qualifier is given, the integer codes are
+                omitted from the output.
+        \item {\tt -verbose} --- Prints out a message when data is taken.
+        \item {\tt -precision=\{single|double\}} --- Selects teh data type for the statistics columns.
+        \item {\tt -updateInterval=<integer>} --- Number of sample sets between each output file update. The default is 1.
+        \item {\tt -ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters.
+        \item {\tt -noezca} --- Obsolete.
+        \item {\tt -dailyFiles} -- The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,
+                where YYYY=year, JJJ=Julian day, and MMDD=month+day. A new file is started after 
+                the midnight.
+        \item {\tt -oncaerror=\{usezero|skiprow|exit\}} --- Selects action taken when a channel access error occurs.
+                The default is using zero ({\tt usezero}) for the value of the process variable 
+                with the channel access error, and resuming execution. The second option ({\tt skiprow}) is to
+    \end{itemize}
+
+\item {\bf see also:}
+
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: M. Borland, ANL} 
+\end{itemize}

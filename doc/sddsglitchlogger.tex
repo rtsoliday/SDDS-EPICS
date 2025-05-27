@@ -1,0 +1,260 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsglitchlogger
+%
+\subsection{sddsglitchlogger}
+\label{sddsglitchlogger}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddsglitchlogger+ reads values of process variables and writes them to a file at a specified time interval when a trigger occurrs.
+An input file defines the process variables to be monitored and/or the trigger parameters.
+An trigger file defines the the process variables that act as triggers.
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The position readbacks of PMs in linac are monitored with the command below.
+\begin{verbatim}
+sddsglitchlogger SRvac.mon . -time=24,hours -interval=1,minute
+\end{verbatim}
+``.'' specifies the directory of the outputfile is current directory,the file name is generated
+as related to the date.
+where the contents of the file \verb+SRvac.mon+ are
+\begin{verbatim}
+SDDS1
+&parameter name=TriggerControlName type=string &end
+&parameter name=MajorAlarm type=short &end
+&parameter name=MinorAlarm, type=short &end
+&parameter name=NoAlarm type=short &end
+&parameter name=OutputRootname type=string &end
+&column name=ControlName type=string  &end
+&column name=ReadbackName type=string &end
+&column name=ReadbackUnits type=string &end
+&data mode=ascii no_row_counts=1 &end
+!page 1
+soliday:PM1:X:positionM
+0
+0
+1
+PM
+soliday:PM1:X:positionM  soliday:PM1:X:positionM  mm
+soliday:PM1:Y:positionM  soliday:PM1:Y:positionM  mm
+soliday:PM2:X:positionM  soliday:PM2:X:positionM  mm
+...
+\end{verbatim}
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddsglitchlogger <input> <outputDirectory>|<outputRootname> [-triggerFile=<filename>]
+        [-sampleInterval=<secs>] [-time=<real-value>[,<time-units>]
+        [-circularBuffer=[before=<number>,][after=<number>]]
+        [-holdoffTime=<seconds>] [-autoHoldoff]
+        [-inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]]
+        [-conditions=<filename>,{allMustPass | oneMustPass}]
+        [-verbose] [-watchInput] [-lockFile=<filename>[,verbose]] 
+Writes values of process variables or devices to a binary SDDS file.
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:}\par
+The input file is an SDDS file with a few data columns required:
+\begin{itemize}
+        \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
+                or devices to be monitored. Both column names are equivalent.
+        \item {\tt ReadbackName} --- Optional string column for the names of the data columns in the 
+                output file. If absent, process variable or device name is used.
+        \item {\tt ReadbackUnits} --- Optional string column for the units fields of the data columns in the 
+                output file.If absent, units are null.
+\end{itemize}
+If triggerFile that gives the trigger information is not given, the input file should contain following
+parameters:
+\begin{itemize}
+        \item {\tt OutputRootname} --- Required string parameter for the root name of output file.
+                Different OutputRootmames go to different output files. If different pages have the same 
+                OutputRootname, the columns defined in new pages are ignored. Only the trigger defined in
+                newer page is counted to the same output.
+        \item {\tt TriggerControlName} --- Required string parameter for the name of process variable that
+                acts as trigger.
+        \item {\tt MajorAlarm}  --- Optional short parameter for alarm-based trigger.
+                if nonzero, then severity of MAJOR on TriggerControlName, results in a buffer dump.
+        \item {\tt MinorAlarm}  --- Optional short parameter for alarm-based trigger.
+                if nonzero, then severity of MINOR on TriggerControlName, results in a buffer dump.
+        \item {\tt NoAlarm}  --- Optional short parameter for alarm-based trigger.
+                if nonzero, then severity of NOALARM on TriggerControlName, results in a buffer dump.
+        \item {\tt TransitionDirection}  --- Optional short parameter for transition-based trigger.
+                required if TransitionThreshold parameter is defined.
+\begin{itemize}
+        \item {\tt -1}  transition of TriggerControlName from above threshold to below threshold.
+                        results in buffer dump.
+        \item {\tt 0}   ignore transition-based triggers for this PV.
+        \item {\tt 1}   transition from below threshold to above threshold results in buffer dump.
+\end{itemize}
+        \item {\tt TransitionThreshold}  --- Optional double parameter for transition-based trigger.
+                required if TransitionDirection parameter is defined. It defines the threshold of
+                a transition trigger.
+        \item {\tt GlitchThreshold} --- Optional double parameter for glitch-based trigger.
+\begin{itemize}
+        \item {\tt 0}   ignore glitch-based triggers for this PV.
+        \item {\tt >0}   absolute glitch level.
+        \item {\tt <0}   -1*(fractional glitch level).
+\end{itemize}
+        \item {\tt GlitchBaselineSamples} --- Optional long parameter for glitch-based trigger.
+                It defines number of samples to average to get the baseline value for glitch determination.
+                A glitch occurs when newReading is different from the baseline by more than GlitchThreshold
+                or (if GlitchThreshold<0) by |GlitchThreshold*baseline|.
+        \item {\tt GlitchBaselineAutoReset} --- Optional short parameter for glitch-based trigger.
+                Normally (if there is no glitch) the baseline is updated at each step using
+                baseline -> (baseline*samples+newReading)/(samples+1).  After a glitch, one 
+                may want to do something different. 
+ \begin{itemize}       
+        \item {\tt 1}   After a glitch, the baseline is reassigned to its current value.
+        \item {\tt 0}   The pre-glitch baseline is retained. 
+\end{itemize}
+\end{itemize}
+\item {\bf trigger file:}\par
+The trigger file is an SDDS file with following columns, the meaning of these columns are the same as
+the parameters defined in input file, which are replaced by a trigger file:
+\begin{itemize}
+        \item {\tt TriggerControlName} --- Required string column for the names of the process variables
+                that act as triggers.
+        \item {\tt MajorAlarm} --- Optional short column.
+        \item {\tt MinorAlarm} --- Optional short column.
+        \item {\tt NoAlarm} --- Optional short column.
+        \item {\tt TransitionThreshold} --- Optional double column. (required for transition trigger exists)
+        \item {\tt TransitionDirection} --- Optional short column.(required for transition trigger exists)
+        \item {\tt GlitchThreshold} --- Optional double column.(required for glitch trigger exists)
+        \item {\tt GlitchBaselineSamples} --- Optional long column.
+        \item {\tt GlitchBaselineAutoReset} --- Optional short column
+\end{itemize}
+\item {\bf conditions file:} \par
+The conditions file is an optional input file specified on the command line which lists
+conditions that must be satisfied at each time step before the data can be logged.
+
+The file is like the main input file, but has numerical columns \verb+LowerLimit+ and \verb+UpperLimit+.
+The minimal column set is \verb+ControlName+, which contain the PV names, and the two limits columns above.
+Depending on comand line options, when any or all PV readback from this file
+is outstide the range defined by the corresponding data from \verb+LowerLimit+ and \verb+UpperLimit+,
+none of the data of the input file PVs are recorded. 
+When this situation occurs for a long period of time, the size of the output file doesn't
+grow, and it may appear that the monitoring process has somehow stopped.
+It is possible to check the program activity with the \verb+touch+ sub-option
+which causes the monitoring program to touch the output file at every step.
+
+\item {\bf output file:}\par
+If trigger file is not given, the output file name is:
+   outputDirectory/OutputRootname-string
+   here, there may be many output files depends how many pages and how many different OutputRootnames 
+   the input file has.
+If trigger file is given, the outputDirectory given in command line is actually the OutputRootname,
+the output file name is now (only one output in this case):
+   outputDirectory-string
+In above, both string is generated by MakeDailyGenerationFilename().
+
+The output file contains one data column for each process variables named in the input file. 
+Time columns and other miscellaneous columns are defined: 
+\begin{itemize}
+        \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
+        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        for time axis labeling.
+        \item {\tt TimeOfDay} --- Float column of system time in units of hours. 
+        The time does not wrap around at 24 hours.
+        \item {\tt DayOfMonth} --- Float column of system time in units of days. 
+        The day does not wrap around at the month boundary.
+        \item {\tt Step} --- Long column for step number.
+        \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step. 
+\end{itemize}
+
+Many time-related parameters are defined in the output file:
+\begin{itemize}
+        \item {\tt TimeStamp} --- String parameter for time stamp for file.
+        \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
+                is appended to an existing file, the new data is written to a new
+                page. The {\tt PageTimeStamp} value for the new page is the creation
+                date of the new page. The {\tt TimeStamp} value for the new page is the creation 
+                date of the very first page.
+        \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
+        \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
+        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+\end{itemize}
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+
+        \item {\tt -triggerFile} --- specifies the name of trigger file.
+        \item {\tt -lockFile} --- specifies the name of lock file. When this option is given,
+                sddsglitchlogger uses the named file to prevent running multiple versions of
+                the program.  If the named file exists and is locked, the program exits.  
+                If it does not exist or is not locked, it is created and locked.
+        \item {\tt -sampleInterval=<real-value>[,<time-units>]} --- Specifies the interval between readings.
+                The time interval is implemented with a call to usleep between calls to the control system.
+                Because the calls to the control system may take up a significant amount of time, the average
+                effective time interval may be longer than specified.
+        \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
+                seconds, minutes, hours, and days. The completion time may be longer, because the time 
+                interval in not garanteed.
+        \item {\tt -enforceTimeLimit} --- Enforces the time limit given with the -time option.
+        \item {\tt -circularBuffer} --- Set how many samples to keep before and after the triggering event.
+        \item {\tt -holdoffTime} --- Set the number of seconds to wait after a trigger or alarm before 
+                accepting new triggers or alarms.
+        \item {\tt -autoHoldoff} --- Sets holdoff time so that the after-trigger samples are guaranteed 
+                to be collected before a new trigger or alarm is accepted.
+        \item {\tt -verbose} --- Prints out a message when data is taken.
+        \item {\tt -pendIOtime=<value>} --- sets the maximum time to wait for return of each value.
+        \item {\tt -inhibitPV} --- Checks this PV prior to each sample.  If the value is nonzero, 
+                then data collection is inhibited.  None of the conditions-related or other PVs are polled.
+        \item {\tt -watchInput} -- If it is given, then the programs checks the input file to see if
+                it is modifed. If the inputfile is modified, then read the input files again and start
+                the logging.
+        \item {\verb+-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]+} --- 
+                   Names an SDDS file containing PVs to read and limits on each PV that must
+                   be satisfied for data to be taken and logged.  The file is like the main
+                   input file, but has numerical columns LowerLimit and UpperLimit.
+
+                One of \verb+allMustPass+ or \verb+oneMustPass+ must be specified. It would make sense
+                to use \verb+allMustPass+ in most monitoring applications.
+                If \verb+touchOutput+ is present, then the output file is touched, even if no data
+                is written. This way, one can determine by the time stamp of the file
+                whether the monitoring job is still alive
+                when the conditions fail for a long period of time. If \verb+retakeStep+ is
+                present, then the value of \verb+Step+ in the output file is not
+                incremented until the conditions pass, and data is written to the output file.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddsmonitor}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: Hairong Shang, ANL} 
+\end{itemize}

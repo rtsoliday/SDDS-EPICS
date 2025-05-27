@@ -1,0 +1,243 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsmonitor
+%
+\subsection{sddsoptimize}
+\label{sddsoptimize}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddsoptimize+ optimizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.   
+
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The trajectory of the booster BPMs is controlled with this command:
+\begin{verbatim}
+sddsoptimize -measFile= booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12 \
+             -knobFiles=booster.cokn -verbose
+\end{verbatim}
+where the contents of the file \verb+booster.h.moni+ are
+\begin{verbatim}
+SDDS1
+&column
+ name = "ControlName",  type = "string", &end
+&column
+ name = "ReadbackName",  type = "string", &end
+&column             
+ name = "ReadbackUnits",  type = "string", &end
+&data
+ mode = ascii, no_row_counts=1 &end
+oag:B1C0P1:ms:x B1C0P1:ms:x mm
+oag:B1C0P2:ms:x B1C0P2:ms:x mm
+oag:B1C1P1:ms:x B1C1P1:ms:x mm
+oag:B1C1P2:ms:x B1C1P2:ms:x mm
+.......
+
+\end{verbatim}
+the contents of the file \verb+vv+ are
+\begin{verbatim}
+SDDS1
+&parameter name=PauseAfterChange, type=double, &end
+&column name=ControlName, type=string,  &end
+&column name=LowerLimit, type=double,  &end
+&column name=UpperLimit, type=double,  &end
+&column name=InitialChange, type=double,  &end
+&data mode=ascii,no_row_counts=1,&end
+oag:B1C1H:KickAO -2  2  2 
+oag:B1C2H:KickAO -2.500000000000000e+01  2.500000000000000e+01  2.000000000000000e-01 
+oag:B1C3H:KickAO -2.500000000000000e+01  2.500000000000000e+01  2.000000000000000e-01 
+B:h11cos         -25                     25                     0.1
+B:h12sin         -25                     25                     0.1
+B:h12cos         -25                     25                     0.1
+.....
+
+\end{verbatim}
+the contents of the file \verb+booster.cokn+ are
+\begin{verbatim}
+SDDS1
+&parameter name=ControlName, type=string, &end
+&parameter name=KnobDescription, type=string, &end
+&parameter name=Gain, type=double, &end
+&parameter name=ControlType, type=string, &end
+&parameter name=ControlUnits, type=string, &end
+&parameter name=Filename, description="Name of file from which this page came", type=string, &end
+&parameter name=NumberCombined, description="Number of files combined to make this file", type=long, &end
+&column name=ControlName, type=string,  &end
+&column name=Weight, type=double,  &end
+&data mode=asc_ii,no_row_counts=1. &end
+....
+....
+!.page 2
+B:h11cos
+h plane 11th harm. cos (1 mrad/click)
+1.0
+pv
+rad
+11HarmCosineh.cokn
+8
+oag:B1C0H:KickAO 0.99997256549446789
+oag:B1C1H:KickAO -0.21202791415796657
+oag:B1C2H:KickAO -0.93188756664225914
+.....
+.....
+
+\end{verbatim}
+
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddsoptimize -measFile=<filename> -measScript=<script> 
+        [-varScript=<scriptname>]
+       -varFile=<filename> -knobFiles=<filename1> , <filename2>,... 
+       [-simplex=[restarts=<nRestarts>][,cycles=<nCycles>,] 
+       [evaluations=<nEvals>,][no1dscans][,divisions=<int>]] 
+       [-logFile=<filename>] [-verbose] [-tolerance=<value>] [-maximize] 
+       [-1dscan=[divisions=<value>,][cycles=<number>][,evaluations=<value>][,refresh]]
+       [-target=<value>] [-testValues=file=<filename>[,limit=<count>]]
+       [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,
+         pingInterval=<value>
+Perform optimization on APS control system process variables using simplex or 1dscan method.
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf variable input file:} \par
+The variable input file is an SDDS file with one string column: ControlName, which is required
+and gives the list of control correctors (process variables or knobs). It also contains three
+double columns: LowerLimit, UpperLimit, IntialChange and InitialValue. InitialValue column
+is optional. Others are required. InitialChange column specifies the initial changes to the correctors.
+Variable input file has one parameter --PauseBetweenReadings(double), which sets the waiting time in
+seconds between two settings of the correctors.
+\item {\bf measurement file:} \par This file specifies the measurement to be optimized. 
+It has four columns:
+\begin{itemize}
+        \item {\tt ControlName} --- Required string column. Gives the list of process variables
+                 to be controlled.
+        \item {\tt ReadbackName} --- string, optional.
+        \item {\tt ReadbackUnits} --- string, optional.
+        \item {\tt Weight} -- double, optional. Defines the weight of each PV contributed to RMS.
+\end{itemize}
+It has three parameters: 
+\begin{itemize}
+        \item {\tt Tolerance} --- double, sets the converging limit.
+        \item {\tt NumberToAverage} --- long, sets number of average for measurement PVs.
+        \item {\tt PauseBetweenReadings} --- double, sets interval between two readings.
+
+\end{itemize}
+
+\item {\bf knob file:} \par
+To make \verb+sddsoptimize+ more robust, one can implement optimizaion on knobs,
+that are composed of set point process varibles. The process variables that a knob contains are
+given in knob file, which contain following parameters and columns:
+\begin{itemize}
+        \item {\tt ControlName} --- Required string paramter. The name of knob, which
+                acts as a corrector as other PVs do.
+        \item {\tt ControlName} --- Required string column. The names of PVs the knob
+                specified above contains.
+        \item {\tt Wieght} --- Required double columns. Defines the weights of PVs that
+                compose the knob.
+        \item {\tt Gain} ---Optional double paramter. The value of each PV the knob contains
+                is value(PV)=value(knob)*Gain*Weigth(PV). When it is not given, set it to 1.
+        \item {\tt ControlType} --- Optional string paramter. Specifies the control type.
+        \item {\tt ControlUnits}  --- Optional string parameter.
+                 Specifies the units of control PVs.
+        \item {\tt KnobDescription} -- Optional string parameter.
+        \item {\tt Filename}--- Optional string parameter. The name of the file where 
+                this knob comes from.
+        \item {\tt Numbercombined} --- Optional long parameter. The number of files combined.
+                The resulted knob file contains all the information of the files combined.
+                The content of each page is from the combined file specified in filename parameter.
+\end{itemize}
+
+\item {\bf output log file:} \par
+The output file contains one data column for each process variables defined in the variable 
+input file. By default, the data type is double. One row is written at every evaluation.
+Also two more columns and two parameters are defined: 
+\begin{itemize}
+        \item {\tt EvalIndex} --- Long Column. The index of evaluations.
+        \item {\tt currentValue} --- Double column. The RMS value of measurement at each evaluaion.
+        \item {\tt variableFile} --- String parameter. The name of input variable file.
+        \item {\tt measurementFile} --- String parameter. The name of input measurement file.
+\end{itemize}
+
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+%
+        \item {\tt -varFile} --- required, see above. Data in \verb+ControlName+may be valid process
+                variable names or knobs defined in knob files.
+        \item {\tt -measFile} ---specifies the name of measurement file. See above about its content.
+         \item {\tt -knobFiles} ---specifies list of knob files, which contain the knob correctors
+                given in varFile. See above about its content.
+        \item {\tt -measScript=<measScript>} --- user given script for measuring PVs. Either -measScript or -measFile
+                is given for measurement. {\\tt<measScript>} is an executable script which is called by optimizer and
+                outputs a value to the stand outputs. This value is the evaluation value and read by the optimizer.
+        \item {\tt -varScript=<varScript>} --- user given script for setting setpoint PVs or tags. 
+                If both -measScript and -varScript are given, there are no obvious ioc calls.
+                The calling syntax of {\tt<varScript>} is: {\tt<varScript> -tagList <tagList> -valueList <valueList>}
+                where {\tt<varScript>} is an executable command, {\tt<tagList>} is a list of setpoints or 
+                tag names supplied by the varFile and {\tt<valueList>} is a list of values for 
+                setting the setpoints or tags. These values are calculated by optimizer in each evaluation.
+        \item {\tt -simplex} ---  Give parameters of the simplex optimization. Each start or restart 
+                allows <nCycles> cycles with up to <nEvals> evaluations of the function.  Defaults are
+                1 restarts, 1 cycles, and 100 evaluations (iterations). If no1dscan is given, then turn
+                off the 1D scan function in simplex. Divisions gives the parameter of maximum divisions
+                used in simplex. If repeat is given, then read the previous better point again to keep
+                track with the noise. If there is not much noise, it should be turned off to have a 
+                better performance.
+        \item {\tt -1dscan} --- Give parameters of one dimensional scan optimization. Cycles gives the max.
+            number of cycles (i.e. loops) of 1dscan and with an maximum number of 
+            evaluations. Divisons is the max. number of division applied in 1dscan. 
+            Either 1dscan or simplex method is used for optimize. 
+            repeat: read the measurement again if the variable PVs are set back
+            to their previous values to keep track with noise.
+        \item {\tt -verbose } --- Specifies printing of possibly useful data to the standard output.
+        \item {\tt -target} --- the target value for RMS of measurement PV (or PVs).
+        \item {\tt -tolerance} --- tolerance should be given if measScript is used, otherwise,
+            a default value of 0.001 is set to tolerance.
+        \item {\tt -maximize} --- If maximize option is given, sddsoptimize maximizes measurement by
+                varying control correctors. Otherwise, it minimizes the measurement.
+        \item {\tt -runControlPV} -- specifies the runControl PV record.
+        \item {\tt -runControlDescription} -- specifies a string parameter whose value is a 
+                runControl PV description record.
+        \item {\tt -testValues} -- <filename> is name of an sdds format file containing minimum 
+            and maximum values of PV's specifying a range outside of which the feedback is temporarily
+            suspended. Column names are ControlName, MinimumValue, MaximumValue. limit specifies
+            the maximum times of testing when test fails.
+  \end{itemize}
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddsexperiment}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: H. Shang, ANL}
+\end{itemize}

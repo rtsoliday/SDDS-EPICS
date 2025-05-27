@@ -1,0 +1,129 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddssnapshot
+%
+\subsection{sddssnapshot}
+\label{sddssnapshot}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddssnapshot+ reads values of process variables and writes them to a file.
+An input file lists the process variables to be read.
+
+\verb+sddssnapshot+ differs from \verb+burtrb+ in that \verb+sddssnapshot+  may operate in a server mode
+in which a new file is written to the named output file whenever the signal SIGUSR1 is received 
+by \verb+sddssnapshot+.
+Another improvement over \verb+burtrb+ is that
+all data in the input file (even those not needed by the program) are transfered to the output file.
+\verb+sddssnapshot+ is more for data collection as opposed to backup and restore.
+
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The state of the APS storage ring is saved by writing 
+values of process variables listed in SR.req
+to the snapshot file SR.snp:
+\begin{verbatim}
+sddssnapshot SR.req SR.snp -nameOfData="Value"
+\end{verbatim}
+where the contents of the file \verb+SR.req+ are
+\begin{verbatim}
+SDDS1
+&column
+ name = ControlName,  type = string, &end
+&data
+ mode = ascii, &end
+&data
+ mode = "ascii", no_row_counts=1 &end
+S1A:Q1:CurrentAO
+S1A:Q2:CurrentAO
+...
+\end{verbatim}
+
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddssnapshot [-pipe[=input][,output]] [<input>] [<output>]
+[-ezcaTiming=<timeout>,<retries>] [-unitsOfData=<string>] [-nameOfData=<string>]
+[-serverMode=<pidFile>] [-average=<number>,<intervalInSec>]
+Takes a snapshot of EPICS scalar process variables.
+Requires the column "ControlName" with the process variable names.
+For server mode, writes a new file to the given filename whenever
+SIGUSR1 is received.  Exits when SIGUSR2 is received.
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:}\par
+The input file is an SDDS file with at least one column:
+\begin{itemize}
+        \item {\tt ControlName} --- Required string column for the process variable or device name.
+\end{itemize}
+
+\item {\bf output file:}\par
+The output file contains all columns of the input file including those
+not needed by the program plus a column named on the command line option {\tt -nameOfData}.
+This column is defined as a double type and contains the readback values. 
+Optionally the units of that readback column may be specified on the command line.
+Of course this option is useful only if all the process variables have the same units, as in
+the case of recording orbit values from all bpms.
+If the {\tt -average} option is requested, then an additional double column is created with the name
+of the readback column with the ``StDev'' appended to it.
+
+\item {\bf pid file:}\par
+A process id file is created with option {\verb+serverMode=<pidFile>+}. This file contains a single
+number which is the pid number of the running {\verb+sddssnapshot+} process.
+\end{itemize}
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+%
+        \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+        \item {\tt -ezcaTiming=<timeout>,<retries>} --- Specifies tuning of ezca, the channel access 
+        interface used by \verb+sddssnapshot+.
+        \item {\tt -nameOfData=<string>} --- Column name to be given to the data collected. Default name is ``Value''.
+        \item {\tt -unitsOfData=<string>} --- Optional. Name given to the units field of the column definition 
+                        of the data to be collected. Default value is the null string.
+        \item {\tt -serverMode=<pidFile>} --- Optional. Enables the server more. The file specified will be created and contain
+                the process number of the present \verb+sddssnapshot+ process. This file is the mechanism
+                through which the user will know to which process should the SIGUSR1 be sent.
+                To activate one snapshot write, the user can type
+                the command ``\verb+kill -SIGUSR1 `cat <pidFile>+`''.
+        \item {\tt -average=<number>,<intervalInSec> } --- Optional. On can specify the number of readings to
+                average and the number of seconds interval between readings.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{burtrb}
+    \item \progref{sddsmonitor}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: M. Borland, ANL} 
+\end{itemize}

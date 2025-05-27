@@ -1,0 +1,179 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+%
+% Substitute the program name for squishPVs
+%
+\subsection{squishPVs}
+\label{squishPVs}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+squishPVs+ minimizes the values of a set of readback process 
+variables (for example bpm readbacks) by varying one setpoint process 
+variable (for example a corrector magnet setpoint) which has
+a physical influence on the readback process variables. 
+An input file defines one or more data sets of correction groups, each
+consisting of a list of readback PVs and one actuator PV. 
+The method simulates the manual tweaking of physical devices that is often necessary
+when the readbacks are very noisy or when obtaining a reponse matrix is not
+worth the trouble.
+
+The name \verb+squishPVs+ comes from the apparent squishing of the real-time
+trajectory display when \verb+squishPVs+ is running.
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The first-turn horizontal trajectory of the APS ring is minimized with this command:
+\begin{verbatim}
+squishPVs xTrajCorr.sdds 
+\end{verbatim}
+where correction groups are defined in the file \verb+xTrajCorr.sdds+.
+Part of the first correction group in the file \verb+xTrajCorr.sdds+
+is shown below:
+\begin{verbatim}
+SDDS1
+&description
+ text = "Input file for first turn correction", &end
+&parameter
+ name = "CorrectorPV",  type = "string", &end
+&parameter
+ name = "Gain",  type = "double", &end
+! LowerLimit and UpperLimit parameters are optional
+&parameter 
+ name = "LowerLimit", type = "double", &end
+&parameter 
+ name = "UpperLimit", type = "double", &end
+&column
+ name = "BpmPV",  type = "string", &end
+! Offset PVs are optional
+&column
+ name = "OffsetPV", type = "string", &end
+! Fixed offsets are optional and default to 0
+&column
+ name = "OffsetValue", type = "double" &end
+! Weights are optional and default to 1
+&column 
+ name = "Weight", type = "double", &end
+&data
+ mode = "ascii", &end
+! table number 1
+! CorrectorPV: 
+S1A:H1:CurrentAO
+1.000000000000000e+00                   ! Gain
+-150                                    ! LowerLimit
+150                                     ! UpperLimit
+360                                     ! number of rows
+S1A:P1:ms:x S1A:P1:ms:x:SetpointAO 0.1 1
+S1A:P2:ms:x S1A:P2:ms:x:SetpointAO 0.2 2
+S1A:P3:ms:x S1A:P3:ms:x:SetpointAO 0.3 1
+S1A:P4:ms:x S1A:P4:ms:x:SetpointAO 0.4 1
+S1B:P5:ms:x S1B:P5:ms:x:SetpointAO 0.5 2
+S1B:P4:ms:x S1B:P4:ms:x:SetpointAO 0.4 1
+...
+\end{verbatim}
+
+
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: squishPVs <inputfile> 
+    [-count=<pvName>,<lower>,<upper>,<number>] 
+    [-averages=<number>,<pauseInSeconds>] [-stepSize=<value>] 
+    [-subdivisions=<number>,<factor>]
+    [-upstep=count=<number>,factor=<value>]
+    [-repeat={number=<integer> | forever}[,pause=<seconds>]
+    [-ezcaTiming=<timeout>,<retries>]
+    [-settlingTime=<seconds>] [-verbose]
+    [-criterion={mav | rms}] [-maximize]
+    [-threshold=<value>] [-actionLevel=<value>]
+    [-testValues=<file>,[limit=<number>]]
+\end{verbatim}
+
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:}\par
+The input file data pages define correction groups. A correction group
+consists of a list of readback PVs and one corrector PV. The required column and parameters are:
+\begin{itemize}
+        \item {\tt BpmPV} --- String column of readback PVs. The name \verb+BpmPV+ is due
+                to the original application of \verb+squishPV+ where the first turn
+                trajectory is reduced by tweaked by corrector magnets.
+        \item {\tt OffsetPV} --- Optional string column of PVs to subtract from corresponding \verb+BpmPV+.
+                This will have the effect of optimizing toward the values of the offsets for
+                positive weights (the default).  The default offsets are all 0.
+        \item {\tt Weight} --- Optional double-precision column of values by which to multiply the
+                \verb+readback-offset+ values.  The default weight is 1.
+        \item {\tt CorrectorPV} --- String parameter of the corrector PV used in the correction group.
+        \item {\tt Gain} --- Double parameter for factor by which to multiply the 
+                value of the command line option \verb+stepsize+. 
+\end{itemize}
+\end{itemize}
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+      \item {\tt -count=<pvName>,<lower>,<upper>,<number>} --- Optional. Specifies
+                a condition after which a reading will be taken. The process variable
+                \verb+<pvName>+ is read at 1 second intervals. If this
+                PV is within the validity limits specified for this number of readbacks, then
+                the PVs of the correction group are read.                
+        \item {\tt -averages=<number>,<pauseInSeconds} --- Optional. Number of PV readings to average
+                and the number of seconds to wait between readings.
+        \item {\tt -stepsize=<value>} --- Optional. Initial step size to attempt for corrector PVs.
+        \item {\tt -subdivisions=<number>,<factor>} --- Optionally specifies number and size of interval
+                     subdivisions.
+        \item {\tt -upstep=count=<number>,factor=<value>} --- Optionally specifies the number of steps
+                to take in one direction before increasing the stepsize by the given factor.
+        \item {\tt -repeat={number=<integer> | forever}[,pause=<seconds>]} --- Specifies repeated
+                optimization, either a given number of times or indefinitely, with a pause in between.
+                This is useful if a system needs periodic tuning up.
+        \item {\tt -settlingTime=<seconds> } --- Optionally specifies the settling time after corrector PV changes.
+        \item {\tt -criterion={mav|rms}} --- Optionally specifies mean-absolute-value or RMS reduction. 
+                Mean-absolute-value is the default.
+        \item {\tt -threshold=<value>} --- Specifies that the change in the criterion must be below the specified
+        value in order to be considered a genuine improvment.
+        \item {\tt -actionLevel=<value>} --- Specifies that the criterion must be above the given value
+        in order for optimization to start.
+        \item {\tt -maximize} --- Specifies that the criterion should be maximized.  The default is
+                minimization.
+        \item {\tt -ezcaTiming=<timeout>,<retries>} --- Optionally specifies EZCA timing parameters.
+        \item {\tt -verbose} --- Optionally requests output during run.
+        \item {\tt -testValues=<file>,[limit=<number>]} -- 
+                     file is a sdds format file containing minimum and maximum values
+                     of PV's specifying a range outside of which the feedback
+                     is temporarily suspended. Column names are ControlName,
+                     MinimumValue, MaximumValue. Optional column names are 
+                     SleepTime, ResetTime.
+                     limits is the maixum number of failure times. The program will be 
+                     terminated when the continuous failure times reaches the limit.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddscontrollaw}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: M. Borland, ANL} 
+\end{itemize}

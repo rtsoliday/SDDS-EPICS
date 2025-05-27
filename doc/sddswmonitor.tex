@@ -1,0 +1,223 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsmonitor
+%
+\subsection{sddswmonitor}
+\label{sddswmonitor}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddswmonitor+ reads values of waveform process variables 
+and writes them to a file at a specified time interval.
+An input file defines the process variables to be monitored.
+
+Warning: If the readback values of all of the waveform PVs do not
+change, then no data sets are written to the output file. This
+skipping of duplicate values is intended to keep the size of the
+output file as small as possible.  The scalar PVs are not checked for
+changes though. In the future an option that allows logging of duplicate
+waveform PVs may be implemented.
+
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The history of a beam position monitor readback is collected with this command:
+\begin{verbatim}
+sddswmonitor SlowBh.wmon SlowBh.sdds -step=1
+\end{verbatim}
+where the contents of the file \verb+SlowBh.wmon+ are
+\begin{verbatim}
+SDDS1
+&description &end
+&description
+ contents = "sddssequence output", &end
+&parameter
+ name = WaveformLength, type=long, &end
+&column
+ name = WaveformPV,  type = string, &end
+&column
+ name = WaveformName,  type = string, &end
+&data
+ mode = ascii, &end
+! page number 1
+512             ! WaveformLength
+2               ! number of rows
+S1A:P1:bh:x_wf S1A:P1:x
+S1A:P1:bh:y_wf S1A:P1:y
+\end{verbatim}
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddswmonitor {<inputfile> | -PVnames=<name>[,<name>]} <outputfile>
+    [{-erase | -generations[=digits=<integer>][,delimiter=<string>]}]
+    [-steps=<integer> | -time=<value>[,<units>]] [-interval=<value>[,<units>]]
+    [-verbose] [-singleShot[=noprompt]] [-precision={single | double}]
+    [-onCAerror={useZero | skipPage | exit}] 
+    [-scalars=<filename>]
+    [-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]]
+    [-ezcaTime=<timeout>,<retries>] 
+    [-comment=<parameterName>,<text>]
+Writes values of waveform process variables to a binary SDDS file.
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:}\par
+The input file is an SDDS file with two required columns and one required parameter:
+\begin{itemize}
+        \item {\verb+WaveformLength+} --- Required long parameter for the length of the waveform PV's. All
+                WaveformPVs are expected to have this length. 
+        \item {\verb+WaveformPV+}  --- Required string column for the names of the waveform process variables.
+        \item {\verb+WaveformName+} --- Required string column for the names of the data columns in the output file.
+\end{itemize}
+
+\item {\bf scalar PV input file:}\par
+An optional input file for scalar PVs (i.e. regular PVs) can be specified. The required columns are:
+\begin{itemize}
+        \item {\tt ControlName} --- Required string column for the names of the scalar process variables
+                to be monitored.
+        \item {\tt ReadbackName} --- Required string column for the names of the parameter in the 
+                output file in which the values of the scalar process variables are written.
+\end{itemize}
+
+\item {\bf conditions file:} \par
+The conditions file is an optional input file specified on the command line which lists
+conditions that must be satisfied at each time step before the data can be logged.
+
+The file is like the main input file, but has numerical columns \verb+LowerLimit+ and \verb+UpperLimit+.
+The minimal column set is \verb+ControlName+, which contain the PV names, and the two limits columns above.
+Depending on comand line options, when any or all PV readback from this file
+is outstide the range defined by the corresponding data from \verb+LowerLimit+ and \verb+UpperLimit+,
+none of the data of the input file PVs are recorded. 
+When this situations occurs for a long period of time, the size of the output file doesn't
+grow, and it may appear that the monitoring process has somehow stopped.
+It is possible to check the program activity with the \verb+touch+ sub-option
+which causes the monitoring program to touch the output file at every step.
+
+\item {\bf output file:}\par
+The output file contains one data column for each waveform process variable named in the input file. The names
+of the data columns are given by the values of {\verb+WaveformName+} in the input file. The units are obtained
+internally from the EPICS database. An additional long column \verb+Index+ is created that give the index
+of each point in the waveform.
+
+The values of the scalar PVs are written to parameters with names given by the {\tt ReadbackName} column
+of the optional scalars input file. The units are obtained internally from the EPICS database.
+
+By default, the data type is float (single precision). Each reading step produces a new page in the output file.
+
+Time and other miscellaneous parameters are defined: 
+\begin{itemize}
+        \item {\tt Time} --- Double column for elapsed time of readback since the start of epoch.
+        \item {\tt TimeOfDay} --- Float column for system time in units of hours. The time does not wrap around at 24 hours.
+        \item {\tt DayOfMonth} --- Float column for system time in units of days. The day does not wrap around at the month boundary.
+        \item {\tt Step} --- Long column for step number.
+        \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step. 
+\end{itemize}
+
+For each scalar PV defined in the \verb+scalars+ command line option a parameter of type double is defined.
+
+Many additional parameters which don't change values throughout the file are defined:
+\begin{itemize}
+        \item {\tt TimeStamp} --- String column for time stamp for file.
+        \item {\tt PageTimeStamp} --- String column for time stamp for each page.
+        \item {\tt StartTime} --- Double column for start time from {\tt C} time call cast to type double.
+        \item {\tt YearStartTime} --- Double column for start time of present year from {\tt C}
+                time call cast to type double.
+        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+\end{itemize}
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+%
+        \item {\verb+-PVnames=<name>[,<name>]+} ---
+                   specifies a list of PV names to read.  It the waveforms are
+                   of different lengths, the short ones are padded with zeros.
+        \item {\tt -scalars=<filename>} ---  Specifies input file for scalar PV names. The values
+                are logged as parameters.
+        \item {\tt -erase} --- If the output file already exists, then it will be overwritten
+                by \verb+sddswmonitor+.
+        \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
+                The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
+                   the smallest positive integer such that the file does not already
+                   exist.   By default, four digits are used for formating \verb+<N>+, so that
+                   the first generation number is 0001.
+        \item {\tt -interval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
+                interval is implemented with a call to usleep between calls to the control system.
+                because the calls to the control system may take up a significant amount of time, the average
+                effective time interval may be longer than specified. 
+        \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
+        \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
+                seconds, minutes, hours, and days. The program calculates the number of steps by dividing this time
+                by the interval. The completion time may be longer, because the time interval in not garanteed.
+        \item {\tt -verbose} --- prints out a message when data is taken.
+        \item {\verb+-singleShot[=noprompt]+} --- a single read is prompted at the terminal
+                and initiated by a \verb+<cr>+ key press. The time interval is disabled. 
+                With \verb+noprompt+ present, no prompt is written to the terminal, but a \verb+<cr>+
+                is still expected. Typing ``q'' or ``Q'' terminates the monitoring.
+        \item {\tt -oncaerror={usezero|skiprow|exit}} --- Selects action taken when a channel access error ocurrs.
+                The default is using zero ({\tt usezero}) for the value of the process variable 
+                with the channel access error, and resuming execution. The second option ({\tt skiprow}) is to
+                simply throw away all the data for that read step, and resume execution.
+                the third option is to exit the program.
+        \item {\tt -ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters.
+        \item {\tt -scalars=<filename>} --- Specifies sddsmonitor input file to get names of scalar PVs
+                   from.  These will be logged in the output file as parameters.
+        \item {\verb+-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]]+} --- 
+                Names an SDDS file containing PVs to read and limits on each PV that must
+                be satisfied for data to be taken and logged.  The file is like the main
+                input file, but has numerical columns LowerLimit and UpperLimit.
+                
+                One of \verb+allMustPass+ or \verb+oneMustPass+ must be specified. It would make sense
+                to use \verb+allMustPass+ in most monitoring applications.
+                If \verb+touchOutput+ is present, then the output file is touched, even if no data
+                is written. This way, one can determine by the time stamp of the file
+                whether the monitoring job is still alive
+                when the conditions fail for a long period of time. If \verb+retakeStep+ is
+                present, then the value of \verb+Step+ in the output file is not
+                incremented until the conditions pass, and data is written to the output file.
+        \item {\verb+-comment=<parameterName>,<text>+} ---
+                Gives the parameter name for a comment to be placed in the SDDS output file,
+                along with the text to be placed in the file.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddsmonitor}
+    \item \progref{sddsvmonitor}
+    \item \progref{sddssnapshot}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: M. Borland and L. Emery, ANL} 
+\end{itemize}

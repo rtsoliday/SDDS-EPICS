@@ -1,0 +1,168 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsmonitor
+%
+\subsection{sddsfeedforward}
+\label{sddsfeedforward}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddsfeedforward+ performs feedforward on process variables.
+Feedforward essentially means that one or more process variables are
+set according to a predetermined function of other process variables.
+In \verb+sddsfeedforward+, the user supplies a series of tables that
+are used to interpolate values of a single actuator as a function of a
+single readback.  Any number of tables may be given, so that any
+number of actuators may be driven by any number of readbacks.  Each
+actuator is, however, driven by only one readback.  One readback may
+drive any number of actuators.
+
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+\begin{verbatim}
+sddsfeedforward ID1GapCompensation.sdds -interval=10,s 
+\end{verbatim}
+where the file ID1GapCompensation.sdds contains the following
+data:
+\begin{verbatim}
+ReadbackName = ID1:Gap             ActuatorName = S1B:H1:CurrentAO  
+ ReadbackValue  ActuatorValue 
+------------------------------
+       150.000          0.000 
+       100.000          0.000 
+        50.000          1.000 
+        40.000         10.000 
+        30.000         20.000 
+        20.000         35.000 
+        15.000         74.000 
+        11.000         99.000 
+\end{verbatim}
+At each iteration step, ID1:Gap is read and \verb+sddsfeedforward+ intepolates a new value for
+\verb+S1B:H1:CurrentAO+ based on this table, which it writes to the PV.
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+sddsfeedforward <inputfile>
+       [-interval=<real-value>] [-steps=<integer=value>]
+       [-verbose] [-dryRun]
+       [-averageOf=<number>[,interval=<seconds>]] 
+       [-testValues=<SDDSfile>]
+       [-ezcaTiming=<timeout>,<retries>]
+       [-runControlPV=string=<string>[,pingTimeout=<value>]] [-runControlDescription=<string>]
+       [-CASecurityTest] 
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file:} \par
+The input file is an SDDS file with the following elements:
+\begin{itemize}
+\item Parameters
+\begin{itemize}
+\item {\tt ReadbackName} --- Required string parameter giving the name of the
+        readback for this table.  This is the process variable that is read from
+        EPICS.  Its value is used to interpolate a new value for the actuator.
+\item {\tt ActuatorName} --- Required string parameter giving the name of the
+        actuator for this table.  This is the process variable that is set by
+        the program according to interpolation with the readback values.
+\item {\tt ReadbackChangeThreshold} --- Optional floating-point value giving
+        the amount by which the process variable named in {\tt ReadbackName}
+        must change from the previous iteration's value in order for a
+        change to be made for the actuator.  Most useful if the readback is
+        a little noisy and one doesn't want the actuator to be changed
+        pointlessly.  If the same process variable is named as readback for
+        several actuators, then the smallest value of the change threshold
+        is the one used.
+\item {\tt ActuatorChangeLimit} --- Optional floating-point value giving 
+        the maximum amount by which the actuator should be changed in a
+        single iteration.  If several actuators have the same
+        readback process variable, then they are limited together by the
+        most constraining of the limits.  In such a case, the vector of
+        changes is scaled to bring all the changes within the respective
+        limits.
+\end{itemize}
+\item Columns
+\begin{itemize}
+\item {\tt ReadbackValue} --- Required floating-point column giving values
+        of the readback for an interpolation table.
+\item {\tt ActuatorValue} --- Required floating-point column giving values
+        of the actuator for an interpolation table.
+\end{itemize}
+\end{itemize}
+
+\item {\bf test values file:} \par
+To make \verb+sddsfeedforward+ more robust, one can implement tests on any process variable,
+not necessarily those involved in the feedforward itself. If any of the tests fail, then the 
+feedforward is suspended until the test suceeds. The test consist of checking whether a process 
+variable is within a specified range or not. The \verb+testValues+ file has three required columns and
+one optional one:
+\begin{itemize}
+        \item {\tt ControlName} --- Required string column giving process variables names to test.
+        \item {\tt MinimumValue}, {\tt MaximumValue} --- Required floating-point columns, defining
+                a valid range for corresponding PVs.  It is an error if
+                {\tt MinimumValue} $>$ {\tt MaximumValue}.
+        \item {\tt SleepTime} --- Optional floating-point column, specifying sleep (or pause) time before
+                attempting another test.
+\end{itemize}
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+        \item {\tt interval=<real-value>} --- Specifies the interval in seconds between readings. The time
+                interval is implemented with a call to usleep between calls to the control system.
+                Because the calls to the control system may take up a significant amount of time, the average
+                effective time interval may be longer than specified. 
+        \item {\tt steps=<integer-value>} --- Number of iterations for the feedforward before normal exiting.
+        \item {\tt verbose} --- prints out a message when data is taken.
+        \item {\tt dryRun} --- readback variables are read and computations are performed, 
+        but the control variables aren't changed.
+        \item {\tt averageOf=<number>[,interval=<seconds>]]} --- Specifies averaging of the
+        readback values, giving the number of readings to average and the interval in seconds
+        between the readbacks.
+        \item {\tt testValues=<file>} --- An SDDS file containing minimum and maximum values
+        of PV's specifying a range outside of which the feedforward
+        is temporarily suspended. The contents of the file are
+        described above.
+        \item {\tt ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters.
+        \item {\tt runControlPV=string=<string>[,pingTimeout=<value>]} --- Gives the name of a process variable to use for
+        workstation-independent process control via the Run Control facility and the value of run control ping time out.
+        \item {\tt runControlDescription=<string>} --- Gives a text description to write to
+        the Run Control record for process identification.
+        \item {\tt CASecurityTest} --- Specifies that before writing values to EPICS, a
+        test should be done of the state of Channel Access security on the process variables,
+        to see if the process is permitted to write values.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddsexperiment}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: M. Borland, ANL}
+\end{itemize}

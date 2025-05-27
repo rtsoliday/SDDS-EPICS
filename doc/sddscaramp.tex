@@ -1,0 +1,107 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsmonitor
+%
+\subsection{sddscaramp}
+\label{sddscaramp}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicall a paragraph) here.
+%
+\verb+sddscaramp+ performs ramping of process variables between
+the present state and the states in one or more SDDS files.
+
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The following example shows how one would use \verb+sddscaramp+ to
+ramp 50\% of the way to a new steering configuration, using 10
+steps and pausing 1 second between steps: 
+\begin{verbatim}
+sddscaramp -rampTo=steering.snap,steps=10,pause=1,percentage=50
+\end{verbatim}
+The file \verb+steering.snap+ contains corrector magnet power supply
+settings, such as might be saved to an SDDS file using the 
+\verb+burtrb+ program.
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+sddscaramp 
+  -rampTo=<filename>,steps=<number>,pause=<seconds>[,percentage=<value>]
+  [-rampTo ...] [-dataColumn=<name>] [-verbose]
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+
+The input files are SDDS files.  There must be a string column named
+{\tt ControlName}, {\tt Device}, or {\tt DeviceName} that contains the
+process variable names.  There must also be a string column named {\tt
+ValueString}, a numerical column named {\tt Value}, or a column of
+either type with the name specified by the \verb+-dataColumn+ option;
+this column contains the final value for the corresponding process
+variable.  
+
+When data is supplied in a string column, {\tt sddscaramp} needs a way
+to determine if the data value is actually a number rather than a
+literal string value (e.g., an enumerated value).  The optional {\tt
+IsNumerical} column can be used for this purpose.  If supplied, this
+column should contain character values {\tt y} or {\tt n}, indicating
+that each PV (respectively) does or does not have numerical values.
+If the {\tt IsNumerical} column does not exist or is not of character
+type, then {\tt sddscaramp} uses an internal algorithm to decide
+whether the data for each PV is numerical or not.  This may fail in
+the case of enumerated values that contain numbers, resulting in
+incorrectly restored values.  For reliable results, the use of {\tt
+IsNumerical} with string data is required.  If the data is in a
+numerical column to begin with, of course, there is no ambiguity.
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+        \item {\tt -rampTo={\em filename},steps={\em
+        number},pause={\em seconds},[percentage={\em value}]} ---
+        Specifies a file to ramp to, the number of steps in the ramp,
+        and the time to wait between sending setpoints for each step.
+        Optionally, one may specify ramping only part of the way to
+        the configuration in the file.  If several {\tt -rampTo}
+        options are given, {\tt sddscaramp} ramps to each of them
+        in the order given.
+        \item {\tt -dataColumn={\em name}} --- Specifies the name of
+        a string column in the input files that contains the PV values.
+        By default, the program uses {\tt ValueString}.
+        \item {\tt -verbose} --- If given, informational text is printed out
+        as the ramping proceeds.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{burtrb}
+    \item \progref{burtwb}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: M. Borland (ANL)}
+\item {\bf programmers: R. Soliday, M. Borland (ANL)}
+\end{itemize}

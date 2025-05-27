@@ -1,0 +1,214 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddslogger
+%
+\subsection{sddslogger}
+\label{sddslogger}
+
+\begin{itemize}
+\item {\bf description:}
+%
+% Insert text of description (typicaly a paragraph) here.
+%
+\verb+sddslogger+ reads values of process variables and writes them to a file at a specified time interval.
+One or more input files defines the process variables to be monitored.
+\item {\bf example:} 
+%
+% Insert text of examples in this section.  Examples should be simple and
+% should be proceeded by a brief description.  Wrap the commands for each
+% example in the following construct:
+% 
+%
+The pressure readbacks of storage ring ion pumps and the stored current are monitored
+with the command below.
+\begin{verbatim}
+sddslogger SRvac.mon SRvac.sdds -time=24,hours -sampleInterval=1,minute
+\end{verbatim}
+where the contents of the file \verb+SRvac.mon+ are
+\begin{verbatim}
+SDDS1
+&description &end
+&column
+ name = ControlName,  type = string, &end
+&column
+ name = ControlType,  type = string, &end
+&column
+ name = ReadbackUnits,  type = string, &end
+&column
+ name = ReadbackName,  type = string, &end
+&data
+ mode = ascii, no_row_counts=1 &end
+! page number 1
+S35DCCT:currentCC pv mA S35DCCT
+VM:01:3IP1.VAL pv Torr VM:01:3IP1
+VM:01:2IP2.VAL pv Torr VM:01:2IP2 
+VM:01:2IP3.VAL pv Torr VM:01:2IP3 
+...
+\end{verbatim}
+\item {\bf synopsis:} 
+%
+% Insert usage message here:
+%
+\begin{verbatim}
+usage: sddslogger <SDDSinputfile1> <SDDSoutputfile1> <SDDSinputfile2> <SDDSoutputfile2>...
+    [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | -dailyFiles]
+    [-sampleInterval=<real-value>[,<time-units>]
+    [-logInterval=<integer-value>
+    [-steps=<integer-value> | -time=<real-value>[,<time-units>]]
+    [-enforceTimeLimit] [-offsetTimeOfDay]
+    [-verbose] [-singleshot{=noprompt | stdout}]
+    [-precision={single|double}]
+    -onerror={usezero|skiprow|exit} [-pendIOtime=<value>]
+    [-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]]
+Writes values of process variables or devices to a binary SDDS file.
+\end{verbatim}
+\item {\bf files:}
+% Describe the files that are used and produced
+\begin{itemize}
+\item {\bf input file(s):}\par
+The input files are SDDS files with a few data columns required:
+\begin{itemize}
+        \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
+                or devices to be monitored. Both column names are equivalent.
+        \item {\tt ReadbackUnits} --- Required string column for the units fields of the data columns in the 
+                output file.
+        \item {\tt ReadbackName} --- Optional string column for the names of the data columns in the 
+                output file. If absent, process variable or device name is used.
+        \item {\tt Message} --- Optional string column for the device read message. If a row entry in
+                column {\tt ControlName} is a process variable, then the corresponding entry
+                in {\tt Message} should be a null string. 
+        \item {\tt ScaleFactor} --- Optional double column for a factor with which to multiply
+                values of the readback in the output file.
+        \item {\tt Average} --- Optional long column.  If value is non-zero the process variable will have
+	        its average value logged.  Otherwise it will log the most recent value.
+                values of the readback in the output file.
+        \item {\tt DoublePrecision} --- Optional long column. If value is non-zero the process variable 
+	        will be logged as a double-precision number.  Otherwise it will be logged as a single-precision
+	        number.
+\end{itemize}
+
+\item {\bf conditions file:} \par
+The conditions file is an optional input file specified on the command line which lists
+conditions that must be satisfied at each time step before the data can be logged.
+
+The file is like the main input file, but has numerical columns \verb+LowerLimit+ and \verb+UpperLimit+.
+The minimal column set is \verb+ControlName+, which contain the PV names, and the two limits columns above.
+Depending on comand line options, when any or all PV readback from this file
+is outstide the range defined by the corresponding data from \verb+LowerLimit+ and \verb+UpperLimit+,
+none of the data of the PVs in the input files are recorded. 
+When this situation occurs for a long period of time, the size of the output files doesn't
+change, and it may appear that the monitoring process has somehow stopped.
+It is possible to check the program activity with the \verb+touch+ sub-option
+which causes the logging program to touch the output file at every step.
+
+\item {\bf output file(s):}\par
+The output files contains one data column for each process variable named in the corresponding input file. By default,
+the data type is float (single precision).
+Time columns and other miscellaneous columns are defined: 
+\begin{itemize}
+        \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
+        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        for time axis labeling.
+        \item {\tt TimeOfDay} --- Float column of system time in units of hours. 
+        The time does not wrap around at 24 hours.
+        \item {\tt DayOfMonth} --- Float column of system time in units of days. 
+        The day does not wrap around at the month boundary.
+        \item {\tt Step} --- Long column for step number.
+        \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step. 
+\end{itemize}
+
+Many time-related parameters are defined in the output file:
+\begin{itemize}
+        \item {\tt TimeStamp} --- String parameter for time stamp for file.
+        \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
+                is appended to an existing file, the new data is written to a new
+                page. The {\tt PageTimeStamp} value for the new page is the creation
+                date of the new page. The {\tt TimeStamp} value for the new page is the creation 
+                date of the very first page.
+        \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
+        \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
+        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+\end{itemize}
+\end{itemize}
+
+%
+\item {\bf switches:}
+%
+% Describe the switches that are available
+%
+    \begin{itemize}
+%
+%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+%
+        \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
+                The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
+                the smallest positive integer such that the file does not already
+                exist.  By default, four digits are used for formating \verb+<N>+, so that
+                the first generation number is 0001.
+        \item {\tt -sampleInterval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
+                interval is implemented with a call to usleep between calls to the control system.
+                Because the calls to the control system may take up a significant amount of time, the average
+                effective time interval may be longer than specified. 
+        \item {\tt -logInterval=<interval>} --- Specifies the number of sampling intervals to average before
+                writing to the output file.
+        \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
+        \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
+                seconds, minutes, hours, and days. The program calculates the number of steps by dividing this time
+                by the interval. The completion time may be longer, because the time interval in not garanteed.
+        \item {\tt -enforceTimeLimit} --- Enforces the time limit given even if the expected number of samples has
+                not been taken.
+        \item {\tt -offsetTimeOfDay} --- Adjusts the starting TimeOfDay value so that it corresponds to the
+                day for which the bulk of the data is taken.  Hence, a 26 hour job started at 11pm would have an
+                initial time of day of -1 hour and a final time of day of 25 hours.
+        \item {\tt -verbose} --- Prints out a message when data is taken.
+        \item {\verb+-singleShot[=noprompt]+} --- a single read is prompted at the terminal
+                and initiated by a \verb+<cr>+ key press. The time interval is disabled. 
+                With \verb+noprompt+ present, no prompt is written to the terminal, but a \verb+<cr>+
+                is still expected. Typing ``q'' or ``Q'' terminates the monitoring.
+        \item {\tt -onerror=\{usezero|skiprow|exit\}} --- Selects action taken when a channel access error occurs.
+                The default is using zero ({\tt usezero}) for the value of the process variable 
+                with the channel access error, and resuming execution. The second option ({\tt skiprow}) is to
+                simply throw away all the data for that read step, and resume execution.
+                the third option is to exit the program.
+        \item {\tt -pendIOtime=<value>} --- Sets the maximum time to wait for connection to each PV.
+        \item {\verb+-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]+} --- 
+                   Names an SDDS file containing PVs to read and limits on each PV that must
+                   be satisfied for data to be taken and logged.  The file is like the main
+                   input file, but has numerical columns LowerLimit and UpperLimit.
+
+                One of \verb+allMustPass+ or \verb+oneMustPass+ must be specified. It would make sense
+                to use \verb+allMustPass+ in most monitoring applications.
+                If \verb+touchOutput+ is present, then the output file is touched, even if no data
+                is written. This way, one can determine by the time stamp of the file
+                whether the monitoring job is still alive
+                when the conditions fail for a long period of time. If \verb+retakeStep+ is
+                present, then the value of \verb+Step+ in the output file is not
+                incremented until the conditions pass, and data is written to the output file.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+%
+% Insert references to other programs by duplicating this line and 
+% replacing <prog> with the program to be referenced:
+%
+    \item \progref{sddsmonitor}
+    \item \progref{sddsvmonitor}
+    \item \progref{sddswmonitor}
+    \item \progref{sddssnapshot}
+    \end{itemize}
+%
+% Insert your name and affiliation after the '}'
+%
+\item {\bf author: R. Soliday, M. Borland, H. Shang ANL} 
+\end{itemize}
