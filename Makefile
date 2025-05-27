@@ -39,6 +39,7 @@ DIRS += $(SDDS_REPO)/matlib
 DIRS += $(SDDS_REPO)/mdbcommon
 DIRS += oagca
 DIRS += runcontrol
+DIRS += logDaemon
 
 .PHONY: all $(DIRS) clean distclean
 
@@ -77,6 +78,8 @@ $(SDDS_REPO)/mdbcommon: $(SDDS_REPO)/matlib
 oagca: $(SDDS_REPO)/mdbcommon
 	$(MAKE) -C $@
 runcontrol: oagca
+	$(MAKE) -C $@
+logDaemon: runcontrol
 	$(MAKE) -C $@
 
 clean:
