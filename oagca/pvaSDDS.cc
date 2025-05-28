@@ -1564,7 +1564,7 @@ long PrepPut(PVA_OVERALL *pva, long index, double value) {
       //if (pva->pvaData[index].putData[0].stringValues[0])
       //free(pva->pvaData[index].putData[0].stringValues[0]);
     }
-    sprintf(buffer, "%lf", value);
+    snprintf(buffer, sizeof(buffer), "%lf", value);
     pva->pvaData[index].putData[0].stringValues[0] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
     strcpy(pva->pvaData[index].putData[0].stringValues[0], buffer);
   }
@@ -1611,7 +1611,7 @@ long PrepPut(PVA_OVERALL *pva, long index, double *value, long length) {
       pva->pvaData[index].putData[0].stringValues = (char **)malloc(sizeof(char *) * length);
     }
     for (i = 0; i < length; i++) {
-      sprintf(buffer, "%lf", value[i]);
+      snprintf(buffer, sizeof(buffer), "%lf", value[i]);
       pva->pvaData[index].putData[0].stringValues[i] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
       strcpy(pva->pvaData[index].putData[0].stringValues[i], buffer);
     }
@@ -1634,7 +1634,7 @@ long PrepPut(PVA_OVERALL *pva, long index, int64_t value) {
       //if (pva->pvaData[index].putData[0].stringValues[0])
       //free(pva->pvaData[index].putData[0].stringValues[0]);
     }
-    sprintf(buffer, "%ld", value);
+    snprintf(buffer, sizeof(buffer), "%ld", value);
     pva->pvaData[index].putData[0].stringValues[0] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
     strcpy(pva->pvaData[index].putData[0].stringValues[0], buffer);
   }
@@ -1681,7 +1681,7 @@ long PrepPut(PVA_OVERALL *pva, long index, int64_t *value, long length) {
       pva->pvaData[index].putData[0].stringValues = (char **)malloc(sizeof(char *) * length);
     }
     for (i = 0; i < length; i++) {
-      sprintf(buffer, "%ld", value[i]);
+      snprintf(buffer, sizeof(buffer), "%ld", value[i]);
       pva->pvaData[index].putData[0].stringValues[i] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
       strcpy(pva->pvaData[index].putData[0].stringValues[i], buffer);
     }
