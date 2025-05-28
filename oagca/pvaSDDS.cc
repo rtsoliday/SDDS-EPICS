@@ -1,6 +1,47 @@
+/**
+ * @file pvaSDDS.cc
+ * @brief Functions for managing and interacting with Process Variable Array (PVA) structures.
+ * 
+ * @details
+ * This file includes a set of functions to allocate, reallocate, free, connect, monitor, and 
+ * extract values for Process Variable Arrays (PVA) using EPICS PVAccess and PVData libraries. 
+ * It provides utilities for managing PVAs in scenarios where EPICS Channel Access (CA) and 
+ * PVAccess (PVA) protocols are used to interact with control system process variables.
+ * 
+ * The file also defines types and utilities for handling multimap-based structures and
+ * formatting channel names and field requests.
+ * 
+ * Key functionalities:
+ * - Memory allocation and reallocation for PVA structures.
+ * - Connection to PV channels using PvaClientMultiChannel.
+ * - Monitoring and polling for events on PVs.
+ * - Extracting and preparing values for PVs.
+ * - Support for scalar, array, and enumerated types within PVs.
+ * - Utilities for interacting with PV metadata such as units and alarm severity.
+ * 
+ * Dependencies:
+ * - EPICS PVAccess
+ * - EPICS PVData
+ * - <unordered_map>, <string>, <vector>, <map>, <set>, and other C++ standard library components.
+ * 
+ * @see https://epics.anl.gov
+ * @see PvaClientMultiChannel documentation for details on channel operations.
+ * @see https://docs.epics-controls.org/projects/pvaclient-cpp/en/latest/
+ * 
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * R. Soliday,
+ */
+
 #include "pvaSDDS.h"
 #include <unordered_map>
-#include <cinttypes>
 
 typedef std::unordered_multimap<std::string, long> Mymap;
 typedef std::unordered_multimap<std::string, long>::iterator MymapIterator;
@@ -321,7 +362,7 @@ void ConnectPVA(PVA_OVERALL *pva, double pendIOTime) {
     epics::pvData::shared_vector<std::string> names(pva->numInternalPVs);
     epics::pvData::shared_vector<std::string> provider(pva->numInternalPVs);
     epics::pvData::shared_vector<const std::string> constProvider;
-    ;
+    
     for (j = 0; j < pva->numPVs; j++) {
       names[pva->pvaData[j].L2Ptr] = namesTmp[j];
       provider[pva->pvaData[j].L2Ptr] = pva->pvaProvider[j];
@@ -347,9 +388,9 @@ void ConnectPVA(PVA_OVERALL *pva, double pendIOTime) {
     epics::pvData::shared_vector<std::string> newnames(numInternalPVs);
     epics::pvData::shared_vector<std::string> provider(numInternalPVs);
     epics::pvData::shared_vector<const std::string> constNames;
-    ;
+    
     epics::pvData::shared_vector<const std::string> constProvider;
-    ;
+    
     for (j = 0; j < pva->numPVs; j++) {
       names[pva->pvaData[j].L2Ptr] = namesTmp[j];
       if (pva->pvaData[j].L2Ptr >= pva->prevNumInternalPVs) {
@@ -402,7 +443,7 @@ long GetPVAValues(PVA_OVERALL *pva) {
   return (result);
 }
 
-long GetPVAValues(PVA_OVERALL **pva, long count) {
+long GetPVAValuesOld(PVA_OVERALL **pva, long count) {
   long i, num = 0, n;
   epics::pvData::Status status;
   epics::pvaClient::PvaClientChannelArray pvaClientChannelArray;
@@ -455,6 +496,162 @@ long GetPVAValues(PVA_OVERALL **pva, long count) {
           continue;
         }
         if (pva[n]->isConnected[i]) {
+          status = pva[n]->pvaClientGetPtr[i]->waitGet();
+          if (!status.isSuccess()) {
+            fprintf(stderr, "error: %s did not respond to the \"get\" request\n", pva[n]->pvaChannelNames[i].c_str());
+            pva[n]->isConnected[i] = false;
+            pva[n]->numNotConnected++;
+            //return (1);
+          }
+        }
+      }
+    }
+  }
+  for (n = 0; n < count; n++) {
+    if ((pva[n] != NULL) && (pva[n]->useGetCallbacks == false)) {
+      if (ExtractPVAValues(pva[n]) == 1) {
+        return (1);
+      }
+    }
+  }
+  return (0);
+}
+
+std::string convertToProperRequestFormat(const std::vector<std::string>& input) {
+  std::map<std::string, std::set<std::string>> prefixMap;
+  
+  // Populate the map with prefixes and their associated suffixes
+  for (const auto& str : input) {
+    size_t pos = str.find('.');
+    if (pos != std::string::npos) {
+      std::string prefix = str.substr(0, pos);
+      std::string suffix = str.substr(pos + 1);
+      prefixMap[prefix].insert(suffix);
+    } else {
+      prefixMap[str];  // Ensure even elements without a suffix are added
+    }
+  }
+  
+  // Construct the final string
+  std::ostringstream result;
+  bool first = true;
+  
+  for (const auto& pair : prefixMap) {
+    if (!first) {
+      result << ',';
+    }
+    first = false;
+    result << pair.first;
+    if (!pair.second.empty()) {
+      result << '{';
+      bool firstSuffix = true;
+      for (const auto& suffix : pair.second) {
+        if (!firstSuffix) {
+          result << ',';
+        }
+        firstSuffix = false;
+        result << suffix;
+      }
+      result << '}';
+    } 
+  }
+  
+  return result.str();
+}
+
+long GetPVAValues(PVA_OVERALL **pva, long count) {
+  long i, ii, num = 0, n;
+  epics::pvData::Status status;
+  epics::pvaClient::PvaClientChannelArray pvaClientChannelArray;
+  std::ostringstream pvaFields;
+
+  for (n = 0; n < count; n++) {
+    if (pva[n] != NULL) {
+      std::vector<bool> isInternalGetIssued(pva[n]->numInternalPVs, false);
+      std::vector<long> InternalGetIndex(pva[n]->numInternalPVs, 0);
+      pva[n]->isInternalConnected = pva[n]->pvaClientMultiChannelPtr[0]->getIsConnected();
+      pvaClientChannelArray = pva[n]->pvaClientMultiChannelPtr[0]->getPvaClientChannelArray();
+      for (i = 1; i < pva[n]->numMultiChannels; i++) {
+        epics::pvData::shared_vector<epics::pvData::boolean> isConnected;
+        epics::pvaClient::PvaClientChannelArray pvaClientChannelArrayAdd;
+        isConnected = pva[n]->pvaClientMultiChannelPtr[i]->getIsConnected();
+        std::copy(isConnected.begin(), isConnected.end(), std::back_inserter(pva[n]->isInternalConnected));
+        pvaClientChannelArrayAdd = pva[n]->pvaClientMultiChannelPtr[i]->getPvaClientChannelArray();
+        std::copy(pvaClientChannelArrayAdd.begin(), pvaClientChannelArrayAdd.end(), std::back_inserter(pvaClientChannelArray));
+      }
+      for (i = 0; i < pva[n]->numPVs; i++) {
+        if (pva[n]->pvaData[i].skip == true) {
+          continue;
+        }
+        pva[n]->isConnected[i] = pva[n]->isInternalConnected[pva[n]->pvaData[i].L2Ptr];
+        if (pva[n]->isConnected[i]) {
+          if (pva[n]->pvaProvider[i].compare("pva") != 0) {
+            // CA PVs
+            if (pva[n]->pvaData[i].haveGetPtr == false) {
+              pva[n]->pvaClientGetPtr[i] = pvaClientChannelArray[pva[n]->pvaData[i].L2Ptr]->createGet(pva[n]->pvaChannelNamesSub[i]);
+              pva[n]->pvaData[i].haveGetPtr = true;
+              if (pva[n]->useGetCallbacks) {
+                pva[n]->pvaClientGetPtr[i]->setRequester((epics::pvaClient::PvaClientGetRequesterPtr)pva[n]->getReqPtr);
+              }
+            }
+          } else {
+            //PVA PVs
+            if (pva[n]->pvaData[i].haveGetPtr == false) {
+              if (isInternalGetIssued[pva[n]->pvaData[i].L2Ptr] == false) {
+                std::vector<std::string> stringArray;
+                stringArray.push_back(pva[n]->pvaChannelNamesSub[i]);
+                for (ii = i+1; ii < pva[n]->numPVs; ii++) {
+                  if (pva[n]->pvaData[ii].skip == true) {
+                    continue;
+                  }
+                  if (pva[n]->pvaData[i].L2Ptr ==pva[n]->pvaData[ii].L2Ptr) {
+                    stringArray.push_back(pva[n]->pvaChannelNamesSub[ii]);
+                  }
+                }
+                std::string fieldNames = convertToProperRequestFormat(stringArray);
+                pva[n]->pvaClientGetPtr[i] = pvaClientChannelArray[pva[n]->pvaData[i].L2Ptr]->createGet(fieldNames);
+                isInternalGetIssued[pva[n]->pvaData[i].L2Ptr] = true;
+                InternalGetIndex[pva[n]->pvaData[i].L2Ptr] = i;
+                pva[n]->pvaData[i].haveGetPtr = true;
+                if (pva[n]->useGetCallbacks) {
+                  // This need to be tested now that we are sharing a get requests for a single PVA PV
+                  pva[n]->pvaClientGetPtr[i]->setRequester((epics::pvaClient::PvaClientGetRequesterPtr)pva[n]->getReqPtr);
+                }
+              } else {
+                //pva[n]->pvaData[i].haveGetPtr = false;
+                pva[n]->pvaClientGetPtr[i] = pva[n]->pvaClientGetPtr[InternalGetIndex[pva[n]->pvaData[i].L2Ptr]];
+              }
+            } else {
+              //If we call GetPVAValues a second time, this is needed
+              //This code will not work if subsequent calls require more fields than the original call
+              isInternalGetIssued[pva[n]->pvaData[i].L2Ptr] = true; 
+              InternalGetIndex[pva[n]->pvaData[i].L2Ptr] = i;
+            }
+          }
+            
+          if (pva[n]->pvaData[i].haveGetPtr) {
+            try {
+              pva[n]->pvaClientGetPtr[i]->issueGet();
+            } catch (std::exception &e) {
+              num++;
+              pva[n]->isConnected[i] = false;
+            }
+          }
+        } else {
+          //Not connected
+          num++;
+        }
+      }
+      pva[n]->numNotConnected = num;
+    }
+  }
+  for (n = 0; n < count; n++) {
+    if ((pva[n] != NULL) && (pva[n]->useGetCallbacks == false)) {
+      for (i = 0; i < pva[n]->numPVs; i++) {
+        if (pva[n]->pvaData[i].skip == true) {
+          continue;
+        }
+        if (pva[n]->isConnected[i] && pva[n]->pvaData[i].haveGetPtr) {
           status = pva[n]->pvaClientGetPtr[i]->waitGet();
           if (!status.isSuccess()) {
             fprintf(stderr, "error: %s did not respond to the \"get\" request\n", pva[n]->pvaChannelNames[i].c_str());
@@ -630,9 +827,7 @@ long ExtractScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVFiel
   case epics::pvData::pvInt:
   case epics::pvData::pvUInt:
   case epics::pvData::pvShort:
-  case epics::pvData::pvUShort:
-  case epics::pvData::pvByte:
-  case epics::pvData::pvUByte: {
+  case epics::pvData::pvUShort: {
     epics::pvData::PVDoubleArray::const_svector dataVector;
     pvScalarArrayPtr->PVScalarArray::getAs<double>(dataVector);
     if (monitorMode) {
@@ -647,6 +842,46 @@ long ExtractScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVFiel
         pva->pvaData[index].numeric = true;
       }
       std::copy(dataVector.begin(), dataVector.begin() + pva->pvaData[index].numGetElements, pva->pvaData[index].getData[i].values);
+    }
+    break;
+  }
+  case epics::pvData::pvByte:
+  case epics::pvData::pvUByte: {
+    //Special code for byte arrays which are usutally strings
+    epics::pvData::PVDoubleArray::const_svector dataVector;
+    int nLength;
+    pvScalarArrayPtr->PVScalarArray::getAs<double>(dataVector);
+    nLength = dataVector.size();
+    if (nLength < 256) {
+      nLength = 256;
+    }
+    if (monitorMode) {
+      if (pva->pvaData[index].monitorData[0].values == NULL) {
+        pva->pvaData[index].monitorData[0].values = (double *)malloc(sizeof(double) * nLength);
+        pva->pvaData[index].numeric = true;
+      }
+      std::copy(dataVector.begin(), dataVector.end(), pva->pvaData[index].monitorData[0].values);
+      for (long k = dataVector.size(); k < 256; k++) {
+        pva->pvaData[index].monitorData[0].values[k] = 0;
+      }
+    } else {
+      if (pva->pvaData[index].getData[i].values == NULL) {
+        pva->pvaData[index].getData[i].values = (double *)malloc(sizeof(double) * nLength);
+        pva->pvaData[index].numeric = true;
+      }
+      std::copy(dataVector.begin(), dataVector.end(), pva->pvaData[index].getData[i].values);
+      for (long k = dataVector.size(); k < 256; k++) {
+        pva->pvaData[index].getData[i].values[k] = 0;
+      }
+    }
+    if (pvScalarArrayPtr->isCapacityMutable() && (pvScalarArrayPtr->getCapacity() <= 256)) {
+      pvScalarArrayPtr->setCapacity(256);
+      pvScalarArrayPtr->setLength(256);
+      if (monitorMode) {
+        pva->pvaData[index].numMonitorElements = 256;
+      } else {
+        pva->pvaData[index].numGetElements = 256;
+      }
     }
     break;
   }
@@ -785,14 +1020,59 @@ long ExtractStructureValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldP
   epics::pvData::PVFieldPtrArray PVFieldPtrArray;
   std::string fieldName;
   epics::pvData::PVStructurePtr pvStructurePtr;
+  epics::pvData::PVFieldPtr pvFieldPtr;
+  std::string afterDot;
   pvStructurePtr = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(PVFieldPtr);
 
   fieldCount = pvStructurePtr->getStructure()->getNumberFields();
   PVFieldPtrArray = pvStructurePtr->getPVFields();
   if (fieldCount > 1) {
-    pvStructurePtr->dumpValue(std::cerr);
-    fprintf(stderr, "Error: sub-field is not specific enough\n");
-    return (1);
+    size_t pos = pva->pvaChannelNames[index].find('.');
+    if (pos != std::string::npos) {
+      afterDot = pva->pvaChannelNames[index].substr(pos + 1);
+      pos = afterDot.find('.');
+      if (pos != std::string::npos) {
+        afterDot = afterDot.substr(pos + 1);
+      } else {
+        pva->pvaClientGetPtr[index]->getData()->getPVStructure()->dumpValue(std::cerr);
+        fprintf(stderr, "Error: sub-field is not specific enough\n");
+        return (1);
+      }
+    } else {
+      pva->pvaClientGetPtr[index]->getData()->getPVStructure()->dumpValue(std::cerr);
+      fprintf(stderr, "Error: sub-field is not specific enough\n");
+      return (1);
+    }
+    pvFieldPtr =  pvStructurePtr->getSubField(afterDot);
+    if (pvFieldPtr == NULL) {
+      fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
+      return (1);
+    }
+    switch (pvStructurePtr->getSubField(afterDot)->getField()->getType()) {
+    case epics::pvData::scalar: {
+      if (ExtractScalarValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+        return (1);
+      }
+      break;
+    }
+    case epics::pvData::scalarArray: {
+      if (ExtractScalarArrayValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+        return (1);
+      }
+      break;
+    }
+    case epics::pvData::structure: {
+      if (ExtractStructureValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+        return (1);
+      }
+      break;
+    }
+    default: {
+      std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getSubField(afterDot)->getField()->getType() << std::endl;
+      return (1);
+    }
+    }
+    return (0);
   }
   fieldName = PVFieldPtrArray[0]->getFieldName();
   switch (PVFieldPtrArray[0]->getField()->getType()) {
@@ -826,7 +1106,7 @@ long ExtractStructureValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldP
   return (1);
 }
 
-long ExtractPVAValues(PVA_OVERALL *pva) {
+long ExtractPVAValuesOld(PVA_OVERALL *pva) {
   long i, j;
   std::string id;
   bool monitorMode = false;
@@ -865,6 +1145,147 @@ long ExtractPVAValues(PVA_OVERALL *pva) {
         if (fieldCount == 0) {
           fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[i].c_str());
           return (1);
+        }
+        switch (PVFieldPtrArray[0]->getField()->getType()) {
+        case epics::pvData::scalar: {
+          if (ExtractScalarValue(pva, i, PVFieldPtrArray[0], monitorMode)) {
+            return (1);
+          }
+          break;
+        }
+        case epics::pvData::scalarArray: {
+          if (ExtractScalarArrayValue(pva, i, PVFieldPtrArray[0], monitorMode)) {
+            return (1);
+          }
+          break;
+        }
+        case epics::pvData::structure: {
+          if (ExtractStructureValue(pva, i, PVFieldPtrArray[0], monitorMode)) {
+            return (1);
+          }
+          break;
+        }
+        default: {
+          std::cerr << "ERROR: Need code to handle " << PVFieldPtrArray[0]->getField()->getType() << std::endl;
+          return (1);
+        }
+        }
+        if (pva->includeAlarmSeverity && (fieldCount > 1)) {
+          for (j = 0; j < fieldCount; j++) {
+            if (PVFieldPtrArray[j]->getFieldName() == "alarm") {
+              if (PVFieldPtrArray[j]->getField()->getType() == epics::pvData::structure) {
+                epics::pvData::PVStructurePtr alarmStructurePtr;
+                epics::pvData::PVFieldPtrArray AlarmFieldPtrArray;
+                long alarmFieldCount;
+
+                alarmStructurePtr = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(PVFieldPtrArray[j]);
+                alarmFieldCount = alarmStructurePtr->getStructure()->getNumberFields();
+                AlarmFieldPtrArray = alarmStructurePtr->getPVFields();
+                if (alarmFieldCount > 0) {
+                  if (AlarmFieldPtrArray[0]->getFieldName() == "severity") {
+                    epics::pvData::PVScalarPtr pvScalarPtr;
+                    pvScalarPtr = std::tr1::static_pointer_cast<epics::pvData::PVScalar>(AlarmFieldPtrArray[0]);
+                    pva->pvaData[i].alarmSeverity = pvScalarPtr->getAs<int>();
+                  } else {
+                    pva->pvaClientGetPtr[i]->getData()->getPVStructure()->dumpValue(std::cerr);
+                    fprintf(stderr, "Error: alarm->severity field is not where it was expected to be\n");
+                    return (1);
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
+      } else {
+#ifdef DEBUG
+        pva->pvaClientGetPtr[i]->getData()->getPVStructure()->dumpValue(std::cerr);
+#endif
+        std::cerr << "Error: unrecognized structure ID (" << id << ")" << std::endl;
+        return (1);
+      }
+    }
+  }
+  return (0);
+}
+
+long ExtractPVAValues(PVA_OVERALL *pva) {
+  long i, j;
+  std::string id;
+  bool monitorMode = false;
+  epics::pvData::PVStructurePtr pvStructurePtr;
+  epics::pvData::PVFieldPtr pvFieldPtr;
+  std::string afterDot;
+
+  for (i = 0; i < pva->numPVs; i++) {
+    if (pva->pvaData[i].skip == true) {
+      continue;
+    }
+    if (pva->isConnected[i]) {
+      pvStructurePtr = pva->pvaClientGetPtr[i]->getData()->getPVStructure();
+      id = pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getStructure()->getID();
+      if (id == "epics:nt/NTScalar:1.0") {
+        if (ExtractNTScalarValue(pva, i, pvStructurePtr, monitorMode)) {
+          return (1);
+        }
+      } else if (id == "epics:nt/NTScalarArray:1.0") {
+        if (ExtractNTScalarArrayValue(pva, i, pvStructurePtr, monitorMode)) {
+          return (1);
+        }
+      } else if (id == "epics:nt/NTEnum:1.0") {
+        if (ExtractNTEnumValue(pva, i, pvStructurePtr, monitorMode)) {
+          return (1);
+        }
+      } else if (id == "structure") {
+        epics::pvData::PVFieldPtrArray PVFieldPtrArray;
+        long fieldCount;
+        PVFieldPtrArray = pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getPVFields();
+        fieldCount = pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getStructure()->getNumberFields();
+        if (fieldCount == 0) {
+          fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[i].c_str());
+          return (1);
+        }
+        if (fieldCount > 1) {
+          if (PVFieldPtrArray[0]->getFieldName() != "value") {
+            size_t pos = pva->pvaChannelNames[i].find('.');
+            if (pos != std::string::npos) {
+              afterDot = pva->pvaChannelNames[i].substr(pos + 1);
+            } else {
+              pva->pvaClientGetPtr[i]->getData()->getPVStructure()->dumpValue(std::cerr);
+              fprintf(stderr, "Error: sub-field is not specific enough\n");
+              return (1);
+            }
+            pvFieldPtr =  pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot);
+            if (pvFieldPtr == NULL) {
+              fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[i].c_str());
+              return (1);
+            }
+            switch (pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot)->getField()->getType()) {
+            case epics::pvData::scalar: {
+              if (ExtractScalarValue(pva, i, pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot), monitorMode)) {
+                return (1);
+              }
+              break;
+            }
+            case epics::pvData::scalarArray: {
+              if (ExtractScalarArrayValue(pva, i, pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot), monitorMode)) {
+                return (1);
+              }
+              break;
+            }
+            case epics::pvData::structure: {
+              if (ExtractStructureValue(pva, i, pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot), monitorMode)) {
+                return (1);
+              }
+              break;
+            }
+            default: {
+              std::cerr << "ERROR: Need code to handle " << pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot)->getField()->getType() << std::endl;
+              return (1);
+            }
+            }
+            continue;
+          }
         }
         switch (PVFieldPtrArray[0]->getField()->getType()) {
         case epics::pvData::scalar: {
@@ -1143,7 +1564,7 @@ long PrepPut(PVA_OVERALL *pva, long index, double value) {
       //if (pva->pvaData[index].putData[0].stringValues[0])
       //free(pva->pvaData[index].putData[0].stringValues[0]);
     }
-    snprintf(buffer, sizeof(buffer), "%lf", value);
+    sprintf(buffer, "%lf", value);
     pva->pvaData[index].putData[0].stringValues[0] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
     strcpy(pva->pvaData[index].putData[0].stringValues[0], buffer);
   }
@@ -1190,7 +1611,7 @@ long PrepPut(PVA_OVERALL *pva, long index, double *value, long length) {
       pva->pvaData[index].putData[0].stringValues = (char **)malloc(sizeof(char *) * length);
     }
     for (i = 0; i < length; i++) {
-      snprintf(buffer, sizeof(buffer), "%lf", value[i]);
+      sprintf(buffer, "%lf", value[i]);
       pva->pvaData[index].putData[0].stringValues[i] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
       strcpy(pva->pvaData[index].putData[0].stringValues[i], buffer);
     }
@@ -1213,7 +1634,7 @@ long PrepPut(PVA_OVERALL *pva, long index, int64_t value) {
       //if (pva->pvaData[index].putData[0].stringValues[0])
       //free(pva->pvaData[index].putData[0].stringValues[0]);
     }
-    snprintf(buffer, sizeof(buffer), "%" PRId64, value);
+    sprintf(buffer, "%ld", value);
     pva->pvaData[index].putData[0].stringValues[0] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
     strcpy(pva->pvaData[index].putData[0].stringValues[0], buffer);
   }
@@ -1260,7 +1681,7 @@ long PrepPut(PVA_OVERALL *pva, long index, int64_t *value, long length) {
       pva->pvaData[index].putData[0].stringValues = (char **)malloc(sizeof(char *) * length);
     }
     for (i = 0; i < length; i++) {
-      snprintf(buffer, sizeof(buffer), "%" PRId64, value[i]);
+      sprintf(buffer, "%ld", value[i]);
       pva->pvaData[index].putData[0].stringValues[i] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
       strcpy(pva->pvaData[index].putData[0].stringValues[i], buffer);
     }
@@ -1603,7 +2024,6 @@ long PollMonitoredPVA(PVA_OVERALL **pva, long count) {
   long result = 0, i, n;
   std::string id;
   bool monitorMode = true, connectionChange = false;
-  ;
   epics::pvData::PVStructurePtr pvStructurePtr;
 
   for (n = 0; n < count; n++) {
@@ -1820,22 +2240,22 @@ bool HaveReadAccess(PVA_OVERALL *pva, long index) {
     }
   }
   return false;
-/*
-  std::string provider;
-  epics::pvAccess::ca::CAChannel::shared_pointer caChan;
-  if (pva->isConnected[index] == false)
+  /*
+    std::string provider;
+    epics::pvAccess::ca::CAChannel::shared_pointer caChan;
+    if (pva->isConnected[index] == false)
     return false;
-  provider = GetProviderName(pva, index);
-  if (provider == "ca") {
+    provider = GetProviderName(pva, index);
+    if (provider == "ca") {
     caChan = std::dynamic_pointer_cast<epics::pvAccess::ca::CAChannel>(pva->pvaClientMultiChannelPtr[0]->getPvaClientChannelArray()[pva->pvaData[index].L2Ptr]->getChannel());
     if (ca_read_access(caChan->getChannelID()) == 0)
-      return false;
+    return false;
     else
-      return true;
-  } else {
     return true;
-  }
-*/
+    } else {
+    return true;
+    }
+  */
 }
 bool HaveWriteAccess(PVA_OVERALL *pva, long index) {
   epics::pvData::PVStructurePtr pvStructurePtr;
@@ -1853,22 +2273,33 @@ bool HaveWriteAccess(PVA_OVERALL *pva, long index) {
   }
   return false;
     
-/*
-  {
+  /*
+    {
     std::string provider;
     epics::pvAccess::ca::CAChannel::shared_pointer caChan;
     provider = GetProviderName(pva, index);
     if (provider == "ca") {
-      caChan = std::dynamic_pointer_cast<epics::pvAccess::ca::CAChannel>(pva->pvaClientMultiChannelPtr[0]->getPvaClientChannelArray()[pva->pvaData[index].L2Ptr]->getChannel());
-      if (ca_write_access(caChan->getChannelID()) == 0)
-        return false;
-      else
-        return true;
+    caChan = std::dynamic_pointer_cast<epics::pvAccess::ca::CAChannel>(pva->pvaClientMultiChannelPtr[0]->getPvaClientChannelArray()[pva->pvaData[index].L2Ptr]->getChannel());
+    if (ca_write_access(caChan->getChannelID()) == 0)
+    return false;
+    else
+    return true;
     } else {
-      return true;
+    return true;
     }
+    }
+  */
+}
+std::string GetAlarmSeverity(PVA_OVERALL *pva, long index) {
+  if (pva->isConnected[index] == false)
+    return "unknown";
+  if (pva->pvaData[index].alarmSeverity == 1) {
+    return "MINOR";
+  } else if (pva->pvaData[index].alarmSeverity > 1) {
+    return "MAJOR";
+  } else {
+    return "NONE";
   }
-*/
 }
 std::string GetStructureID(PVA_OVERALL *pva, long index) {
   if (pva->isConnected[index] == false)
