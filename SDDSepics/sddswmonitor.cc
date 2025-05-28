@@ -1,0 +1,2129 @@
+/*************************************************************************\
+ * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+ * National Laboratory.
+ * Copyright (c) 2002 The Regents of the University of California, as
+ * Operator of Los Alamos National Laboratory.
+ * This file is distributed subject to a Software License Agreement found
+ * in the file LICENSE that is included with this distribution. 
+\*************************************************************************/
+
+/* program: sddswmonitor.c
+ * purpose: reads process variable waveform and scalar values. 
+ * output: each page of the output file is a separate snapshot of the
+ *   waveforms and scalars.
+ *
+ * based on sddsmonitor2.c
+ * L. Emery, M. Borland, 1994-1995.
+ $Log: not supported by cvs2svn $
+ Revision 1.13  2008/06/30 21:50:42  shang
+ added ability to read string scalar PVs and write them as parameters to the output file, and added two optional columns ReadbackSymbol and UnitsPV to the scalar monitor file.
+
+ Revision 1.12  2007/12/07 22:31:59  shang
+ added -xparameter and -yparameter, modified to use the ca data type for SDDS data type if the data
+ type is not provided from commandline or input file.
+
+ Revision 1.11  2006/10/20 15:21:08  soliday
+ Fixed problems seen by linux-x86_64.
+
+ Revision 1.10  2005/11/09 19:42:30  soliday
+ Updated to remove compiler warnings on Linux
+
+ Revision 1.9  2005/11/08 22:05:05  soliday
+ Added support for 64 bit compilers.
+
+ Revision 1.8  2004/12/02 22:48:44  soliday
+ Updated to build on WIN32
+
+ Revision 1.7  2004/11/29 23:18:01  shang
+ added newline to the usage message for versus option.
+
+ Revision 1.6  2004/11/29 23:13:51  shang
+ added -versus option to write the meaningful physical values that is
+ related to the index as a column to the output file.
+
+ Revision 1.5  2004/09/23 21:03:39  soliday
+ Added missing ca_task_exit command.
+
+ Revision 1.4  2004/07/19 17:39:39  soliday
+ Updated the usage message to include the epics version string.
+
+ Revision 1.3  2004/07/16 21:24:40  soliday
+ Replaced sleep commands with ca_pend_event commands because Epics/Base
+ 3.14.x has an inactivity timer that was causing disconnects from PVs
+ when the log interval time was too large.
+
+ Revision 1.2  2004/01/03 19:35:18  borland
+ sddswmonitor no longer requires the WaveformLength parameter in the input
+ file.  If it is there, it is used.  If not, the waveform length is determined
+ from the waveform PVs.
+
+ Revision 1.1  2003/08/27 19:51:27  soliday
+ Moved into subdirectory
+
+ Revision 1.50  2002/10/31 20:43:14  soliday
+ Removed commented out old code.
+
+ Revision 1.49  2002/10/30 22:55:50  soliday
+ sddswmonitor no longer uses ezca
+
+ Revision 1.48  2002/08/14 20:00:38  soliday
+ Added Open License
+
+ Revision 1.47  2002/07/01 21:12:12  soliday
+ Fsync is no longer the default so it is now set after the file is opened.
+
+ Revision 1.46  2002/04/08 19:25:51  soliday
+ Changed free_scanargs argument.
+
+ Revision 1.45  2002/03/25 20:42:33  shang
+ fixed the big memory leak problem by allocating the memory for waveform
+ data (once) outside the ReadWaveforms().
+
+ Revision 1.44  2002/01/03 22:11:42  soliday
+ Fixed problems on WIN32.
+
+ Revision 1.43  2001/12/13 17:15:29  borland
+ Removed warning message when -comment is used with -append.
+ No longer aborts if units can't be obtained.
+
+ Revision 1.42  2001/10/16 21:02:28  shang
+ fixed the bug in version 3
+
+ Revision 1.41  2001/10/09 21:45:55  shang
+ fixed the problem that EnforceTimeLimit did not work for -append mode.
+
+ Revision 1.40  2001/10/05 16:10:45  shang
+ added -append option
+
+ Revision 1.39  2001/05/29 21:27:55  borland
+ Added waveformOnly, scalarsOnly, and anyChange qualifiers to -logOnChange option.
+
+ Revision 1.38  2001/05/03 19:53:48  soliday
+ Standardized the Usage message.
+
+ Revision 1.37  2000/11/29 19:48:36  borland
+ Now uses getWaveformMonitorData() to read input file.
+
+ Revision 1.36  2000/04/20 15:59:53  soliday
+ Fixed WIN32 definition of usleep.
+
+ Revision 1.35  2000/04/19 15:53:31  soliday
+ Removed some solaris compiler warnings.
+
+ Revision 1.34  2000/03/08 17:15:15  soliday
+ Removed compiler warnings under Linux.
+
+ Revision 1.33  1999/09/17 22:13:43  soliday
+ This version now works with WIN32
+
+ Revision 1.32  1999/08/27 22:06:04  soliday
+ logOnChange is no longer incompatible with the accumulate option
+
+ Revision 1.31  1999/08/27 21:11:30  soliday
+ Added the -logOnChange option
+
+ Revision 1.30  1999/02/10 16:44:32  borland
+ Now does averaging of scalars when in accumulation mode.
+
+ Revision 1.29  1999/01/27 22:42:38  borland
+ Added noquery qualifier to -accumulate option.  If this is given, then in
+ accumulate more with -singleShot also given, the program only prompts at
+ the beginning of every accumulation series.
+
+ Revision 1.28  1998/11/18 14:33:59  borland
+ Brought up to date with latest version of MakeGenerationFilename().
+
+ Revision 1.27  1998/10/05 17:57:13  borland
+ Minor change to use macro AA_AVERAGE in place of the macro's value.
+
+ Revision 1.26  1998/09/09 21:13:53  soliday
+ Added accumulate option to average or sum multiple waveforms.
+
+ Revision 1.25  1998/07/30 16:53:17  borland
+ Control over data type of each waveform (short, long, float, double, string,
+ character) added by B. Dolin.
+
+ Revision 1.24  1998/06/15 14:25:06  borland
+ Added dead-band feature to sddsmonitor.  Required changing getScalarMonitorData,
+ which is used to read data from SDDS file specifying how to scalar logging.
+
+ Revision 1.23  1998/06/11 17:17:57  borland
+ Changed the usage message so that it gives the correct usage for
+ ezcaTiming.
+
+ Revision 1.22  1998/06/11 15:22:08  borland
+ Added some error messages for ezcaGetUnits problems.
+
+ Revision 1.21  1997/07/31 18:42:09  borland
+ Added conditions holdoff feature.
+
+ Revision 1.20  1997/05/30 14:53:44  borland
+ Added -offsetTimeOfDay option.  When given, causes TimeOfDay data to be
+ offset by 24 hours if more than half of the time of the run will fall
+ in the following day.  This permits starting a 24+ hour job before midnight
+ with the TimeOfDay values starting at negative numbers, then running 0
+ to 24 in the following day.  An identical job started just after midnight
+ will have the same TimeOfDay values as the first.
+
+ Revision 1.19  1997/02/28 21:47:28  borland
+ Made use of ezcaGetNelem instead of reading .NORD field.
+
+ Revision 1.18  1997/02/04 22:06:16  borland
+ Improved function of -PVNames option by checking for a field name on the
+ PV and removing it before appending .NORD when trying to get the waveform
+ length.
+
+ Revision 1.17  1996/12/13 20:48:09  borland
+ Added -enforceTimeLimit option.
+
+ Revision 1.16  1996/08/21 17:16:49  borland
+ Check prompt/noprompt mode before emitting "Done." message at end.
+
+ Revision 1.15  1996/06/13 19:46:36  borland
+ Improved function of -singleShot option by providing control of whether
+ prompts go to stderr or stdout.  Also added "Done." message before program
+ exits.
+
+ * Revision 1.14  1996/02/28  21:14:38  borland
+ * Added mode argument to getScalarMonitorData() for control of units control.
+ * sddsmonitor and sddsstatmon now have -getUnits option. sddswmonitor and
+ * sddsvmonitor now get units from EPICS for any scalar that has a blank
+ * units string.
+ *
+ * Revision 1.13  1996/02/16  17:20:50  borland
+ * Added recover qualifier to -append option.  However, since this option isn't
+ * actually implemented, I removed mention of it from the usage message.
+ *
+ * Revision 1.12  1996/02/15  03:41:46  borland
+ * Made some changes to the usage message for -conditions option to make it
+ * consistent with actual function of programs.
+ *
+ * Revision 1.11  1996/02/14  05:08:03  borland
+ * Switched from obsolete scan_item_list() routine to scanItemList(), which
+ * offers better response to invalid/ambiguous qualifiers.
+ *
+ * Revision 1.10  1996/02/10  06:30:40  borland
+ * Converted Time column/parameter in output from elapsed time to time-since-
+ * epoch.
+ *
+ * Revision 1.9  1996/02/07  18:32:01  borland
+ * Brought up-to-date with new time routines; now uses common setup routines
+ * for time data in SDDS output.
+ *
+ * Revision 1.8  1996/01/02  18:38:09  borland
+ * Added -comment and -generations options to monitor and logging programs;
+ * added support routines in SDDSepics.c .
+ *
+ * Revision 1.7  1995/11/13  16:24:01  borland
+ * Cleaned up some parsing statements to check for presence of data before
+ * scanning.  Fixed harmless uninitialized memory read problem with scalar
+ * data lists.
+ *
+ * Revision 1.6  1995/11/09  03:22:48  borland
+ * Added copyright message to source files.
+ *
+ * Revision 1.5  1995/11/04  04:45:42  borland
+ * Added new program sddsalarmlog to Makefile.  Changed routine
+ * getTimeBreakdown in SDDSepics, and modified programs to use the new
+ * version; it computes the Julian day and the year now.
+ *
+ * Revision 1.4  1995/10/15  21:18:03  borland
+ * Fixed bug in getScalarMonitorData (wasn't initializing *scaleFactor).
+ * Fixed bug in sdds[vw]monitor argument parsing for -onCAerror option (had
+ * exit outside of if branch).
+ *
+ * Revision 1.3  1995/09/30  00:05:11  borland
+ * Added -PVnames option for command-line specification of waveform PVs to
+ * read.  Added support for using ReadbackUnits, ReadbackScale, and ReadbackOffset
+ * from input file.
+ *
+ * Revision 1.2  1995/09/29  19:08:16  borland
+ * Added -PVnames option and code to support it; allows listing PV names on
+ * the commandline rather than in a file.
+ *
+ * Revision 1.1  1995/09/25  20:15:57  saunders
+ * First release of SDDSepics applications.
+ *
+ */
+
+#include <complex>
+#include <iostream>
+#include <ctime>
+
+#if defined(_WIN32)
+#  include <winsock.h>
+#else
+#  include <unistd.h>
+#endif
+
+#include <cadef.h>
+#include <epicsVersion.h>
+#if (EPICS_VERSION > 3)
+#  include "pvaSDDS.h"
+#  include "pv/thread.h"
+#endif
+
+#include "mdb.h"
+#include "scan.h"
+#include "match_string.h"
+#include "SDDS.h"
+
+#include "fftpackC.h"
+#include "SDDSepics.h"
+
+#ifdef _WIN32
+#  define usleep(usecs) Sleep(usecs / 1000)
+#  define sleep(sec) Sleep(sec * 1000)
+#endif
+
+#define CLO_INTERVAL 0
+#define CLO_STEPS 1
+#define CLO_VERBOSE 2
+#define CLO_ERASE 3
+#define CLO_SINGLE_SHOT 4
+#define CLO_TIME 5
+#define CLO_APPEND 6
+#define CLO_PRECISION 7
+#define CLO_PROMPT 8
+#define CLO_ONCAERROR 9
+#define CLO_EZCATIMING 10
+#define CLO_SCALARS 11
+#define CLO_CONDITIONS 12
+#define CLO_PVNAMES 13
+#define CLO_GENERATIONS 14
+#define CLO_COMMENT 15
+#define CLO_ENFORCETIMELIMIT 16
+#define CLO_OFFSETTIMEOFDAY 17
+#define CLO_DATATYPE 18
+#define CLO_ACCUMULATE 19
+#define CLO_LOGONCHANGE 20
+#define CLO_NOWARNINGS 21
+#define CLO_NOUNITS 22
+#define CLO_PENDIOTIME 23
+#define CLO_VERSUS 24
+#define CLO_XPARAMETER 25
+#define CLO_YPARAMETER 26
+#define CLO_RMS 27
+#define CLO_BANDWIDTHLIMITEDRMS 28
+#define COMMANDLINE_OPTIONS 29
+char *commandline_option[COMMANDLINE_OPTIONS] = {
+  (char *)"interval", (char *)"steps", (char *)"verbose", (char *)"erase", (char *)"singleshot", (char *)"time",
+  (char *)"append", (char *)"precision", (char *)"prompt", (char *)"oncaerror",
+  (char *)"ezcatiming", (char *)"scalars", (char *)"conditions", (char *)"pvnames", (char *)"generations", (char *)"comment",
+  (char *)"enforcetimelimit", (char *)"offsettimeofday", (char *)"datatype", (char *)"accumulate",
+  (char *)"logOnChange", (char *)"nowarnings", (char *)"nounits", (char *)"pendiotime", (char *)"versus", (char *)"xparameter",
+  (char *)"yparameter", (char *)"rms", (char *)"bandwidthLimitedRMS"};
+
+#define ONCAERROR_USEZERO 0
+#define ONCAERROR_SKIPPAGE 1
+#define ONCAERROR_EXIT 2
+#define ONCAERROR_OPTIONS 3
+char *oncaerror_options[ONCAERROR_OPTIONS] = {
+  (char *)"usezero",
+  (char *)"skippage",
+  (char *)"exit",
+};
+
+#define NAuxiliaryParameterNames 4
+char *AuxiliaryParameterNames[NAuxiliaryParameterNames] = {
+  (char *)"Step",
+  (char *)"Time",
+  (char *)"TimeOfDay",
+  (char *)"DayOfMonth",
+};
+
+#define NTimeUnitNames 4
+char *TimeUnitNames[NTimeUnitNames] = {
+  (char *)"seconds",
+  (char *)"minutes",
+  (char *)"hours",
+  (char *)"days",
+};
+double TimeUnitFactor[NTimeUnitNames] = {
+  1,
+  60,
+  3600,
+  86400,
+};
+
+static char *USAGE1 = (char *)"sddswmonitor [<inputfile> | -PVnames=<name>[,<name>]]\n\
+    <outputfile> [{-erase | -generations[=digits=<integer>][,delimiter=<string>}]\n\
+    [-append[=reover]] [-pendIOtime=<seconds>]\n\
+    [-steps=<integer> | -time=<value>[,<units>]] [-interval=<value>[,<units>]]\n\
+    [-enforceTimeLimit] [-offsetTimeOfDay]\n\
+    [-verbose] [-singleShot{=noprompt|stdout}] [-precision={single|double}]\n\
+    [-dataType={short|long|float|double|character|string}]\n\
+    [-onCAerror={useZero|skipPage|exit}] \n\
+    [-scalars=<filename>]\n\
+    [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]\n\
+    [-accumulate={average|sum},number=<number>[,noquery]\n\
+    [-logOnChange[=waveformOnly][,scalarsOnly][,anyChange]]\n\
+    [-comment=<parameterName>,<text>] [-nowarnings] [-nounits]\n\
+    [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>] \n\
+    [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>] \n\
+    [-versus=name=<columnName>[,unitsValue=<string>|unitsPV=<string>][,deltaValue=<number>|deltaPV=<string>][,offsetValue=<integer>|offsetPV=<string>]] \n\
+    [-rms] [-bandwidthLimitedRMS=<MinHZ>,<MaxHZ>[,scaleByOneOverOmegaSquared][,noPV]]\n\n";
+static char *USAGE2 = (char *)"Writes values of process variables to a binary SDDS file.\n\
+<inputfile>        SDDS input file containing the columns \"WaveformPV\" and\n\
+                   \"WaveformName\", plus a parameter \"WaveformLength\".  A \"DataType\"\n\
+                   column is optional to specify the data type (short, long, float, double,\n\
+                   character, or string) for each pv, but this will be overidden if the\n\
+                   -dataType option is specified on the command line.\n\
+PVnames            specifies a list of PV names to read.  If the waveforms are\n\
+                   of different lengths, the short ones are padded with zeros.\n\
+<outputfile>       SDDS output file, each page of which one instance of each waveform.\n\
+generations        The output is sent to the file <outputfile>-<N>, where <N> is\n\
+                   the smallest positive integer such that the file does not already \n\
+                   exist.   By default, four digits are used for formating <N>, so that\n\
+                   the first generation number is 0001.\n\
+erase              outputfile is erased before execution.\n\
+append             Appends new values in a new SDDS page in the output file.\n\
+                   Optionally recovers garbled SDDS data. \n\
+steps              number of reads for each process variable.\n\
+time               total time (in seconds) for monitoring;\n\
+                   valid time units are seconds, minutes, hours, or days.\n";
+static char *USAGE3 = (char *)"enforceTimeLimit   Enforces the time limit given with the -time option, even if \n\
+                   the expected number of samples has not been taken.\n\
+offsetTimeOfDay    Adjusts the starting TimeOfDay value so that it corresponds\n\
+                   to the day for which the bulk of the data is taken.  Hence, a\n\
+                   26 hour job started at 11pm would have initial time of day of\n\
+                   -1 hour and final time of day of 25 hours.\n\
+interval           desired time interval between reading PVs.\n\
+                   Valid time units are seconds, minutes, hours, or days.\n\
+verbose            prints out a message when data is taken.\n\
+singleShot         single shot read initiated by a <cr> key press; time_interval is disabled.\n\
+                   By default, a prompt is issued to stderr.  The qualifiers may be used to\n\
+                   remove the prompt or have it go to stdout.\n\
+precision          specify single (default) or double precision for PV data.\n\
+dataType           Optionally specifies the data type for the output file.  Overrides\n\
+                   the precision option.\n\
+x|yParameter       provide the required information for the parameters that are needed by sddscontour quantity plot\n";
+static char *USAGE4 = (char *)"onCAerror          action taken when a channel access error occurs. Default is\n\
+                   to use zeroes for values.\n\
+scalars            specifies sddsmonitor input file to get names of scalar PVs\n\
+                   from.  These will be logged in the output file as parameters.\n\
+conditions         Names an SDDS file containing PVs to read and limits on each PV that must\n\
+                   be satisfied for data to be taken and logged.  The file is like the main\n\
+                   input file, but has numerical columns LowerLimit and UpperLimit.\n\
+accumulate         Directs accumulation or averaging of several readings of each waveform.\n\
+                   If noquery is given, then in single-shot mode there is only one query\n\
+                   for each set of averaged readings. \n\
+versus             for user to specify the physical quantity of the waveform corresponding to \n\
+                   the Index. The name will be the column name in the output, units, delta and offset \n\
+                   can be specified by value or PV. If none of units and units pv are provided,\n\
+                   the units will be obtained from the units of deltaPV if provided.\n";
+static char *USAGE5 = (char *)"logOnChange        If given, the data is written only if one or more elements of one or more\n\
+                   waveforms changes.\n\
+nounits            do not get units for the readback PVs if they are not provided. \n\
+comment            Gives the parameter name for a comment to be placed in the SDDS output file,\n\
+                   along with the text to be placed in the file.  \n\
+rms                Creates parameters with the RMS values of each waveform.\n\
+Program by M. Borland, L. Emery, H. Shang, R. Soliday ANL\n\
+Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VERSION_STRING "\n";
+
+#define DEFAULT_TIME_INTERVAL 1.0
+#define DEFAULT_STEPS 1
+
+#define AA_AVERAGE 0x001
+#define AA_SUM 0x002
+#define AA_NOQUERY 0x004
+
+#define SS_PROMPT 1
+#define SS_NOPROMPT 2
+#define SS_STDOUTPROMPT 4
+#define ANSWER_LENGTH 256
+
+#define LOGONCHANGE_WAVEFORMS 0x0001U
+#define LOGONCHANGE_SCALARS 0x0002U
+#define LOGONCHANGE_ANYCHANGE (LOGONCHANGE_WAVEFORMS | LOGONCHANGE_SCALARS)
+
+void ScaleWaveformData(void *data, long dataType, long length, double offset, double scale);
+void AccumulateWaveformData(void *data, void *accData, long dataType, long length, long accumulate, long accumulateClear);
+void AveAccumulate(void *accData, long dataType, long length, long number);
+void CopyWaveformData(void *data, void *previousData, long dataType, long length);
+long CheckIfWaveformChanged(void *data, void *previousData, long dataType, long length);
+
+void AllocateWaveformMemory(void **waveformData, int32_t *readbackDataType,
+                            long readbacks, long waveformLength);
+void FreeWaveformMemory(void **waveformData, int32_t *readbackDataType,
+                        long readbacks, long waveformLength);
+void FreeReadMemory(long variables, char **pvs, char **names, char **units, char **typeStrings,
+                    double *data1, double *data2, double *data3, double *data4, int32_t *dataType);
+
+double rmsValueFloat(float *y, long n);
+double rmsValueLong(long *y, long n);
+double rmsValueShort(short *y, long n);
+double bandwidthLimitedRMS(double *fftIndepVariable, double *fftDepenQuantity, long rows, double minFreq, double maxFreq, short scaleByOneOverOmegaSquared);
+
+int main(int argc, char **argv) {
+  SCANNED_ARG *s_arg;
+  SDDS_TABLE outTable, originalfile_page;
+  char *inputfile, *outputfile, answer[ANSWER_LENGTH];
+  long CAerrors, waveformLength, optPVnames, unitsFromFile, rmsPVPrefixFromFile;
+  long enforceTimeLimit, noWarnings = 0, noUnits = 0;
+  char **optPVname;
+  char **readbackPV, **readbackName, **readbackUnits, **readbackDataTypeStrings, **rmsPVPrefix;
+  chid *readbackCHID = NULL, *scalarCHID = NULL;
+
+  void **outputColumn, **waveformData, **accWaveformData, **previousWaveformData;
+  double *readbackOffset, *readbackScale;
+  char **scalarPV, **scalarName, **scalarUnits, **readMessage, **scalarSymbol = NULL;
+  double *scalarData, *scalarFactor, *scalarAccumData, *previousScalarData;
+  char **strScalarData = NULL;
+  long i, j, n, pvIndex, i_arg, outputColumns, readbacks = 0, scalars = 0, *scalarDataType = NULL, strScalarExist = 0;
+  char *TimeStamp, *PageTimeStamp;
+  double TimeInterval, ElapsedTime, EpochTime, StartDay, StartHour, TimeOfDay, DayOfMonth;
+  double TotalTime, StartTime, StartJulianDay, StartYear, StartMonth, RunStartTime, RunTime;
+  long Step, NStep, verbose, singleShot, firstPage;
+  long accumulateAction, accumulate, accumulateClear, accumulateNoQuery;
+  int32_t accumulateNumber;
+  long stepsSet, totalTimeSet;
+  long outputPreviouslyExists, append, erase, recover;
+  char *precision_string, *datatype_string, *scalarFile;
+  long Precision, DataType, TimeUnits;
+  int32_t *index;
+  long onCAerror;
+  double timeToWait, expectedTime;
+  unsigned long dummyFlags;
+  char **CondDeviceName = NULL, **CondReadMessage = NULL, *CondFile;
+  double *CondScaleFactor = NULL, *CondLowerLimit = NULL, *CondUpperLimit = NULL, *CondHoldoff = NULL;
+  chid *CondCHID = NULL;
+  long conditions = 0;
+  unsigned long CondMode = 0;
+  double *CondDataBuffer = NULL;
+  char **ColumnNames, **ParameterNames, **temp, *xParName = NULL, *yParName = NULL;
+  int32_t NColumnNames = 0, NParameters = 0, xParDim = 0, yParDim = 0, xParGiven = 0, yParGiven = 0;
+  double xParMin = 0, xParInterval = 1.0, xParMax = 100, yParMin = 0, yParInterval = 1.0, yParMax = 100.0;
+
+  char **commentParameter, **commentText, *generationsDelimiter;
+  long comments, generations;
+  int32_t generationsDigits;
+  long offsetTimeOfDay, TimeOfDayOffset;
+  int32_t *readbackDataType;
+  long dataTypeCLOGiven;
+  /*long dataTypeColumnGiven; */
+  unsigned long logOnChange;
+  double pendIOtime = 10.0, timeout;
+  long retries;
+
+  char *indeptName, *indeptUnits, *indeptUnitPV, *indeptDeltaPV, *indeptOffsetPV = NULL;
+  double indeptDelta = 0, *indeptValue = NULL;
+  chid indeptUnitChid, indeptDeltaChid, indeptOffsetChid;
+  long indeptOffset = 0;
+
+  short rms = 0;
+  char buffer[50];
+  double *fftIndepVariable = NULL, *fftDepenQuantity = NULL;
+
+  short bandwidthLimitedRMSCount = 0;
+  double bandwidthLimitedRMS_MIN[10], bandwidthLimitedRMS_MAX[10], bandwidthLimitedRMSResult;
+  short bandwidthLimitedRMS_Omega[10];
+  short bandwidthLimitedRMS_noPV[10];
+  chid *bandwidthLimitedRMS_CHID = NULL;
+  SDDS_RegisterProgramName(argv[0]);
+
+  argc = scanargs(&s_arg, argc, argv);
+  if (argc == 1) {
+    fprintf(stderr, "%s%s%s%s%s\n", USAGE1, USAGE2, USAGE3, USAGE4, USAGE5);
+    exit(1);
+  }
+  conditions = 0;
+  CondDeviceName = CondReadMessage = NULL;
+  CondScaleFactor = CondLowerLimit = CondUpperLimit = CondHoldoff = NULL;
+
+  offsetTimeOfDay = TimeOfDayOffset = 0;
+  inputfile = outputfile = scalarFile = NULL;
+  TimeInterval = DEFAULT_TIME_INTERVAL;
+  NStep = DEFAULT_STEPS;
+  totalTimeSet = verbose = append = erase = singleShot = stepsSet = generations = recover = 0;
+  onCAerror = ONCAERROR_USEZERO;
+  Precision = PRECISION_SINGLE;
+  DataType = -1;
+  CondFile = NULL;
+  optPVname = NULL;
+  optPVnames = 0;
+  commentParameter = commentText = NULL;
+  comments = 0;
+  enforceTimeLimit = 0;
+  accumulateAction = accumulateNumber = accumulateNoQuery = 0;
+  accWaveformData = previousWaveformData = NULL;
+  CondDataBuffer = scalarData = NULL;
+  precision_string = datatype_string = NULL;
+
+  dataTypeCLOGiven = 0;
+  /*dataTypeColumnGiven = 0; */
+  logOnChange = 0;
+  indeptName = indeptUnitPV = indeptUnits = indeptDeltaPV = NULL;
+
+  for (i_arg = 1; i_arg < argc; i_arg++) {
+    if (s_arg[i_arg].arg_type == OPTION) {
+      delete_chars(s_arg[i_arg].list[0], (char *)"_");
+      switch (match_string(s_arg[i_arg].list[0], commandline_option, COMMANDLINE_OPTIONS, 0)) {
+      case CLO_PENDIOTIME:
+        if (s_arg[i_arg].n_items != 2 || sscanf(s_arg[i_arg].list[1], "%lf", &pendIOtime) != 1 ||
+            pendIOtime <= 0)
+          bomb((char *)"invalid -pendIOtime syntax", NULL);
+        break;
+      case CLO_INTERVAL:
+        if (s_arg[i_arg].n_items < 2 || !(get_double(&TimeInterval, s_arg[i_arg].list[1])) ||
+            TimeInterval <= 0)
+          bomb((char *)"no value or invalid value given for option -interval", NULL);
+        if (s_arg[i_arg].n_items == 3) {
+          if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) >= 0)
+            TimeInterval *= TimeUnitFactor[TimeUnits];
+          else
+            bomb((char *)"unknown/ambiguous time units given for -interval", NULL);
+        }
+        break;
+      case CLO_NOWARNINGS:
+        noWarnings = 1;
+        break;
+      case CLO_NOUNITS:
+        noUnits = 1;
+        break;
+      case CLO_STEPS:
+        if (s_arg[i_arg].n_items != 2)
+          bomb((char *)"no value or invalid value given for option -steps", NULL);
+        if (!(get_long(&NStep, s_arg[i_arg].list[1])) || NStep <= 0)
+          bomb((char *)"no value or invalid value given for option -steps", NULL);
+        stepsSet = 1;
+        break;
+      case CLO_VERBOSE:
+        verbose = 1;
+        break;
+      case CLO_PROMPT:
+        singleShot = SS_PROMPT;
+      case CLO_SINGLE_SHOT:
+        singleShot = SS_PROMPT;
+        if (s_arg[i_arg].n_items != 1) {
+          if (strncmp(s_arg[i_arg].list[1], "noprompt", strlen(s_arg[i_arg].list[1])) == 0)
+            singleShot = SS_NOPROMPT;
+          else if (strncmp(s_arg[i_arg].list[1], "stdout", strlen(s_arg[i_arg].list[1])) == 0)
+            singleShot = SS_STDOUTPROMPT;
+          else
+            SDDS_Bomb((char *)"invalid -singleShot qualifier");
+        }
+        break;
+      case CLO_APPEND:
+        if (s_arg[i_arg].n_items != 1 && s_arg[i_arg].n_items != 2)
+          SDDS_Bomb((char *)"invalid -append syntax/value");
+        append = 1;
+        recover = 0;
+        if (s_arg[i_arg].n_items == 2) {
+          if (strncmp(s_arg[i_arg].list[1], "recover", strlen(s_arg[i_arg].list[1])) == 0)
+            recover = 1;
+          else
+            SDDS_Bomb((char *)"invalid -append syntax/value");
+        }
+        break;
+      case CLO_ERASE:
+        erase = 1;
+        break;
+      case CLO_PRECISION:
+        if (s_arg[i_arg].n_items < 2 ||
+            !(precision_string = s_arg[i_arg].list[1]))
+          bomb((char *)"no value given for option -precision", NULL);
+        if ((Precision = identifyPrecision(precision_string)) < 0)
+          bomb((char *)"invalid -precision value", NULL);
+        break;
+      case CLO_DATATYPE:
+        if (s_arg[i_arg].n_items < 2 ||
+            !(datatype_string = s_arg[i_arg].list[1]))
+          bomb((char *)"no value given for option -dataType", NULL);
+        if ((DataType = SDDS_IdentifyType(datatype_string)) < 0)
+          bomb((char *)"invalid -dataType value", NULL);
+        dataTypeCLOGiven = 1;
+        break;
+      case CLO_TIME:
+        if (s_arg[i_arg].n_items < 2 ||
+            !(get_double(&TotalTime, s_arg[i_arg].list[1])) || TotalTime <= 0)
+          bomb((char *)"no value or invalid value given for option -time", NULL);
+        totalTimeSet = 1;
+        if (s_arg[i_arg].n_items == 3) {
+          if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) >= 0)
+            TotalTime *= TimeUnitFactor[TimeUnits];
+          else
+            bomb((char *)"invalid units for -time option", NULL);
+        }
+        break;
+      case CLO_ONCAERROR:
+        if (s_arg[i_arg].n_items != 2)
+          bomb((char *)"invalid -onCAerror syntax", NULL);
+        if ((onCAerror = match_string(s_arg[i_arg].list[1], oncaerror_options, ONCAERROR_OPTIONS, 0)) < 0) {
+          fprintf(stderr, "error: unrecognized oncaerror option given: %s\n", s_arg[i_arg].list[1]);
+          exit(1);
+        }
+        break;
+      case CLO_EZCATIMING:
+        /* This option is obsolete */
+        if (s_arg[i_arg].n_items != 3)
+          SDDS_Bomb((char *)"wrong number of items for -ezcaTiming");
+        if (sscanf(s_arg[i_arg].list[1], "%lf", &timeout) != 1 ||
+            sscanf(s_arg[i_arg].list[2], "%ld", &retries) != 1 ||
+            timeout <= 0 || retries < 0)
+          bomb((char *)"invalid -ezca values", NULL);
+        pendIOtime = timeout * (retries + 1);
+        break;
+      case CLO_SCALARS:
+        if (s_arg[i_arg].n_items != 2)
+          bomb((char *)"wrong number of keywords for -scalars", NULL);
+        scalarFile = s_arg[i_arg].list[1];
+        break;
+      case CLO_CONDITIONS:
+        if (s_arg[i_arg].n_items < 3 ||
+            SDDS_StringIsBlank(CondFile = s_arg[i_arg].list[1]) ||
+            !(CondMode = IdentifyConditionMode(s_arg[i_arg].list + 2, s_arg[i_arg].n_items - 2)))
+          SDDS_Bomb((char *)"invalid -conditions syntax/values");
+        break;
+      case CLO_PVNAMES:
+        if (s_arg[i_arg].n_items < 2)
+          SDDS_Bomb((char *)"invalid -PVnames syntax");
+        optPVnames = s_arg[i_arg].n_items - 1;
+        optPVname = s_arg[i_arg].list + 1;
+        break;
+      case CLO_GENERATIONS:
+        generationsDigits = DEFAULT_GENERATIONS_DIGITS;
+        generations = 1;
+        generationsDelimiter = (char *)"-";
+        s_arg[i_arg].n_items -= 1;
+        if (!scanItemList(&dummyFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
+                          "digits", SDDS_LONG, &generationsDigits, 1, 0,
+                          "delimiter", SDDS_STRING, &generationsDelimiter, 1, 0,
+                          NULL) ||
+            generationsDigits < 1)
+          SDDS_Bomb((char *)"invalid -generations syntax/values");
+        s_arg[i_arg].n_items += 1;
+        break;
+      case CLO_VERSUS:
+        s_arg[i_arg].n_items -= 1;
+        if (!scanItemList(&dummyFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
+                          "name", SDDS_STRING, &indeptName, 1, 0,
+                          "unitsValue", SDDS_STRING, &indeptUnits, 1, 0,
+                          "unitsPV", SDDS_STRING, &indeptUnitPV, 1, 0,
+                          "deltaValue", SDDS_DOUBLE, &indeptDelta, 1, 0,
+                          "deltaPV", SDDS_STRING, &indeptDeltaPV, 1, 0,
+                          "offsetValue", SDDS_LONG, &indeptOffset, 1, 0,
+                          "offsetPV", SDDS_STRING, &indeptOffsetPV, 1, 0,
+                          NULL))
+          SDDS_Bomb((char *)"invalid -versus syntax/values");
+        s_arg[i_arg].n_items += 1;
+        if (!indeptName) {
+          fprintf(stderr, "The indepent column name is not provided!\n");
+          exit(1);
+        }
+        if (!indeptDeltaPV && !indeptDelta) {
+          fprintf(stderr, "Either the delta or detla pv for indepent column name has to be provided!\n");
+          exit(1);
+        }
+        break;
+      case CLO_COMMENT:
+        ProcessCommentOption(s_arg[i_arg].list + 1, s_arg[i_arg].n_items - 1,
+                             &commentParameter, &commentText, &comments);
+        break;
+      case CLO_ENFORCETIMELIMIT:
+        enforceTimeLimit = 1;
+        break;
+      case CLO_OFFSETTIMEOFDAY:
+        offsetTimeOfDay = 1;
+        break;
+      case CLO_ACCUMULATE:
+        if (s_arg[i_arg].n_items < 3)
+          bomb((char *)"wrong number of keywords for -accumulate", NULL);
+        s_arg[i_arg].n_items -= 1;
+        accumulateNumber = 0;
+        if (!scanItemList(&dummyFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
+                          "average", -1, NULL, 0, AA_AVERAGE,
+                          "sum", -1, NULL, 0, AA_SUM,
+                          "noquery", -1, NULL, 0, AA_NOQUERY,
+                          "number", SDDS_LONG, &accumulateNumber, 1, 0,
+                          NULL) ||
+            accumulateNumber <= 0)
+          bomb((char *)"invalid -accumulation syntax/values", NULL);
+        if ((!(dummyFlags & AA_AVERAGE) && !(dummyFlags & AA_SUM)) ||
+            (dummyFlags & AA_AVERAGE && dummyFlags & AA_SUM))
+          bomb((char *)"give one and only one of average or sum qualifiers for -accumulate", NULL);
+        accumulateAction = dummyFlags & (AA_AVERAGE + AA_SUM);
+        accumulateNoQuery = dummyFlags & AA_NOQUERY;
+        s_arg[i_arg].n_items += 1;
+        break;
+      case CLO_LOGONCHANGE:
+        if ((s_arg[i_arg].n_items -= 1) == 0)
+          logOnChange = LOGONCHANGE_ANYCHANGE;
+        else if (!scanItemList(&logOnChange, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
+                               "waveform", -1, NULL, 0, LOGONCHANGE_WAVEFORMS,
+                               "scalars", -1, NULL, 0, LOGONCHANGE_SCALARS,
+                               "anychange", -1, NULL, 0, LOGONCHANGE_ANYCHANGE,
+                               NULL))
+          bomb((char *)"invalid -logOnChange syntax/values", NULL);
+        s_arg[i_arg].n_items += 1;
+        break;
+      case CLO_XPARAMETER:
+        s_arg[i_arg].n_items -= 1;
+        if (!scanItemList(&dummyFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
+                          "dimension", SDDS_LONG, &xParDim, 1, 0,
+                          "name", SDDS_STRING, &xParName, 1, 0,
+                          "interval", SDDS_DOUBLE, &xParInterval, 1, 0,
+                          "minimum", SDDS_DOUBLE, &xParMin, 1, 0,
+                          "maximum", SDDS_DOUBLE, &yParMax, 1, 0,
+                          NULL) ||
+            xParDim < 1)
+          SDDS_Bomb((char *)"invalid -xParameter syntax/values (the dimension size should be greater than 1)");
+        s_arg[i_arg].n_items += 1;
+        if (!xParName)
+          SDDS_CopyString(&xParName, "x");
+        xParGiven = 1;
+        break;
+      case CLO_YPARAMETER:
+        s_arg[i_arg].n_items -= 1;
+        if (!scanItemList(&dummyFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
+                          "dimension", SDDS_LONG, &yParDim, 1, 0,
+                          "name", SDDS_STRING, &yParName, 1, 0,
+                          "interval", SDDS_DOUBLE, &yParInterval, 1, 0,
+                          "minimum", SDDS_DOUBLE, &yParMin, 1, 0,
+                          "maximum", SDDS_DOUBLE, &yParMax, 1, 0,
+                          NULL) ||
+            yParDim < 1)
+          SDDS_Bomb((char *)"invalid -yParameter syntax/values (the dimension size should be greater than 1)");
+        s_arg[i_arg].n_items += 1;
+        if (!yParName)
+          SDDS_CopyString(&yParName, "y");
+        yParGiven = 1;
+        break;
+      case CLO_RMS:
+        rms = 1;
+        break;
+      case CLO_BANDWIDTHLIMITEDRMS:
+        if (bandwidthLimitedRMSCount == 10) {
+          bomb((char *)"Limited to 10 -bandwidthLimitedRMS options", NULL);
+        }
+        if ((s_arg[i_arg].n_items != 3) && (s_arg[i_arg].n_items != 4) && (s_arg[i_arg].n_items != 5))
+          bomb((char *)"no value or invalid value given for option -bandwidthLimitedRMS", NULL);
+        if (!(get_double(&(bandwidthLimitedRMS_MIN[bandwidthLimitedRMSCount]), s_arg[i_arg].list[1])))
+          bomb((char *)"no value or invalid value given for option -bandwidthLimitedRMS", NULL);
+        if (!(get_double(&(bandwidthLimitedRMS_MAX[bandwidthLimitedRMSCount]), s_arg[i_arg].list[2])))
+          bomb((char *)"no value or invalid value given for option -bandwidthLimitedRMS", NULL);
+        if (bandwidthLimitedRMS_MIN[bandwidthLimitedRMSCount] >= bandwidthLimitedRMS_MAX[bandwidthLimitedRMSCount])
+          bomb((char *)"no value or invalid value given for option -bandwidthLimitedRMS", NULL);
+        bandwidthLimitedRMS_Omega[bandwidthLimitedRMSCount] = 0;
+        bandwidthLimitedRMS_noPV[bandwidthLimitedRMSCount] = 0;
+
+        if (s_arg[i_arg].n_items >= 4) {
+          if (strncasecmp(s_arg[i_arg].list[3], "scaleByOneOverOmegaSquared", strlen(s_arg[i_arg].list[3])) == 0) {
+            bandwidthLimitedRMS_Omega[bandwidthLimitedRMSCount] = 1;
+          } else if (strncasecmp(s_arg[i_arg].list[3], "noPV", strlen(s_arg[i_arg].list[3])) == 0) {
+            bandwidthLimitedRMS_noPV[bandwidthLimitedRMSCount] = 1;
+          }
+        }
+        if (s_arg[i_arg].n_items == 5) {
+          if (strncasecmp(s_arg[i_arg].list[4], "scaleByOneOverOmegaSquared", strlen(s_arg[i_arg].list[4])) == 0) {
+            bandwidthLimitedRMS_Omega[bandwidthLimitedRMSCount] = 1;
+          } else if (strncasecmp(s_arg[i_arg].list[4], "noPV", strlen(s_arg[i_arg].list[4])) == 0) {
+            bandwidthLimitedRMS_noPV[bandwidthLimitedRMSCount] = 1;
+          }
+        }
+        bandwidthLimitedRMSCount++;
+        break;
+      default:
+        fprintf(stderr, "unrecognized option given: %s.\n", s_arg[i_arg].list[0]);
+        exit(1);
+      }
+    } else {
+      if (!inputfile)
+        inputfile = s_arg[i_arg].list[0];
+      else if (!outputfile)
+        outputfile = s_arg[i_arg].list[0];
+      else
+        bomb((char *)"too many filenames given", NULL);
+    }
+  }
+  if (xParName && yParName && strcmp(xParName, yParName) == 0)
+    SDDS_Bomb((char *)"xparameter name and y parameter name can not be the same!");
+
+  ca_task_initialize();
+
+  if (!dataTypeCLOGiven) {
+    if (Precision == PRECISION_SINGLE) {
+      DataType = SDDS_FLOAT;
+    } else {
+      DataType = SDDS_DOUBLE;
+    }
+  }
+  if (!inputfile && optPVnames == 0)
+    SDDS_Bomb((char *)"neither input filename nor -PVnames was given");
+  if (optPVnames && outputfile)
+    SDDS_Bomb((char *)"too many filenames given");
+  if (optPVnames) {
+    outputfile = inputfile;
+    inputfile = NULL;
+  }
+  if (!outputfile)
+    bomb((char *)"output filename not given", NULL);
+  if (append && erase)
+    SDDS_Bomb((char *)"-append and -erase are incompatible options");
+  if (append && generations)
+    SDDS_Bomb((char *)"-append and -generations are incompatible options");
+  if (erase && generations)
+    SDDS_Bomb((char *)"-erase and -generations are incompatible options");
+  if (generations)
+    outputfile = MakeGenerationFilename(outputfile, generationsDigits, generationsDelimiter, NULL);
+
+  outputPreviouslyExists = fexists(outputfile);
+  if (outputPreviouslyExists && !erase && !append) {
+    fprintf(stderr, "Error. File %s already exists.\n", outputfile);
+    exit(1);
+  }
+
+  if (totalTimeSet) {
+    if (stepsSet && !noWarnings)
+      fprintf(stderr, "warning: option -time supersedes option -steps\n");
+    NStep = TotalTime / TimeInterval + 1;
+  } else {
+    enforceTimeLimit = 0;
+  }
+
+  unitsFromFile = rmsPVPrefixFromFile = 0;
+  readbackDataType = NULL;
+  readbackPV = readbackName = readbackUnits = rmsPVPrefix = NULL;
+  readbackOffset = readbackScale = NULL;
+  readbackDataTypeStrings = NULL;
+
+  if (inputfile) {
+    long i;
+    if (!getWaveformMonitorData(&readbackPV, &readbackName, &readbackUnits,
+                                &rmsPVPrefix,
+                                &readbackOffset, &readbackScale, &readbackDataType,
+                                &readbacks, &waveformLength, inputfile,
+                                DataType))
+      SDDS_Bomb((char *)"problem getting waveform monitor input data");
+    if (readbackUnits)
+      unitsFromFile = 1;
+    if (rmsPVPrefix)
+      rmsPVPrefixFromFile = 1;
+    if (!(readbackCHID = (chid *)malloc(sizeof(chid) * readbacks)))
+      SDDS_Bomb((char *)"memory allocation failure");
+    for (i = 0; i < readbacks; i++)
+      readbackCHID[i] = NULL;
+  } else {
+    long i;
+    readbacks = optPVnames;
+    readbackPV = optPVname;
+    waveformLength = 0;
+    if (!(readbackName = (char **)malloc(sizeof(*readbackName) * readbacks)))
+      SDDS_Bomb((char *)"memory allocation failure");
+    if (!(readbackCHID = (chid *)malloc(sizeof(chid) * readbacks)))
+      SDDS_Bomb((char *)"memory allocation failure");
+    waveformLength = 0;
+    if (!(readbackDataType = (int32_t *)malloc(sizeof(*readbackDataType) * readbacks)))
+      SDDS_Bomb((char *)"memory allocation failure");
+    for (i = 0; i < readbacks; i++) {
+      readbackName[i] = readbackPV[i];
+      readbackDataType[i] = DataType;
+      readbackCHID[i] = NULL;
+    }
+  }
+  for (i = 0; i < readbacks; i++) {
+    if (ca_search(readbackPV[i], &(readbackCHID[i])) != ECA_NORMAL) {
+      fprintf(stderr, "error: problem doing search for %s\n", readbackName[i]);
+      exit(1);
+    }
+  }
+  if (indeptUnitPV) {
+    if (ca_search(indeptUnitPV, &indeptUnitChid) != ECA_NORMAL) {
+      fprintf(stderr, "error: problem doing search for %s\n", indeptUnitPV);
+      exit(1);
+    }
+  }
+  if (indeptDeltaPV) {
+    if (ca_search(indeptDeltaPV, &indeptDeltaChid) != ECA_NORMAL) {
+      fprintf(stderr, "error: problem doing search for %s\n", indeptDeltaPV);
+      exit(1);
+    }
+  }
+  if (indeptOffsetPV) {
+    if (ca_search(indeptOffsetPV, &indeptOffsetChid) != ECA_NORMAL) {
+      fprintf(stderr, "error: problem doing search for %s\n", indeptOffsetPV);
+      exit(1);
+    }
+  }
+
+  if (rmsPVPrefixFromFile) {
+    n = 0;
+    for (i = 0; i < readbacks; i++) {
+      for (j = 0; j < bandwidthLimitedRMSCount; j++) {
+        if (strlen(rmsPVPrefix[i]) > 0) {
+          n++;
+        }
+      }
+    }
+    if (!(bandwidthLimitedRMS_CHID = (chid *)malloc(sizeof(chid) * n)))
+      SDDS_Bomb((char *)"memory allocation failure");
+    n = 0;
+    for (i = 0; i < readbacks; i++) {
+      for (j = 0; j < bandwidthLimitedRMSCount; j++) {
+        if (strlen(rmsPVPrefix[i]) > 0) {
+          sprintf(buffer, "%s:%ldHzBW", rmsPVPrefix[i], (long)(bandwidthLimitedRMS_MAX[j]));
+          if (bandwidthLimitedRMS_noPV[j] == 0) {
+            if (ca_search(buffer, &(bandwidthLimitedRMS_CHID[n])) != ECA_NORMAL) {
+              fprintf(stderr, "error: problem doing search for %s\n", buffer);
+              exit(1);
+            }
+            n++;
+          }
+        }
+      }
+    }
+  }
+  if (ca_pend_io(pendIOtime) != ECA_NORMAL) {
+    fprintf(stderr, "error: problem doing search for some channels\n");
+    exit(1);
+  }
+
+  if (!inputfile && !dataTypeCLOGiven) {
+    /* get the datatype from pv record */
+    for (i = 0; i < readbacks; i++)
+      readbackDataType[i] = CaTypeToDataType(ca_field_type(readbackCHID[i]));
+  }
+  if (waveformLength <= 0) {
+    for (i = 0; i < readbacks; i++) {
+      int wfLength;
+      wfLength = ca_element_count(readbackCHID[i]);
+      if (wfLength > waveformLength)
+        waveformLength = wfLength;
+    }
+    if (waveformLength == 0)
+      SDDS_Bomb((char *)"waveforms have zero length!");
+  }
+  if (indeptUnitPV) {
+    indeptUnits = (char *)malloc(sizeof(char) * 40);
+    if (ca_get(DBR_STRING, indeptUnitChid, indeptUnits) != ECA_NORMAL) {
+      fprintf(stderr, "error: problem reading values for %s\n", indeptUnitPV);
+      exit(1);
+    }
+  }
+  if (indeptDeltaPV) {
+    if (ca_get(DBR_DOUBLE, indeptDeltaChid, &indeptDelta) != ECA_NORMAL) {
+      fprintf(stderr, "error: problem reading values for %s\n", indeptDeltaPV);
+      exit(1);
+    }
+    if (!indeptUnitPV && !indeptUnits) {
+      getUnits(&indeptDeltaPV, &indeptUnits, 1, &indeptDeltaChid, pendIOtime);
+    }
+  }
+  if (indeptOffsetPV) {
+    if (ca_get(DBR_LONG, indeptOffsetChid, &indeptOffset) != ECA_NORMAL) {
+      fprintf(stderr, "error: problem reading values for %s\n", indeptOffsetPV);
+      exit(1);
+    }
+  }
+  scalars = 0;
+  scalarPV = scalarName = scalarUnits = NULL;
+  scalarFactor = scalarData = NULL;
+  readMessage = NULL;
+
+  if (scalarFile) {
+    if (!getScalarMonitorDataModified(&scalarPV, &readMessage, &scalarName,
+                                      &scalarUnits, &scalarSymbol, &scalarFactor, NULL, &scalarDataType,
+                                      &scalars, scalarFile, GET_UNITS_IF_BLANK, &scalarCHID, pendIOtime))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+  CondDeviceName = CondReadMessage = NULL;
+  CondScaleFactor = NULL;
+  CondLowerLimit = CondUpperLimit = NULL;
+  CondHoldoff = NULL;
+
+  if (CondFile) {
+    if (!getConditionsData(&CondDeviceName, &CondReadMessage, &CondScaleFactor,
+                           &CondLowerLimit, &CondUpperLimit, &CondHoldoff, &conditions,
+                           CondFile))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    if (!(CondDataBuffer = (double *)malloc(sizeof(*CondDataBuffer) * conditions)))
+      SDDS_Bomb((char *)"allocation faliure");
+    if (!(CondCHID = (chid *)malloc(sizeof(*CondCHID) * conditions)))
+      SDDS_Bomb((char *)"allocation faliure");
+    for (i = 0; i < conditions; i++)
+      CondCHID[i] = NULL;
+  }
+
+  outputColumn = (void **)tmalloc(sizeof(void *) * (outputColumns = readbacks + 1));
+  SDDS_CopyString((char **)&outputColumn[0], "Index");
+  if (!unitsFromFile)
+    readbackUnits = (char **)tmalloc(sizeof(*readbackUnits) * readbacks);
+  waveformData = (void **)tmalloc(sizeof(void *) * readbacks);
+  accWaveformData = (void **)tmalloc(sizeof(void *) * readbacks);
+  if (logOnChange & LOGONCHANGE_WAVEFORMS)
+    previousWaveformData = (void **)tmalloc(sizeof(void *) * readbacks);
+  for (i = 0; i < readbacks; i++) {
+    outputColumn[i + 1] = readbackName[i];
+    if (!unitsFromFile)
+      readbackUnits[i] = NULL;
+  }
+  if ((!unitsFromFile) && (!noUnits)) {
+    getUnits(readbackPV, readbackUnits, readbacks, readbackCHID, pendIOtime);
+  }
+  scalarAccumData = previousScalarData = NULL;
+  if (scalars) {
+    scalarData = (double *)calloc(scalars, sizeof(*scalarData));
+    if (accumulateAction)
+      scalarAccumData = (double *)calloc(scalars, sizeof(*scalarAccumData));
+    if (logOnChange & LOGONCHANGE_SCALARS)
+      previousScalarData = (double *)calloc(scalars, sizeof(*previousScalarData));
+    if (!scalarUnits) {
+      scalarUnits = (char **)tmalloc(sizeof(*scalarUnits) * scalars);
+    }
+    strScalarData = (char **)malloc(sizeof(*strScalarData) * scalars);
+    for (i = 0; i < scalars; i++) {
+      strScalarData[i] = NULL;
+      if (scalarDataType[i] == SDDS_STRING) {
+        strScalarExist = 1;
+        strScalarData[i] = (char *)malloc(sizeof(char) * 40);
+      }
+    }
+  }
+
+  if ((scalars) && (!scalarUnits)) {
+    getUnits(scalarPV, scalarUnits, scalars, scalarCHID, pendIOtime);
+  }
+
+  index = (int32_t *)tmalloc(sizeof(*index) * waveformLength);
+  if (indeptName)
+    indeptValue = (double *)tmalloc(sizeof(*indeptValue) * waveformLength);
+  for (i = 0; i < waveformLength; i++)
+    index[i] = i;
+  if (indeptName)
+    for (i = 0; i < waveformLength; i++)
+      indeptValue[i] = (i - indeptOffset) * indeptDelta;
+
+  /* if append is true and the specified output file already exists, then move
+     the file to a temporary file, then copy all tables. */
+
+  if (append && outputPreviouslyExists) {
+    if (!SDDS_CheckFile(outputfile)) {
+      if (recover) {
+        char commandBuffer[1024];
+        fprintf(stderr, "warning: file %s is corrupted--reconstructing before appending--some data may be lost.\n", outputfile);
+        sprintf(commandBuffer, "sddsconvert -recover -nowarnings %s", outputfile);
+        system(commandBuffer);
+      } else {
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+        SDDS_Bomb((char *)"unable to get data from existing file---try -append=recover (may truncate file)");
+      }
+    }
+
+    if (!SDDS_InitializeInput(&originalfile_page, outputfile)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      exit(1);
+    }
+    /* compare columns of output file to ReadbackNames column in input file */
+    ColumnNames = (char **)SDDS_GetColumnNames(&originalfile_page, &NColumnNames);
+    if (-1 == match_string((char *)"Index", ColumnNames, NColumnNames, EXACT_MATCH)) {
+      printf("\"Index\" column doesn't exist in output file.\n");
+      exit(1);
+    }
+    for (i = 0; i < readbacks; i++) {
+      if (-1 == match_string(readbackName[i], ColumnNames, NColumnNames, EXACT_MATCH)) {
+        printf("ReadbackName %s doesn't match any columns in output file.\n", readbackName[i]);
+        exit(1);
+      }
+    }
+    if (indeptName) {
+      if (-1 == match_string(indeptName, ColumnNames, NColumnNames, EXACT_MATCH)) {
+        printf("Indepent column %s doesn't exist in output file.\n", indeptName);
+        exit(1);
+      }
+    }
+    temp = (char **)malloc(sizeof(char *));
+    SDDS_CopyString(&temp[0], "Index");
+    for (i = 0; i < NColumnNames; i++) {
+      if (strcmp(ColumnNames[i], "Index") == 0)
+        continue;
+      if (indeptName && strcmp(ColumnNames[i], indeptName) == 0)
+        continue;
+      if (-1 == match_string(ColumnNames[i], readbackName, readbacks, EXACT_MATCH)) {
+        printf("Column %s in output file doesn't match any readbackName.\n", ColumnNames[i]);
+        exit(1);
+      }
+    }
+    SDDS_FreeStringArray(temp, 1);
+    SDDS_FreeStringArray(ColumnNames, NColumnNames);
+    free(ColumnNames);
+
+    /* compare parameters of output file to scalarName in input file */
+    ParameterNames = (char **)SDDS_GetParameterNames(&originalfile_page, &NParameters);
+    for (i = 0; i < scalars; i++) {
+      if (-1 == match_string(scalarName[i], ParameterNames, NParameters, EXACT_MATCH)) {
+        printf("ScalarName %s doesn't match any parameters in output file.\n", scalarName[i]);
+        exit(1);
+      }
+    }
+    for (j = 0; j < bandwidthLimitedRMSCount; j++) {
+      for (i = 0; i < readbacks; i++) {
+        sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+        if (-1 == match_string(buffer, ParameterNames, NParameters, EXACT_MATCH)) {
+          printf("%s doesn't match any columns in output file.\n", buffer);
+          exit(1);
+        }
+      }
+    }
+    if (rms) {
+      for (i = 0; i < readbacks; i++) {
+        sprintf(buffer, "%s:RMS", readbackName[i]);
+        if (-1 == match_string(buffer, ParameterNames, NParameters, EXACT_MATCH)) {
+          printf("%s doesn't match any columns in output file.\n", buffer);
+          exit(1);
+        }
+      }
+    }
+
+    SDDS_FreeStringArray(ParameterNames, NParameters);
+    free(ParameterNames);
+
+    /*check if output has Step, CAerros,Time,TimeOfDay, DayOfMonth auxilliary parameters*/
+    if (SDDS_ReadPage(&originalfile_page) != 1) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Bomb((char *)"unable to get data from existing file---try -append=recover");
+    }
+    if (SDDS_CheckParameter(&originalfile_page, (char *)"Step", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckParameter(&originalfile_page, (char *)"Time", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckParameter(&originalfile_page, (char *)"TimeOfDay", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckParameter(&originalfile_page, (char *)"DayOfMonth", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckParameter(&originalfile_page, (char *)"CAerrors", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckParameter(&originalfile_page, (char *)"PageTimeStamp", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      SDDS_Bomb((char *)"unable to get auxilliary paramters from existing file.");
+    }
+
+    if (!SDDS_GetParameter(&originalfile_page, (char *)"StartHour", &StartHour) ||
+        !SDDS_GetParameterAsDouble(&originalfile_page, (char *)"StartDayOfMonth", &StartDay) ||
+        !SDDS_GetParameter(&originalfile_page, (char *)"StartTime", &StartTime)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      exit(1);
+    }
+
+    StartDay += StartHour / 24.0;
+    if (!SDDS_InitializeAppend(&outTable, outputfile)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      exit(1);
+    }
+    getTimeBreakdown(&RunStartTime, NULL, NULL, NULL, NULL, NULL, NULL);
+    firstPage = 0;
+  } else {
+    /* start with a new file */
+    getTimeBreakdown(&StartTime, &StartDay, &StartHour, &StartJulianDay, &StartMonth, &StartYear, &TimeStamp);
+    RunStartTime = StartTime;
+    if (!SDDS_InitializeOutput(&outTable, SDDS_BINARY, 1, "Monitored devices", "Monitored devices", outputfile) ||
+        !DefineLoggingTimeParameters(&outTable) ||
+        !DefineLoggingTimeDetail(&outTable, TIMEDETAIL_EXTRAS) ||
+        0 > SDDS_DefineColumn(&outTable, "Index", NULL, NULL, NULL, NULL, SDDS_LONG, 0))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    if (indeptName) {
+      if (SDDS_DefineColumn(&outTable, indeptName, NULL, indeptUnits, NULL, NULL, SDDS_DOUBLE, 0) < 0)
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
+    SDDS_EnableFSync(&outTable);
+    if (scalars) {
+      for (i = 0; i < scalars; i++)
+        if (scalarSymbol) {
+          if (!SDDS_DefineParameter(&outTable, scalarName[i], scalarSymbol[i], scalarUnits[i], NULL, NULL, scalarDataType[i], NULL))
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+        } else {
+          if (!SDDS_DefineParameter(&outTable, scalarName[i], NULL, scalarUnits[i], NULL, NULL, scalarDataType[i], NULL))
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+        }
+    }
+    for (j = 0; j < bandwidthLimitedRMSCount; j++) {
+      for (i = 0; i < readbacks; i++) {
+        sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+        if (!SDDS_DefineSimpleParameter(&outTable, buffer, NULL, SDDS_DOUBLE))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+    }
+    if (rms) {
+      for (i = 0; i < readbacks; i++) {
+        sprintf(buffer, "%s:RMS", readbackName[i]);
+        if (!SDDS_DefineSimpleParameter(&outTable, buffer, NULL, SDDS_DOUBLE))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+    }
+
+    for (pvIndex = 0; pvIndex < readbacks; pvIndex++) {
+      if (!SDDS_DefineSimpleColumn(&outTable, readbackName[pvIndex], readbackUnits[pvIndex],
+                                   readbackDataType[pvIndex]))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
+    if (xParGiven) {
+      char buff[4][256];
+      sprintf(buff[0], "%sDimension", xParName);
+      sprintf(buff[1], "%sInterval", xParName);
+      sprintf(buff[2], "%sMinimum", xParName);
+      sprintf(buff[3], "%sMaximum", xParName);
+      if (!SDDS_DefineSimpleParameter(&outTable, "Variable1Name", NULL, SDDS_STRING) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[0], NULL, SDDS_LONG) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[1], NULL, SDDS_DOUBLE) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[2], NULL, SDDS_DOUBLE) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[3], NULL, SDDS_DOUBLE))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
+    if (yParGiven) {
+      char buff[4][256];
+      sprintf(buff[0], "%sDimension", yParName);
+      sprintf(buff[1], "%sInterval", yParName);
+      sprintf(buff[2], "%sMinimum", yParName);
+      sprintf(buff[3], "%sMaximum", yParName);
+      if (!SDDS_DefineSimpleParameter(&outTable, "Variable2Name", NULL, SDDS_STRING) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[0], NULL, SDDS_LONG) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[1], NULL, SDDS_DOUBLE) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[2], NULL, SDDS_DOUBLE) ||
+          !SDDS_DefineSimpleParameter(&outTable, buff[3], NULL, SDDS_DOUBLE))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
+    if (!SDDS_DefineSimpleParameters(&outTable, comments, commentParameter, NULL, SDDS_STRING) ||
+        !SDDS_WriteLayout(&outTable))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+  if (offsetTimeOfDay && totalTimeSet && (StartHour * 3600.0 + TotalTime - 24.0 * 3600.0) > 0.5 * TotalTime) {
+    StartHour -= 24;
+  }
+
+  for (i = 0; i < readbacks; i++) {
+    accWaveformData[i] = tmalloc(SizeOfDataType(readbackDataType[i]) * waveformLength);
+  }
+  if (logOnChange & LOGONCHANGE_WAVEFORMS) {
+    for (i = 0; i < readbacks; i++) {
+      previousWaveformData[i] = tmalloc(SizeOfDataType(readbackDataType[i]) * waveformLength);
+    }
+  }
+
+  if (bandwidthLimitedRMSCount > 0) {
+    if (!(fftIndepVariable = (double *)malloc(sizeof(double) * waveformLength)))
+      SDDS_Bomb((char *)"memory allocation failure");
+    if (!(fftDepenQuantity = (double *)malloc(sizeof(double) * waveformLength)))
+      SDDS_Bomb((char *)"memory allocation failure");
+    for (j = 0; j < waveformLength; j++) {
+      fftIndepVariable[j] = TimeInterval * j / waveformLength;
+    }
+  }
+
+  accumulate = 1;      /* number of point we are about to accumulate */
+  accumulateClear = 1; /* indicates need to clear accumulated data for waveforms */
+  expectedTime = getTimeInSecs();
+  firstPage = 1;
+  if (!totalTimeSet && accumulateNumber != 0)
+    NStep = NStep * accumulateNumber;
+  /*allocate memory for waveformData*/
+  AllocateWaveformMemory(waveformData, readbackDataType, readbacks, waveformLength);
+
+  for (Step = 0; Step < NStep; Step++) {
+    if (singleShot && (!accumulateNoQuery || accumulateClear)) {
+      if (singleShot != SS_NOPROMPT) {
+        fputs("Type <cr> to read, q to quit:\n", singleShot == SS_STDOUTPROMPT ? stdout : stderr);
+        fflush(singleShot == SS_STDOUTPROMPT ? stdout : stderr);
+      }
+      fgets(answer, ANSWER_LENGTH, stdin);
+      if (answer[0] == 'q' || answer[0] == 'Q') {
+        SDDS_Terminate(&outTable);
+        exit(0);
+      }
+    } else if (Step) {
+      if ((timeToWait = expectedTime - getTimeInSecs()) < 0)
+        timeToWait = 0;
+      if (timeToWait > 0) {
+        /* Wait inside ca_pend_event so the CA library does not disconnect us if we wait too long */
+        ca_pend_event(timeToWait);
+      } else {
+        ca_poll();
+      }
+      expectedTime += TimeInterval;
+    } else if (Step == 0) {
+      expectedTime += TimeInterval;
+    }
+    if (CondFile &&
+        !PassesConditions(CondDeviceName, CondReadMessage, CondScaleFactor,
+                          CondDataBuffer, CondLowerLimit, CondUpperLimit,
+                          CondHoldoff, conditions, CondMode, CondCHID, pendIOtime)) {
+      if (CondMode & TOUCH_OUTPUT)
+        TouchFile(outputfile);
+      if (verbose) {
+        printf("Step %ld---values failed condition test--continuing\n", Step);
+        fflush(stdout);
+      }
+      if (CondMode & RETAKE_STEP)
+        Step--;
+      continue;
+    }
+    if ((CAerrors = ReadWaveforms(readbackPV, waveformData, waveformLength, readbacks, readbackDataType, readbackCHID, pendIOtime)) != 0)
+      switch (onCAerror) {
+      case ONCAERROR_USEZERO:
+        break;
+      case ONCAERROR_SKIPPAGE:
+        continue;
+      case ONCAERROR_EXIT:
+        exit(1);
+        break;
+      }
+    if (scalarPV) {
+      if (!strScalarExist)
+        CAerrors = ReadScalarValues(scalarPV, readMessage, scalarFactor,
+                                    scalarData, scalars, scalarCHID, pendIOtime);
+      else
+        CAerrors = ReadMixScalarValues(scalarPV, readMessage, scalarFactor, scalarData, scalarDataType,
+                                       strScalarData, scalars, scalarCHID, pendIOtime);
+      if (CAerrors != 0) {
+        switch (onCAerror) {
+        case ONCAERROR_USEZERO:
+          break;
+        case ONCAERROR_SKIPPAGE:
+          continue;
+        case ONCAERROR_EXIT:
+          exit(1);
+          break;
+        }
+      }
+      if (scalarAccumData) {
+        for (i = 0; i < scalars; i++)
+          scalarAccumData[i] += scalarData[i];
+      }
+    }
+    ElapsedTime = EpochTime = getTimeInSecs();
+
+    for (i = 0; i < readbacks; i++) {
+      if (readbackOffset && readbackScale)
+        ScaleWaveformData((void *)waveformData[i], readbackDataType[i], waveformLength, readbackOffset[i], readbackScale[i]);
+    }
+    if (accumulateNumber != 0 && accumulateNumber == accumulate) {
+      for (i = 0; i < readbacks; i++) {
+        AccumulateWaveformData((void *)waveformData[i], (void *)accWaveformData[i], readbackDataType[i], waveformLength, accumulate, accumulateClear);
+        if (accumulateAction == AA_AVERAGE)
+          AveAccumulate((void *)accWaveformData[i], readbackDataType[i], waveformLength, accumulateNumber);
+      }
+    }
+
+    if ((logOnChange) && (!firstPage)) {
+      if (accumulateNumber == 0 || accumulateNumber == accumulate) {
+        j = 0;
+        if (logOnChange & LOGONCHANGE_SCALARS) {
+          if (scalarPV) {
+            if (!scalarAccumData) {
+              for (i = 0; i < scalars; i++) {
+                if (scalarData[i] != previousScalarData[i]) {
+                  j = 1;
+                  break;
+                }
+              }
+            } else {
+              for (i = 0; i < scalars; i++) {
+                if (scalarAccumData[i] != previousScalarData[i]) {
+                  j = 1;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (logOnChange & LOGONCHANGE_WAVEFORMS)
+          for (i = 0; i < readbacks; i++) {
+            if (accumulateNumber == 0) {
+              if (!j) {
+                if (CheckIfWaveformChanged((void *)waveformData[i], (void *)previousWaveformData[i], readbackDataType[i], waveformLength))
+                  j = 1;
+              }
+            } else {
+              if (!j) {
+                if (CheckIfWaveformChanged((void *)accWaveformData[i], (void *)previousWaveformData[i], readbackDataType[i], waveformLength))
+                  j = 1;
+              }
+            }
+          }
+        if (!j) {
+          if (verbose) {
+            printf("Step %ld---Not logging because nothing changed--continuing\n", Step);
+            fflush(stdout);
+          }
+          accumulateClear = 1;
+          accumulate = 1;
+          continue;
+        }
+      }
+    }
+
+    if (firstPage)
+      SDDS_CopyString(&TimeStamp, makeTimeStamp(EpochTime));
+    PageTimeStamp = makeTimeStamp(EpochTime);
+
+    ElapsedTime -= StartTime;
+    RunTime = getTimeInSecs() - RunStartTime;
+    if (enforceTimeLimit && RunTime > TotalTime) {
+      NStep = Step;
+    }
+    TimeOfDay = StartHour + ElapsedTime / 3600.0;
+    DayOfMonth = StartDay + ElapsedTime / 3600.0 / 24.0;
+    if (verbose) {
+      printf("Step %ld. Reading devices at %f seconds.\n", Step, ElapsedTime);
+      fflush(stdout);
+    }
+    if (accumulateNumber == 0 || accumulateNumber == accumulate) {
+      /* must write out data as there is no accumulation or accumualtors are full */
+      if (firstPage) {
+        if (append && outputPreviouslyExists) {
+          if (!SDDS_StartTable(&outTable, waveformLength) ||
+              !SDDS_CopyParameters(&outTable, &originalfile_page) ||
+              !SDDS_Terminate(&originalfile_page))
+            SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+        } else {
+          if (!SDDS_StartTable(&outTable, waveformLength) ||
+              (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
+                                   "TimeStamp", TimeStamp,
+                                   "StartTime", StartTime, "StartJulianDay", (short)StartJulianDay,
+                                   "YearStartTime", computeYearStartTime(StartTime),
+                                   "StartDayOfMonth", (short)StartDay, "StartHour", (float)StartHour,
+                                   "StartYear", (short)StartYear, "StartMonth",
+                                   (short)StartMonth, NULL)) ||
+              !SetCommentParameters(&outTable, commentParameter, commentText, comments))
+            SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          if (xParGiven) {
+            char buff[4][256];
+            sprintf(buff[0], "%sDimension", xParName);
+            sprintf(buff[1], "%sInterval", xParName);
+            sprintf(buff[2], "%sMinimum", xParName);
+            sprintf(buff[3], "%sMaximum", xParName);
+            if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
+                                    "Variable1Name", xParName,
+                                    buff[0], xParDim, buff[1], xParInterval, buff[2], xParMin,
+                                    buff[3], xParMax, NULL))
+              SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          }
+          if (yParGiven) {
+            char buff[4][256];
+            sprintf(buff[0], "%sDimension", yParName);
+            sprintf(buff[1], "%sInterval", yParName);
+            sprintf(buff[2], "%sMinimum", yParName);
+            sprintf(buff[3], "%sMaximum", yParName);
+            if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
+                                    "Variable2Name", yParName,
+                                    buff[0], yParDim, buff[1], yParInterval, buff[2], yParMin,
+                                    buff[3], yParMax, NULL))
+              SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          }
+        }
+      }
+      firstPage = 0;
+      if (!SDDS_StartTable(&outTable, waveformLength) ||
+          !SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
+                              "Step", Step, "Time", EpochTime, "TimeOfDay", (float)TimeOfDay,
+                              "DayOfMonth", (float)DayOfMonth, "PageTimeStamp", PageTimeStamp,
+                              "CAerrors", CAerrors, NULL))
+        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+      if (!scalarAccumData) {
+        /* no accumulation for scalars */
+        for (i = 0; i < scalars; i++) {
+          if (scalarDataType[i] == SDDS_STRING) {
+            if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
+                                    scalarName[i], strScalarData[i], NULL))
+              SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          } else {
+            if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
+                                    scalarName[i], scalarData[i], NULL))
+              SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          }
+        }
+        if (logOnChange & LOGONCHANGE_SCALARS) {
+          for (i = 0; i < scalars; i++)
+            previousScalarData[i] = scalarData[i];
+        }
+      } else {
+        /* accumulation (averaging) for scalars */
+        for (i = 0; i < scalars; i++) {
+          if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
+                                  scalarName[i], scalarAccumData[i] / accumulateNumber, NULL))
+            SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          if (logOnChange & LOGONCHANGE_SCALARS) {
+            for (i = 0; i < scalars; i++)
+              previousScalarData[i] = scalarAccumData[i];
+          }
+          scalarAccumData[i] = 0;
+        }
+      }
+      if (!SDDS_SetColumn(&outTable, SDDS_BY_NAME, index, waveformLength, "Index"))
+        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+      if (indeptName && !SDDS_SetColumn(&outTable, SDDS_BY_NAME, indeptValue, waveformLength, indeptName))
+        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+      n = 0;
+      for (i = 0; i < readbacks; i++) {
+        if (accumulateNumber == 0) {
+          /* no accumulation is being done so just set the column */
+          if (!SDDS_SetColumn(&outTable, SDDS_BY_NAME, waveformData[i],
+                              waveformLength, readbackName[i])) {
+            fprintf(stderr, "error: unable to set values for column %s\nknown columns are:",
+                    readbackName[i]);
+            for (j = 0; j < outTable.layout.n_columns; j++)
+              fprintf(stderr, "  %s\n", outTable.layout.column_definition[j].name);
+            SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          }
+          if (bandwidthLimitedRMSCount > 0) {
+            if (readbackDataType[i] == SDDS_DOUBLE) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((double *)waveformData[i])[j];
+              }
+            } else if (readbackDataType[i] == SDDS_FLOAT) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((float *)waveformData[i])[j];
+              }
+            } else if (readbackDataType[i] == SDDS_LONG) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((long *)waveformData[i])[j];
+              }
+            } else if (readbackDataType[i] == SDDS_SHORT) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((short *)waveformData[i])[j];
+              }
+            } else {
+              fprintf(stderr, "Error: sddswmonitor: the -rms option requires that waveforms be of type double, float, long or short\n");
+              return (1);
+            }
+            for (j = 0; j < bandwidthLimitedRMSCount; j++) {
+              sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+              bandwidthLimitedRMSResult = bandwidthLimitedRMS(fftIndepVariable, fftDepenQuantity, waveformLength, bandwidthLimitedRMS_MIN[j], bandwidthLimitedRMS_MAX[j], bandwidthLimitedRMS_Omega[j]);
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      bandwidthLimitedRMSResult, NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+
+              if (rmsPVPrefixFromFile) {
+                if (strlen(rmsPVPrefix[i]) > 0) {
+                  if (bandwidthLimitedRMS_noPV[j] == 0) {
+                    if (ca_put(DBR_DOUBLE, bandwidthLimitedRMS_CHID[n], &bandwidthLimitedRMSResult) != ECA_NORMAL) {
+                      fprintf(stderr, "error: setting one or more bandwidth limited RMS PVs\n");
+                      exit(1);
+                    }
+                    if (ca_pend_io(pendIOtime) != ECA_NORMAL) {
+                      fprintf(stderr, "error: setting one or more bandwidth limited RMS PVs\n");
+                      exit(1);
+                    }
+                    n++;
+                  }
+                }
+              }
+            }
+          }
+          if (rms) {
+            sprintf(buffer, "%s:RMS", readbackName[i]);
+            if (readbackDataType[i] == SDDS_DOUBLE) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValue((double *)waveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else if (readbackDataType[i] == SDDS_FLOAT) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValueFloat((float *)waveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else if (readbackDataType[i] == SDDS_LONG) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValueLong((long *)waveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else if (readbackDataType[i] == SDDS_SHORT) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValueShort((short *)waveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else {
+              fprintf(stderr, "Error: sddswmonitor: the -rms option requires that waveforms be of type double, float, long or short\n");
+              return (1);
+            }
+          }
+          if (logOnChange & LOGONCHANGE_WAVEFORMS)
+            CopyWaveformData((void *)waveformData[i], (void *)previousWaveformData[i], readbackDataType[i], waveformLength);
+        } else {
+          /* accumulation is being done, so finish it up and set the column */
+          if (!SDDS_SetColumn(&outTable, SDDS_BY_NAME, accWaveformData[i],
+                              waveformLength, readbackName[i])) {
+            fprintf(stderr, "error: unable to set values for column %s\nknown columns are:",
+                    readbackName[i]);
+            for (j = 0; j < outTable.layout.n_columns; j++)
+              fprintf(stderr, "  %s\n", outTable.layout.column_definition[j].name);
+            SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+          }
+          if (bandwidthLimitedRMSCount > 0) {
+            if (readbackDataType[i] == SDDS_DOUBLE) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((double *)accWaveformData[i])[j];
+              }
+            } else if (readbackDataType[i] == SDDS_FLOAT) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((float *)accWaveformData[i])[j];
+              }
+            } else if (readbackDataType[i] == SDDS_LONG) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((long *)accWaveformData[i])[j];
+              }
+            } else if (readbackDataType[i] == SDDS_SHORT) {
+              for (j = 0; j < waveformLength; j++) {
+                fftDepenQuantity[j] = ((short *)accWaveformData[i])[j];
+              }
+            } else {
+              fprintf(stderr, "Error: sddswmonitor: the -rms option requires that waveforms be of type double, float, long or short\n");
+              return (1);
+            }
+            for (j = 0; j < bandwidthLimitedRMSCount; j++) {
+              sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+              bandwidthLimitedRMSResult = bandwidthLimitedRMS(fftIndepVariable, fftDepenQuantity, waveformLength, bandwidthLimitedRMS_MIN[j], bandwidthLimitedRMS_MAX[j], bandwidthLimitedRMS_Omega[j]);
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      bandwidthLimitedRMSResult, NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+              if (rmsPVPrefixFromFile) {
+                if (strlen(rmsPVPrefix[i]) > 0) {
+                  if (bandwidthLimitedRMS_noPV[j] == 0) {
+                    if (ca_put(DBR_DOUBLE, bandwidthLimitedRMS_CHID[n], &bandwidthLimitedRMSResult) != ECA_NORMAL) {
+                      fprintf(stderr, "error: setting one or more bandwidth limited RMS PVs\n");
+                      exit(1);
+                    }
+                    if (ca_pend_io(pendIOtime) != ECA_NORMAL) {
+                      fprintf(stderr, "error: setting one or more bandwidth limited RMS PVs\n");
+                      exit(1);
+                    }
+                    n++;
+                  }
+                }
+              }
+            }
+          }
+          if (rms) {
+            sprintf(buffer, "%s:RMS", readbackName[i]);
+            if (readbackDataType[i] == SDDS_DOUBLE) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValue((double *)accWaveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else if (readbackDataType[i] == SDDS_FLOAT) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValueFloat((float *)accWaveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else if (readbackDataType[i] == SDDS_LONG) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValueLong((long *)accWaveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else if (readbackDataType[i] == SDDS_SHORT) {
+              if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
+                                      rmsValueShort((short *)accWaveformData[i], waveformLength), NULL))
+                SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+            } else {
+              fprintf(stderr, "Error: sddswmonitor: the -rms option requires that waveforms be of type double, float, long or short\n");
+              return (1);
+            }
+          }
+          if (logOnChange & LOGONCHANGE_WAVEFORMS)
+            CopyWaveformData((void *)accWaveformData[i], (void *)previousWaveformData[i], readbackDataType[i], waveformLength);
+        }
+      }
+      /* record fact that we need to clear the waveform accumulators on the next step */
+      accumulateClear = 1;
+      if (!SDDS_WriteTable(&outTable))
+        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+      accumulate = 1;
+    } else {
+      for (i = 0; i < readbacks; i++) {
+        AccumulateWaveformData((void *)waveformData[i], (void *)accWaveformData[i], readbackDataType[i], waveformLength, accumulate, accumulateClear);
+      }
+      accumulateClear = 0;
+      accumulate++;
+    }
+  }
+
+  if (bandwidthLimitedRMSCount > 0) {
+    free(fftIndepVariable);
+    free(fftDepenQuantity);
+  }
+
+  if (!SDDS_Terminate(&outTable))
+    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+  if (singleShot && singleShot != SS_NOPROMPT) {
+    fputs("Done.\n", singleShot == SS_STDOUTPROMPT ? stdout : stderr);
+    fflush(singleShot == SS_STDOUTPROMPT ? stdout : stderr);
+  }
+  /*clean up memeory */
+  if (accWaveformData) {
+    for (i = 0; i < readbacks; i++)
+      free(accWaveformData[i]);
+    free(accWaveformData);
+  }
+  if (logOnChange & LOGONCHANGE_WAVEFORMS) {
+    for (i = 0; i < readbacks; i++)
+      free(previousWaveformData[i]);
+    free(previousWaveformData);
+  }
+  if (TimeStamp)
+    free(TimeStamp);
+  if (index)
+    free(index);
+  FreeWaveformMemory(waveformData, readbackDataType, readbacks, waveformLength);
+
+  FreeReadMemory(scalars, scalarPV, scalarName, scalarUnits, readMessage, scalarData,
+                 scalarFactor, scalarAccumData, previousScalarData, NULL);
+  if (inputfile)
+    FreeReadMemory(readbacks, readbackPV, readbackName, readbackUnits, readbackDataTypeStrings,
+                   readbackOffset, readbackScale, NULL, NULL, readbackDataType);
+  else
+    FreeReadMemory(readbacks, NULL, NULL, readbackUnits, readbackDataTypeStrings,
+                   readbackOffset, readbackScale, NULL, NULL, readbackDataType);
+  FreeReadMemory(conditions, CondDeviceName, CondReadMessage, NULL, NULL, CondScaleFactor,
+                 CondLowerLimit, CondUpperLimit, CondHoldoff, NULL);
+
+  if (outputColumn) {
+    free((char *)outputColumn[0]); /*index column name*/
+    free((char **)outputColumn);
+    outputColumn = NULL;
+  }
+  if (indeptName)
+    free(indeptName);
+  if (indeptUnits)
+    free(indeptUnits);
+  if (indeptUnitPV)
+    free(indeptUnitPV);
+  if (indeptDeltaPV)
+    free(indeptDeltaPV);
+  if (indeptOffsetPV)
+    free(indeptOffsetPV);
+  if (indeptValue)
+    free(indeptValue);
+  if (readbackCHID)
+    free(readbackCHID);
+  if (scalarCHID)
+    free(scalarCHID);
+  if (strScalarData) {
+    for (i = 0; i < scalars; i++)
+      if (strScalarData[i])
+        free(strScalarData[i]);
+    free(strScalarData);
+  }
+  if (scalarDataType)
+    free(scalarDataType);
+  if (scalarSymbol)
+    free(scalarSymbol);
+
+  if (CondCHID)
+    free(CondCHID);
+  free_scanargs(&s_arg, argc);
+  ca_task_exit();
+  return 0;
+}
+
+/*allocate memory for waveformdata */
+void AllocateWaveformMemory(void **waveformData, int32_t *readbackDataType,
+                            long readbacks, long waveformLength) {
+  long i, j;
+
+  for (i = 0; i < readbacks; i++) {
+    if (readbackDataType[i] == SDDS_STRING) {
+      ((char ***)waveformData)[i] = (char **)tmalloc(sizeof(char *) * readbacks);
+      for (j = 0; j < waveformLength; j++)
+        ((char **)waveformData[i])[j] = (char *)tmalloc(sizeof(char) * 40);
+    } else {
+      waveformData[i] = tmalloc(SizeOfDataType(readbackDataType[i]) * waveformLength);
+    }
+  }
+}
+
+void FreeWaveformMemory(void **waveformData, int32_t *readbackDataType,
+                        long readbacks, long waveformLength) {
+  long i, j;
+
+  if (waveformData) {
+    for (i = 0; i < readbacks; i++) {
+      if (readbackDataType[i] == SDDS_STRING) {
+        for (j = 0; j < waveformLength; j++)
+          free(((char **)waveformData[i])[j]);
+        free((char **)waveformData[i]);
+      } else
+        free(waveformData[i]);
+    }
+    free(waveformData);
+  }
+}
+void FreeReadMemory(long variables, char **pvs, char **names, char **units, char **typeStrings,
+                    double *data1, double *data2, double *data3, double *data4, int32_t *dataType) {
+  long i;
+  if (!variables)
+    return;
+  if (data1)
+    free(data1);
+  if (data2)
+    free(data2);
+  if (data3)
+    free(data3);
+  if (data4)
+    free(data4);
+  if (dataType)
+    free(dataType);
+  if (!pvs && !names && !units && !typeStrings)
+    return;
+  for (i = 0; i < variables; i++) {
+    if (names && names[i]) {
+      free(names[i]);
+      names[i] = NULL;
+    }
+    if (units && units[i])
+      free(units[i]);
+    if (typeStrings && typeStrings[i])
+      free(typeStrings[i]);
+  }
+  if (names)
+    free(names);
+  if (units)
+    free(units);
+  if (typeStrings)
+    free(typeStrings);
+  names = units = typeStrings = NULL;
+  if (pvs) {
+    for (i = 0; i < variables; i++) {
+      if (pvs[i]) {
+        free(pvs[i]);
+        pvs[i] = NULL;
+      }
+    }
+    free(pvs);
+    pvs = NULL;
+  }
+}
+
+void ScaleWaveformData(void *data, long dataType, long length, double offset, double scale) {
+  switch (dataType) {
+  case SDDS_SHORT:
+    while (length--)
+      ((short *)data)[length] = (((short *)data)[length] - offset) * scale;
+    break;
+  case SDDS_LONG:
+    while (length--)
+      ((int32_t *)data)[length] = (((int32_t *)data)[length] - offset) * scale;
+    break;
+  case SDDS_FLOAT:
+    while (length--)
+      ((float *)data)[length] = (((float *)data)[length] - offset) * scale;
+    break;
+  case SDDS_DOUBLE:
+    while (length--)
+      ((double *)data)[length] = (((double *)data)[length] - offset) * scale;
+    break;
+  case SDDS_CHARACTER:
+    if (!(offset == 0 && scale == 1))
+      bomb((char *)"Scaling waveform data not supported for characters.", NULL);
+    break;
+  case SDDS_STRING:
+    if (!(offset == 0 && scale == 1))
+      bomb((char *)"Scaling waveform data not supported for strings.", NULL);
+    break;
+  default:
+    bomb((char *)"Unsupported type passed to ScaleWaveformData.", NULL);
+    break;
+  }
+}
+
+void CopyWaveformData(void *data, void *previousData, long dataType, long length) {
+  switch (dataType) {
+  case SDDS_SHORT:
+    while (length--)
+      ((short *)previousData)[length] = ((short *)data)[length];
+    break;
+  case SDDS_LONG:
+    while (length--)
+      ((int32_t *)previousData)[length] = ((int32_t *)data)[length];
+    break;
+  case SDDS_FLOAT:
+    while (length--)
+      ((float *)previousData)[length] = ((float *)data)[length];
+    break;
+  case SDDS_DOUBLE:
+    while (length--)
+      ((double *)previousData)[length] = ((double *)data)[length];
+    break;
+  default:
+    bomb((char *)"Unsupported type passed to CopyWaveformData.", NULL);
+    break;
+  }
+}
+
+long CheckIfWaveformChanged(void *data, void *previousData, long dataType, long length) {
+  switch (dataType) {
+  case SDDS_SHORT:
+    while (length--) {
+      if (((short *)previousData)[length] != ((short *)data)[length])
+        return 1;
+    }
+    break;
+  case SDDS_LONG:
+    while (length--) {
+      if (((int32_t *)previousData)[length] != ((int32_t *)data)[length])
+        return 1;
+    }
+    break;
+  case SDDS_FLOAT:
+    while (length--) {
+      if (((float *)previousData)[length] != ((float *)data)[length])
+        return 1;
+    }
+    break;
+  case SDDS_DOUBLE:
+    while (length--) {
+      if (((double *)previousData)[length] != ((double *)data)[length])
+        return 1;
+    }
+    break;
+  default:
+    bomb((char *)"Unsupported type passed to CheckIfWaveformChanged.", NULL);
+    break;
+  }
+  return 0;
+}
+
+void AccumulateWaveformData(void *data, void *accData, long dataType, long length, long accumulate, long accumulateClear) {
+  long length2;
+  length2 = length;
+  if (accumulateClear == 1) {
+    switch (dataType) {
+    case SDDS_SHORT:
+      while (length2--)
+        ((short *)accData)[length2] = 0;
+      break;
+    case SDDS_LONG:
+      while (length2--)
+        ((int32_t *)accData)[length2] = 0;
+      break;
+    case SDDS_FLOAT:
+      while (length2--)
+        ((float *)accData)[length2] = 0.0;
+      break;
+    case SDDS_DOUBLE:
+      while (length2--)
+        ((double *)accData)[length2] = 0.0;
+      break;
+    default:
+      break;
+    }
+  }
+  switch (dataType) {
+  case SDDS_SHORT:
+    while (length--)
+      ((short *)accData)[length] = ((short *)accData)[length] + ((short *)data)[length];
+    break;
+  case SDDS_LONG:
+    while (length--)
+      ((int32_t *)accData)[length] = ((int32_t *)accData)[length] + ((int32_t *)data)[length];
+    break;
+  case SDDS_FLOAT:
+    while (length--)
+      ((float *)accData)[length] = ((float *)accData)[length] + ((float *)data)[length];
+    break;
+  case SDDS_DOUBLE:
+    while (length--)
+      ((double *)accData)[length] = ((double *)accData)[length] + ((double *)data)[length];
+    break;
+  default:
+    bomb((char *)"Unsupported type passed to AccumulateWaveformData.", NULL);
+    break;
+  }
+}
+
+void AveAccumulate(void *accData, long dataType, long length, long number) {
+  switch (dataType) {
+  case SDDS_SHORT:
+    while (length--)
+      ((short *)accData)[length] = (((short *)accData)[length]) / number;
+    break;
+  case SDDS_LONG:
+    while (length--)
+      ((int32_t *)accData)[length] = (((int32_t *)accData)[length]) / number;
+    break;
+  case SDDS_FLOAT:
+    while (length--)
+      ((float *)accData)[length] = (((float *)accData)[length]) / number;
+    break;
+  case SDDS_DOUBLE:
+    while (length--)
+      ((double *)accData)[length] = (((double *)accData)[length]) / number;
+    break;
+  default:
+    bomb((char *)"Unsupported type passed to AveAccumulate.", NULL);
+    break;
+  }
+}
+
+double rmsValueFloat(float *y, long n) {
+  long i;
+  double sum;
+
+  if (!n)
+    return (0.0);
+  for (i = sum = 0; i < n; i++)
+    sum += y[i] * y[i];
+  return (sqrt(sum / n));
+}
+
+double rmsValueLong(long *y, long n) {
+  long i;
+  double sum;
+
+  if (!n)
+    return (0.0);
+  for (i = sum = 0; i < n; i++)
+    sum += y[i] * y[i];
+  return (sqrt(sum / n));
+}
+
+double rmsValueShort(short *y, long n) {
+  long i;
+  double sum;
+
+  if (!n)
+    return (0.0);
+  for (i = sum = 0; i < n; i++)
+    sum += y[i] * y[i];
+  return (sqrt(sum / n));
+}
+
+double bandwidthLimitedRMS(double *tdata, double *data, long rows, double minFreq, double maxFreq, short scaleByOneOverOmegaSquared) {
+  long n_freq, i, max;
+  double length, *real_imag, df, *fdata, *psd, *psdInteg, result;
+
+  length = ((double)rows) * (tdata[rows - 1] - tdata[0]) / ((double)rows - 1.0);
+
+  real_imag = (double *)tmalloc(sizeof(double) * (2 * rows + 2));
+  for (i = 0; i < rows; i++) {
+    real_imag[2 * i] = data[i];
+    real_imag[2 * i + 1] = 0;
+  }
+  complexFFT(real_imag, rows, 0);
+  n_freq = rows / 2 + 1;
+
+  df = 1.0 / length;
+
+  fdata = (double *)tmalloc(sizeof(double) * n_freq);
+  psd = (double *)tmalloc(sizeof(*psd) * n_freq);
+  psdInteg = (double *)tmalloc(sizeof(*psdInteg) * n_freq);
+  psdInteg[0] = 0;
+  max = 0;
+
+  for (i = 0; i < n_freq; i++) {
+    fdata[i] = i * df;
+    psd[i] = (sqr(real_imag[2 * i]) + sqr(real_imag[2 * i + 1])) / df;
+    if (i != 0 && !(i == (n_freq - 1) && rows % 2 == 0)) {
+      real_imag[2 * i] *= 2;
+      real_imag[2 * i + 1] *= 2;
+      psd[i] *= 2;
+    }
+    if ((fdata[i] >= minFreq) && (fdata[i] <= maxFreq)) {
+      if (scaleByOneOverOmegaSquared) {
+        psd[i] = psd[i] / (pow((fdata[i] * PI * 2), 4));
+      }
+      if (i > 0) {
+        psdInteg[i] = psdInteg[i - 1] + (psd[i - 1] + psd[i]) * df / 2.;
+        max = i;
+      }
+    } else {
+      psd[i] = 0;
+      psdInteg[i] = 0;
+    }
+  }
+
+  /*RMS mean taking the square root of cumulative power*/
+  result = sqrt(psdInteg[max]);
+
+  free(psdInteg);
+  free(fdata);
+  free(psd);
+  free(real_imag);
+  return (result);
+}

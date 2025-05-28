@@ -40,6 +40,7 @@ DIRS += $(SDDS_REPO)/mdbcommon
 DIRS += oagca
 DIRS += runcontrol
 DIRS += logDaemon
+DIRS += SDDSepics
 
 .PHONY: all $(DIRS) clean distclean
 
@@ -81,9 +82,14 @@ runcontrol: oagca
 	$(MAKE) -C $@
 logDaemon: runcontrol
 	$(MAKE) -C $@
+SDDSepics: logDaemon
+	$(MAKE) -C $@
 
 clean:
 	$(MAKE) -C oagca clean
+	$(MAKE) -C runcontrol clean
+	$(MAKE) -C logDaemon clean
+	$(MAKE) -C SDDSepics clean
 
 distclean: clean
 	rm -rf bin/$(OS)-$(ARCH)
