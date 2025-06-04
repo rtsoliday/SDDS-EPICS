@@ -7667,7 +7667,7 @@ long isSorted(int32_t *index, long n) {
   return 1;
 }
 
-#if defined(SOLARIS) || defined(LINUX) || defined(_WIN32) || defined(vxWorks) || defined(darwin)
+#if defined(linux) || defined(_WIN32) || defined(vxWorks) || defined(__APPLE__)
 int Compare2Longs(const void *vindex1, const void *vindex2)
 #else
 long Compare2Longs(const void *vindex1, const void *vindex2)

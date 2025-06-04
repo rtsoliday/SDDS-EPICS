@@ -2107,14 +2107,11 @@ long epicsSecondsWestOfUTC(void) {
 #  if defined(_WIN32)
   return (_timezone);
 #  endif
-#  if defined(SOLARIS) || defined(_AIX)
-  return (timezone);
-#  endif
 #  if defined(__APPLE__)
   tm = localtime(&clock);
   return (-1 * tm->tm_gmtoff);
 #  endif
-#  if !defined(_WIN32) && !defined(SOLARIS) && !defined(__APPLE__) && !defined(_AIX)
+#  if !defined(_WIN32) && !defined(__APPLE__)
   return (__timezone);
 #  endif
 }
