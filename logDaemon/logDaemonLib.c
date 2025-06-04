@@ -300,7 +300,7 @@ int logString(LOGHANDLE handle, char *valueList) {
   snprintf(time_buf, sizeof(time_buf), "%ld~%ld", t.tv_sec, (long)(t.tv_nsec / 1000));
 #else
   gettimeofday(&t, NULL);
-  snprintf(time_buf, sizeof(time_buf), "%ld~%d", t.tv_sec, t.tv_usec);
+  snprintf(time_buf, sizeof(time_buf), "%ld~%ld", t.tv_sec, (long)t.tv_usec);
 #endif
 
   /* This byte differentiates log message from a broadcast for server */
@@ -400,7 +400,7 @@ int logArguments(LOGHANDLE handle, ...) {
   snprintf(time_buf, sizeof(time_buf), "%ld~%ld", t.tv_sec, (long)(t.tv_nsec / 1000));
 #else
   gettimeofday(&t, NULL);
-  snprintf(time_buf, sizeof(time_buf), "%ld~%d", t.tv_sec, t.tv_usec);
+  snprintf(time_buf, sizeof(time_buf), "%ld~%ld", t.tv_sec, (long)t.tv_usec);
 #endif
 
   /* This byte differentiates log message from a broadcast for server */
@@ -491,7 +491,7 @@ int logArray(LOGHANDLE handle, char *valueArray[]) {
   snprintf(time_buf, sizeof(time_buf), "%ld~%ld", t.tv_sec, (long)(t.tv_nsec / 1000));
 #else
   gettimeofday(&t, NULL);
-  snprintf(time_buf, sizeof(time_buf), "%ld~%d", t.tv_sec, t.tv_usec);
+  snprintf(time_buf, sizeof(time_buf), "%ld~%ld", t.tv_sec, (long)t.tv_usec);
 #endif
 
   /* This byte differentiates log message from a broadcast for server */
