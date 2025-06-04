@@ -127,13 +127,6 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-#ifdef SOLARIS
-#  ifdef _X86_
-  /* This is ment to be temporary until logMessage is fixed on solaris-x86 */
-  exit(0);
-#  endif
-#endif
-
   strNode = (STRNODE *)ellFirst(&(tagList));
   tagString[0] = '\0';
   while (strNode != NULL) {

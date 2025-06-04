@@ -115,11 +115,6 @@ DEVELOPMENT CENTER AT ARGONNE NATIONAL LABORATORY (708-252-2000).
 #  include <sys/ioctl.h>
 #endif
 
-#ifdef SOLARIS
-#  define BSD_COMP
-#  include <sys/ioctl.h>
-#endif
-
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -136,15 +131,10 @@ static int BSgetBroadcastAddr(int soc, struct sockaddr *sin);
 /* child reaper for the server mode */
 /* -------------------------------- */
 static void get_child(int sig) {
-#  ifdef SOLARIS
-  while (waitpid(-1, (int *)NULL, WNOHANG) > 0)
-    ;
-#  else
-  while (wait3((int *)NULL, WNOHANG, (struct rusage *)NULL) > 0)
-    ;
-#  endif
+while (wait3((int *)NULL, WNOHANG, (struct rusage *)NULL) > 0)
+  ;
 
-#  if defined linux || defined SOLARIS
+#  if defined linux
   signal(SIGCHLD, get_child); /* for reaping children */
 #  endif
 }
@@ -177,7 +167,7 @@ int BSmakeServer() {
     perror("Cannot fork");
     return -1;
   case 0: /* child */
-#  if defined linux || defined SOLARIS || __APPLE__
+#  if defined linux || __APPLE__
     setpgrp();
 #  else
     setpgrp(0, 0);

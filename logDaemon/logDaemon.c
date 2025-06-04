@@ -618,7 +618,7 @@ void logDaemonStartNewLog() {
 void logDaemonRequestReadConfig(int sig) {
   requestReadConfig = 1;
 
-#if defined linux || defined SOLARIS
+#if defined linux
   signal(SIGHUP, logDaemonRequestReadConfig);
 #endif
 }
