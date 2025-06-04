@@ -288,7 +288,7 @@ static char *USAGE1 = (char *)"sddsglitchlogger <input> <outputDirectory>|<outpu
  [-runControlPV=string=<string>,pingTimeout=<value>\n\
  [-runControlDescription=string=<string>]\n\n";
 static char *USAGE2 = (char *)"<input>            the name of the input file\n\
-                   the input file contains ControlName, ReabbackName, ReadbackUnits \n\
+                   the input file contains ControlName, ReadbackName, ReadbackUnits \n\
                    Provider, ExpectNumeric, ExpectFieldType and ExpectElements \n\
                    columns and it has following parameters: \n\
                    1. OutputRootname(string) -- the rootname for output file that log PVs \n\
@@ -524,7 +524,7 @@ int main(int argc, char **argv) {
   alarmTrigRequest = NULL;
 
   PVA_OVERALL pva1, pva2, pva3, pva4, pva5;
-  PVA_OVERALL *pvaTrigger, *pvaGlitch, *pvaInhibit, *pvaCond, *pvaAlarm;
+  PVA_OVERALL *pvaTrigger=NULL, *pvaGlitch=NULL, *pvaInhibit, *pvaCond=NULL, *pvaAlarm;
   LOGGER_DATA logger;
 
   //Initialize variable values
@@ -586,7 +586,7 @@ int main(int argc, char **argv) {
         char buf[100] = {0};
         char command[100];
         FILE *p;
-        sprintf(command, "ps -o fname -p %ld | tail -1", pid);
+        snprintf(command, sizeof(command), "ps -o fname -p %ld | tail -1", pid);
         ;
         p = popen(command, "r");
         if (NULL == p) {
@@ -926,8 +926,8 @@ int main(int argc, char **argv) {
           /*  trigBeforeCount[i]=0; */
           logger.tableStarted[i] = 0;
           logger.datasets[i].triggerMode = 0;
-          sprintf(logger.temp, "%s%s", logger.outputDir, logger.datasets[i].OutputRootname);
-          sprintf(logger.temp, "%s", MakeDailyGenerationFilename(logger.temp, 4, (char *)".", 0));
+          snprintf(logger.temp, sizeof(logger.temp), "%s%s", logger.outputDir, logger.datasets[i].OutputRootname);
+          snprintf(logger.temp, sizeof(logger.temp), "%s", MakeDailyGenerationFilename(logger.temp, 4, (char *)".", 0));
           logger.datasets[i].outputFile = (char *)tmalloc(sizeof(char) * (strlen(logger.temp) + 1));
           strcpy(logger.datasets[i].outputFile, logger.temp);
 #if DEBUG
@@ -2248,8 +2248,8 @@ int ReadInputFiles(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, lo
     logger->datasets[i].triggerMode = 0;
     logger->datasets[i].pva = new PVA_OVERALL;
 
-    sprintf(logger->temp, "%s%s", logger->outputDir, logger->datasets[i].OutputRootname);
-    sprintf(logger->temp, "%s", MakeDailyGenerationFilename(logger->temp, 4, (char *)".", 0));
+    snprintf(logger->temp, sizeof(logger->temp), "%s%s", logger->outputDir, logger->datasets[i].OutputRootname);
+    snprintf(logger->temp, sizeof(logger->temp), "%s", MakeDailyGenerationFilename(logger->temp, 4, (char *)".", 0));
     logger->datasets[i].outputFile = (char *)tmalloc(sizeof(char) * (strlen(logger->temp) + 1));
     strcpy(logger->datasets[i].outputFile, logger->temp);
     if (logger->verbose)
@@ -2924,8 +2924,8 @@ long DefineGlitchParameters(LOGGER_DATA *logger, ALARMTRIG_REQUEST *alarmTrigReq
   char buffer[1024], descrip[1024];
   for (i = 0; i < logger->glitchChannels; i++) {
     if (logger->glitchRequest[i].dataIndex == dataIndex) {
-      sprintf(buffer, "%sGlitched%ld", logger->glitchRequest[i].controlName, i);
-      sprintf(descrip, "sddsmonitor glitch status of %s", logger->glitchRequest[i].controlName);
+      snprintf(buffer, sizeof(buffer), "%sGlitched%ld", logger->glitchRequest[i].controlName, i);
+      snprintf(descrip, sizeof(descrip), "sddsmonitor glitch status of %s", logger->glitchRequest[i].controlName);
       if ((logger->glitchRequest[i].parameterIndex =
            SDDS_DefineParameter((logger->datasets + dataIndex)->dataset, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL)) < 0)
         return 0;
@@ -2933,8 +2933,8 @@ long DefineGlitchParameters(LOGGER_DATA *logger, ALARMTRIG_REQUEST *alarmTrigReq
   }
   for (i = 0; i < logger->triggerChannels; i++) {
     if (logger->triggerRequest[i].dataIndex == dataIndex) {
-      sprintf(buffer, "%sTriggered%ld", logger->triggerRequest[i].controlName, i);
-      sprintf(descrip, "sddsmonitor trigger status of %s%ld", logger->triggerRequest[i].controlName, i);
+      snprintf(buffer, sizeof(buffer), "%sTriggered%ld", logger->triggerRequest[i].controlName, i);
+      snprintf(descrip, sizeof(descrip), "sddsmonitor trigger status of %s%ld", logger->triggerRequest[i].controlName, i);
       if ((logger->triggerRequest[i].parameterIndex =
            SDDS_DefineParameter((logger->datasets + dataIndex)->dataset, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL)) < 0)
         return 0;
@@ -2943,11 +2943,11 @@ long DefineGlitchParameters(LOGGER_DATA *logger, ALARMTRIG_REQUEST *alarmTrigReq
 
   for (i = 0; i < alarmTrigRequests; i++) {
     if (alarmTrigRequest[i].dataIndex == dataIndex) {
-      sprintf(descrip, "sddsmonitor alarm-trigger status of %s",
+      snprintf(descrip, sizeof(descrip), "sddsmonitor alarm-trigger status of %s",
               alarmTrigRequest[i].controlName);
       j = 0;
       while (1) {
-        sprintf(buffer, "%sAlarmTrigger%ld", alarmTrigRequest[i].controlName, j);
+        snprintf(buffer, sizeof(buffer), "%sAlarmTrigger%ld", alarmTrigRequest[i].controlName, j);
         if (SDDS_GetParameterIndex((logger->datasets + dataIndex)->dataset, buffer) >= 0)
           j++;
         else
@@ -2956,8 +2956,8 @@ long DefineGlitchParameters(LOGGER_DATA *logger, ALARMTRIG_REQUEST *alarmTrigReq
       if ((alarmTrigRequest[i].alarmParamIndex =
            SDDS_DefineParameter((logger->datasets + dataIndex)->dataset, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL)) < 0)
         return 0;
-      sprintf(buffer, "%sAlarmSeverity%ld", alarmTrigRequest[i].controlName, j);
-      sprintf(descrip, "EPICS alarm severity of %s",
+      snprintf(buffer, sizeof(buffer), "%sAlarmSeverity%ld", alarmTrigRequest[i].controlName, j);
+      snprintf(descrip, sizeof(descrip), "EPICS alarm severity of %s",
               alarmTrigRequest[i].controlName);
       if ((alarmTrigRequest[i].severityParamIndex =
            SDDS_DefineParameter((logger->datasets + dataIndex)->dataset, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL)) < 0)

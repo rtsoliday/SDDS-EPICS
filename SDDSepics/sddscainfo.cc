@@ -43,6 +43,7 @@
 #include <iostream>
 #include <cerrno>
 #include <csignal>
+#include <string>
 
 #include <cadef.h>
 #include <epicsVersion.h>
@@ -709,21 +710,14 @@ int ConnectPVs(PVA_OVERALL *pva, PVA_OVERALL *pva_ca, PROG_DATA *prog_data) {
 }
 
 int compare_strings(const char *str1, const char *str2) {
-  // Check if str1 starts with '{' and ends with '}'
-  if (str1[0] == '{' && str1[strlen(str1) - 1] == '}') {
-    // Create a new string to hold str1 without the brackets
-    char newStr1[strlen(str1) - 1];
-        
-    // Copy the characters from str1 to newStr1, excluding the brackets
-    strncpy(newStr1, str1 + 1, strlen(str1) - 2);
-    newStr1[strlen(str1) - 2] = '\0'; // Null-terminate the new string
+    // Handle brace-enclosed strings without variable-length arrays
+    if (str1[0] == '{' && str1[strlen(str1) - 1] == '}') {
+        std::string temp(str1 + 1, strlen(str1) - 2);
+        return temp.compare(str2);
+    }
 
-    // Compare newStr1 with str2
-    return strcmp(newStr1, str2);
-  }
-
-  // If str1 does not have brackets, just compare it directly with str2
-  return strcmp(str1, str2);
+    // Fallback to direct C-string comparison
+    return strcmp(str1, str2);
 }
 
 int GetPVinfo(PVA_OVERALL *pva_pva, PVA_OVERALL *pva_ca, PROG_DATA *prog_data) {

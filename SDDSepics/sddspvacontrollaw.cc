@@ -2406,7 +2406,7 @@ void setupInputFile(CORRECTION *correction) {
 
     for (subscript = 0; subscript <= aorder; subscript++) {
       acoef[subscript] = NULL;
-      sprintf(coefNameString, "a%ld", subscript);
+      snprintf(coefNameString, 4, "a%ld", subscript);
       if (!SDDS_FindColumn(&coefPage, FIND_NUMERIC_TYPE, coefNameString, NULL)) {
         fprintf(stderr, "warning: column %s doesn't exist\n", coefNameString);
         /*set it to be zero if not provided */
@@ -2417,7 +2417,7 @@ void setupInputFile(CORRECTION *correction) {
     }
     for (subscript = 0; subscript <= border; subscript++) {
       bcoef[subscript] = NULL;
-      sprintf(coefNameString, "b%ld", subscript);
+      snprintf(coefNameString, 4, "b%ld", subscript);
       if (!SDDS_FindColumn(&coefPage, FIND_NUMERIC_TYPE, coefNameString, NULL)) {
         fprintf(stderr, "warning: column %s doesn't exist\n", coefNameString);
         /*set it to be zero if not provided */
@@ -2646,7 +2646,7 @@ void setupCompensationFiles(CORRECTION *compensation) {
       exit(1);
     }
     for (subscript = 0; subscript <= aorder; subscript++) {
-      sprintf(coefNameString, "a%ld", subscript);
+      snprintf(coefNameString, 4, "a%ld", subscript);
       if (!SDDS_FindColumn(&coefPage, FIND_NUMERIC_TYPE, coefNameString, NULL)) {
         fprintf(stderr, "warning: column %s doesn't exist\n", coefNameString);
       } else {
@@ -2675,7 +2675,7 @@ void setupCompensationFiles(CORRECTION *compensation) {
     compensation->bCoef = B;
     m_zero(B);
     for (subscript = 0; subscript <= border; subscript++) {
-      sprintf(coefNameString, "b%ld", subscript);
+      snprintf(coefNameString, 4, "b%ld", subscript);
       if (!SDDS_FindColumn(&coefPage, FIND_NUMERIC_TYPE, coefNameString, NULL)) {
         fprintf(stderr, "warning: column %s doesn't exist\n", coefNameString);
       } else {
@@ -3317,7 +3317,7 @@ void setupGlitchFile(SDDS_TABLE *glitchPage, GLITCH_PARAM *glitchParam, LOOP_PAR
         FreeEverything();
         exit(1);
       }
-      sprintf(buffer, "%sDelta", control->symbolicName[i]);
+      snprintf(buffer, strlen(control->symbolicName[i]) + 6, "%sDelta", control->symbolicName[i]);
       if (0 > SDDS_DefineColumn(glitchPage, buffer, NULL, NULL, NULL, NULL, SDDS_FLOAT, 0)) {
         free(buffer);
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -3335,7 +3335,7 @@ void setupGlitchFile(SDDS_TABLE *glitchPage, GLITCH_PARAM *glitchParam, LOOP_PAR
           FreeEverything();
           exit(1);
         }
-        sprintf(buffer, "%sAuxil", readbackComp->symbolicName[i]);
+        snprintf(buffer, strlen(readbackComp->symbolicName[i]) + 6, "%sAuxil", readbackComp->symbolicName[i]);
         if (0 > SDDS_DefineColumn(glitchPage, buffer, NULL, NULL, NULL, NULL, SDDS_FLOAT, 0)) {
           free(buffer);
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -3350,7 +3350,7 @@ void setupGlitchFile(SDDS_TABLE *glitchPage, GLITCH_PARAM *glitchParam, LOOP_PAR
           FreeEverything();
           exit(1);
         }
-        sprintf(buffer, "%sAuxil", controlComp->symbolicName[i]);
+        snprintf(buffer, strlen(controlComp->symbolicName[i]) + 6, "%sAuxil", controlComp->symbolicName[i]);
         if (0 > SDDS_DefineColumn(glitchPage, buffer, NULL, NULL, NULL, NULL, SDDS_FLOAT, 0)) {
           free(buffer);
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -3363,7 +3363,7 @@ void setupGlitchFile(SDDS_TABLE *glitchPage, GLITCH_PARAM *glitchParam, LOOP_PAR
           FreeEverything();
           exit(1);
         }
-        sprintf(buffer, "%sAuxilDelta", controlComp->symbolicName[i]);
+        snprintf(buffer, strlen(controlComp->symbolicName[i]) + 11, "%sAuxilDelta", controlComp->symbolicName[i]);
         if (0 > SDDS_DefineColumn(glitchPage, buffer, NULL, NULL, NULL, NULL, SDDS_FLOAT, 0)) {
           free(buffer);
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -3626,7 +3626,7 @@ long getReadbackValues(CONTROL_NAME *readback, AVERAGE_PARAM *aveParam, LOOP_PAR
     }
     readbackStats->largest = readback->value[0][largestIndex];
     readbackStats->largestName = readback->controlName[largestIndex];
-    sprintf(readbackStats->msg, "Readback devices        %10.3g %10.3g"
+    snprintf(readbackStats->msg, 256, "Readback devices        %10.3g %10.3g"
                                 " %10.3g %10.3g (%s)",
             readbackStats->ave, readbackStats->RMS, readbackStats->MAD, readbackStats->largest, readbackStats->largestName);
   }
@@ -3645,7 +3645,7 @@ long getReadbackValues(CONTROL_NAME *readback, AVERAGE_PARAM *aveParam, LOOP_PAR
     }
     readbackDeltaStats->largest = readback->delta[0][largestIndex];
     readbackDeltaStats->largestName = readback->controlName[largestIndex];
-    sprintf(readbackDeltaStats->msg, "Readback device deltas %10.3g %10.3g"
+    snprintf(readbackDeltaStats->msg, 256, "Readback device deltas %10.3g %10.3g"
                                      " %10.3g %10.3g (%s)",
             readbackDeltaStats->ave, readbackDeltaStats->RMS, readbackDeltaStats->MAD, readbackDeltaStats->largest, readbackDeltaStats->largestName);
   }
@@ -3761,7 +3761,7 @@ void adjustReadbacks(CONTROL_NAME *readback, LIMITS *limits, DESPIKE_PARAM *desp
     readbackAdjustedStats->MAD = meanAbsoluteDeviation(readback->value[0], readback->n);
     readbackAdjustedStats->largest = readback->value[0][largest_index];
     readbackAdjustedStats->largestName = readback->controlName[largest_index];
-    sprintf(readbackAdjustedStats->msg, "Adjusted readback devs  %10.3g %10.3g"
+    snprintf(readbackAdjustedStats->msg, 256, "Adjusted readback devs  %10.3g %10.3g"
                                         " %10.3g %10.3g (%s)\n",
             readbackAdjustedStats->ave, readbackAdjustedStats->RMS, readbackAdjustedStats->MAD, readbackAdjustedStats->largest, readbackAdjustedStats->largestName);
   } else {
@@ -4253,7 +4253,7 @@ void calcControlDeltaStats(CONTROL_NAME *control, STATS *controlStats, STATS *co
   }
   controlStats->largest = control->value[0][largestIndex];
   controlStats->largestName = control->controlName[largestIndex];
-  sprintf(controlStats->msg, "Control devices         %10.3g %10.3g"
+  snprintf(controlStats->msg, sizeof(controlStats->msg), "Control devices         %10.3g %10.3g"
                              " %10.3g %10.3g (%s)",
           controlStats->ave, controlStats->RMS, controlStats->MAD, controlStats->largest, controlStats->largestName);
 
@@ -4269,7 +4269,7 @@ void calcControlDeltaStats(CONTROL_NAME *control, STATS *controlStats, STATS *co
   }
   controlDeltaStats->largest = control->delta[0][largestIndex];
   controlDeltaStats->largestName = control->controlName[largestIndex];
-  sprintf(controlDeltaStats->msg, "Control device deltas   %10.3g %10.3g"
+  snprintf(controlDeltaStats->msg, sizeof(controlDeltaStats->msg), "Control device deltas   %10.3g %10.3g"
                                   " %10.3g %10.3g (%s)",
           controlDeltaStats->ave, controlDeltaStats->RMS, controlDeltaStats->MAD, controlDeltaStats->largest, controlDeltaStats->largestName);
   return;
@@ -4517,7 +4517,7 @@ void writeToGlitchFile(GLITCH_PARAM *glitchParam, SDDS_TABLE *glitchPage, long *
         FreeEverything();
         exit(1);
       }
-      sprintf(buffer, "%sDelta", control->symbolicName[i]);
+      snprintf(buffer, strlen(control->symbolicName[i]) + 6, "%sDelta", control->symbolicName[i]);
       if (!SDDS_SetRowValues(glitchPage, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, *glitchRow, control->symbolicName[i], (float)control->value[index][i], buffer, (float)control->delta[index][i], NULL)) {
         free(buffer);
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -4533,7 +4533,7 @@ void writeToGlitchFile(GLITCH_PARAM *glitchParam, SDDS_TABLE *glitchPage, long *
           FreeEverything();
           exit(1);
         }
-        sprintf(buffer, "%sAuxil", readbackComp->symbolicName[i]);
+        snprintf(buffer, strlen(readbackComp->symbolicName[i]) + 6, "%sAuxil", readbackComp->symbolicName[i]);
         if (!SDDS_SetRowValues(glitchPage, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, *glitchRow, buffer, (float)readbackComp->value[index][i], NULL)) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
           FreeEverything();
@@ -4546,13 +4546,13 @@ void writeToGlitchFile(GLITCH_PARAM *glitchParam, SDDS_TABLE *glitchPage, long *
           FreeEverything();
           exit(1);
         }
-        sprintf(buffer, "%sAuxil", controlComp->symbolicName[i]);
+        snprintf(buffer, strlen(controlComp->symbolicName[i]) + 6, "%sAuxil", controlComp->symbolicName[i]);
         if ((buffer2 = (char*)malloc(sizeof(char) * (strlen(controlComp->symbolicName[i]) + 11))) == NULL) {
           fprintf(stderr, "memory allocation failure\n");
           FreeEverything();
           exit(1);
         }
-        sprintf(buffer2, "%sAuxilDelta", controlComp->symbolicName[i]);
+        snprintf(buffer2, strlen(controlComp->symbolicName[i]) + 11, "%sAuxilDelta", controlComp->symbolicName[i]);
         if (!SDDS_SetRowValues(glitchPage, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, *glitchRow, buffer, (float)controlComp->value[index][i], buffer2, (float)controlComp->delta[index][i], NULL)) {
           free(buffer);
           free(buffer2);
@@ -4579,7 +4579,7 @@ void writeToGlitchFile(GLITCH_PARAM *glitchParam, SDDS_TABLE *glitchPage, long *
 
 void serverExit(int sig) {
   char s[1024];
-  sprintf(s, "rm %s", sddscontrollawGlobal->pidFile);
+  snprintf(s, sizeof(s), "rm %s", sddscontrollawGlobal->pidFile);
   system(s);
   fprintf(stderr, "Program terminated by signal.\n");
   if (sddscontrollawGlobal->loopParam.launcherPV[0]) {
@@ -4628,7 +4628,7 @@ void exitIfServerRunning() {
     fprintf(stderr, "Old server pid was %ld\n", pid);
     fprintf(stderr, "Removing old server PID file\n");
 #  endif
-    sprintf(s, "rm %s", sddscontrollawGlobal->pidFile);
+    snprintf(s, sizeof(s), "rm %s", sddscontrollawGlobal->pidFile);
     if (system(s)) {
       fprintf(stderr, "Problem with %s.\n", s);
     }
@@ -4661,7 +4661,7 @@ void setupServer() {
   }
   fprintf(fp, "%ld\n", pid);
   fclose(fp);
-  sprintf(s, "chmod g+w %s", sddscontrollawGlobal->pidFile);
+  snprintf(s, sizeof(s), "chmod g+w %s", sddscontrollawGlobal->pidFile);
   system(s);
 
 #    ifndef _WIN32

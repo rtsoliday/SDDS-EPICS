@@ -125,7 +125,7 @@ typedef struct
   char **Provider, **ExpectFieldType;
   char *ExpectNumeric;
   int32_t *ExpectElements;
-  long variables, validCount; /*variables is the total number of pv, validCount is the number of valid pvs */
+  long variables; /*variables is the total number of pv*/
   long *rowIndex;             /* rowIndex is the row position of PV in the input file */
   char **IndirectName;        /*same as ControlName for vectors, or "-" for scalar pvs */
   char **ValueString;         /*the value of pvs are saved as string, input/output column is ValueString */
@@ -787,7 +787,7 @@ long UpdateDataInfo(CONTROL_NAME *control_name, PVA_OVERALL *pva, long variables
   }
   if (!control_name->variables) {
     /*the first time of reading input file, where the data is empty */
-    control_name->variables = control_name->validCount = variables;
+    control_name->variables = variables;
     control_name->ControlName = (char **)malloc(sizeof(*(control_name->ControlName)) * variables);
     control_name->Provider = (char **)malloc(sizeof(*(control_name->Provider)) * variables);
     control_name->ExpectFieldType = (char **)malloc(sizeof(*(control_name->ExpectFieldType)) * variables);
@@ -935,20 +935,20 @@ char *getWaveformFileName(CONTROL_NAME *control_name, char *outputFile, char *wa
   if (control_name->oneWaveformFile) {
     if (control_name->waveformRootname) {
       if (control_name->waveformDir)
-        sprintf(vectorOut, "%s/%s.waveformDir", control_name->waveformDir, control_name->waveformRootname);
+        snprintf(vectorOut, sizeof(vectorOut), "%s/%s.waveformDir", control_name->waveformDir, control_name->waveformRootname);
       else
-        sprintf(vectorOut, "%s.waveform", control_name->waveformRootname);
+        snprintf(vectorOut, sizeof(vectorOut), "%s.waveform", control_name->waveformRootname);
     } else if (outputFile)
-      sprintf(vectorOut, "%s.waveform", outputFile);
+      snprintf(vectorOut, sizeof(vectorOut), "%s.waveform", outputFile);
   } else {
     if (control_name->waveformRootname) {
       if (control_name->waveformDir)
-        sprintf(vectorOut, "%s/%s.%s", control_name->waveformDir,
+        snprintf(vectorOut, sizeof(vectorOut), "%s/%s.%s", control_name->waveformDir,
                 control_name->waveformRootname, waveformPV);
       else
-        sprintf(vectorOut, "%s.%s", control_name->waveformRootname, waveformPV);
+        snprintf(vectorOut, sizeof(vectorOut), "%s.%s", control_name->waveformRootname, waveformPV);
     } else if (outputFile)
-      sprintf(vectorOut, "%s.%s", outputFile, waveformPV);
+      snprintf(vectorOut, sizeof(vectorOut), "%s.%s", outputFile, waveformPV);
   }
   SDDS_CopyString(&f1, vectorOut);
   f2 = f1;
@@ -1030,9 +1030,9 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
     ExpectElements = (int32_t *)malloc(sizeof(int32_t) * variables);
     for (i = 0; i < variables; i++) {
       Provider[i] = (char *)malloc(sizeof(char) * 3);
-      sprintf(Provider[i], "ca");
+      snprintf(Provider[i], 3, "ca");
       ExpectFieldType[i] = (char *)malloc(sizeof(char) * 7);
-      sprintf(ExpectFieldType[i], "scalar");
+      snprintf(ExpectFieldType[i], 7, "scalar");
       ExpectNumeric[i] = 'y';
       ExpectElements[i] = 1;
     }
@@ -1208,7 +1208,7 @@ long WriteOutputLayout(SDDS_DATASET *outTable, SDDS_DATASET *inTable) {
 }
 
 long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
-  long j, variables, validCount, newCount = 0, i;
+  long j, variables, newCount = 0, i;
   char **ControlName, **Provider;
   CHANNEL_INFO *channelInfo;
   double starttime, endtime;
@@ -1219,13 +1219,11 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
   channelInfo = control_name->channelInfo;
 
   variables = control_name->variables;
-  validCount = 0;
 
   if (!control_name->channelInfo)
     SDDS_Bomb((char *)"Memory has not been allocated for channelID.\n");
   for (j = 0; j < variables; j++) {
     if (control_name->valid[j]) {
-      validCount++;
       if (control_name->newFlag[j]) {
         channelInfo[j].flag = 0;
         newCount++;
@@ -1300,7 +1298,7 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
         control_name->ExpectElements[i] = control_name->channelInfo[i].length;
         free(control_name->ExpectFieldType[i]);
         control_name->ExpectFieldType[i] = (char *)malloc(sizeof(char) * 12);
-        sprintf(control_name->ExpectFieldType[i], "scalarArray");
+        snprintf(control_name->ExpectFieldType[i], 12, "scalarArray");
       } else {
         fprintf(stderr, (char *)"Error: %s has %ld elements. Expected %d\n", control_name->ControlName[i], control_name->channelInfo[i].length, control_name->ExpectElements[i]);
         exit(1);
@@ -1452,9 +1450,9 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
   CHANNEL_INFO *channelInfo;
   /* note that this waveform file assume that all contained waveforms have the same type either numeric or string */
   if (control_name->waveformDir)
-    sprintf(vectorFile, "%s/%s%s", control_name->waveformDir, control_name->waveformRootname, control_name->waveformExtension);
+    snprintf(vectorFile, sizeof(vectorFile), "%s/%s%s", control_name->waveformDir, control_name->waveformRootname, control_name->waveformExtension);
   else
-    sprintf(vectorFile, "%s%s", control_name->waveformRootname, control_name->waveformExtension);
+    snprintf(vectorFile, sizeof(vectorFile), "%s%s", control_name->waveformRootname, control_name->waveformExtension);
 
   if (!SDDS_InitializeInput(&inSet, vectorFile)) {
     fprintf(stderr, "The waveform file %s does not exist.\n", vectorFile);
@@ -1550,9 +1548,9 @@ long GetWaveformValueFromFile(char *directory, char *rootname, char *waveformPV,
     return 0;
   }
   if (directory)
-    sprintf(vectorFile, "%s/%s.%s", directory, rootname, waveformPV);
+    snprintf(vectorFile, sizeof(vectorFile), "%s/%s.%s", directory, rootname, waveformPV);
   else
-    sprintf(vectorFile, "%s.%s", rootname, waveformPV);
+    snprintf(vectorFile, sizeof(vectorFile), "%s.%s", rootname, waveformPV);
   if (!SDDS_InitializeInput(&inSet, vectorFile)) {
     fprintf(stderr, "The waveform file %s does not exist (the waveformPV name may be wrong!).\n", vectorFile);
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -1839,15 +1837,15 @@ long InputfileModified(char *inputFile, char *prevInput, struct stat *input_stat
 }
 
 long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *pvaDescriptPV, SDDS_DATASET *outTable, char *inputFile, char *outputFile, long firstTime, long daemon) {
-  long i, rowcount = 0;
+  long i;
   char vectorOut[1024];
   char *TimeStamp, groupID[256], effectID[256];
   double RunStartTime, endTime;
   CHANNEL_INFO *channelInfo;
 
   channelInfo = control_name->channelInfo;
-  sprintf(groupID, "%ld", control_name->group_id);
-  sprintf(effectID, "%ld", control_name->effective_uid);
+  snprintf(groupID, sizeof(groupID), "%ld", control_name->group_id);
+  snprintf(effectID, sizeof(effectID), "%ld", control_name->effective_uid);
 
   if (control_name->descriptPV)
     read_char_waveform(&control_name->description, pvaDescriptPV);
@@ -1935,12 +1933,12 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
         switch (channelInfo[i].dataType) {
         case SDDS_DOUBLE:
           if (channelInfo[i].isEnumPV)
-            sprintf(control_name->ValueString[i], "%.0f", control_name->doubleValue[i]);
+            snprintf(control_name->ValueString[i], 250, "%.0f", control_name->doubleValue[i]);
           else
-            sprintf(control_name->ValueString[i], "%.15le", control_name->doubleValue[i]);
+            snprintf(control_name->ValueString[i], 250, "%.15le", control_name->doubleValue[i]);
           break;
         case SDDS_FLOAT:
-          sprintf(control_name->ValueString[i], "%.6le", control_name->doubleValue[i]);
+          snprintf(control_name->ValueString[i], 250, "%.6le", control_name->doubleValue[i]);
           break;
         case SDDS_LONG64:
         case SDDS_ULONG64:
@@ -1949,7 +1947,7 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
         case SDDS_SHORT:
         case SDDS_USHORT:
         case SDDS_CHARACTER:
-          sprintf(control_name->ValueString[i], "%.0f", control_name->doubleValue[i]);
+          snprintf(control_name->ValueString[i], 250, "%.0f", control_name->doubleValue[i]);
           break;
         case SDDS_STRING:
           if (strchr(control_name->ValueString[i], ' ') != NULL) {
@@ -1969,7 +1967,6 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
     }
   }
 
-  rowcount = 0;
   getTimeBreakdown(&endTime, NULL, NULL, NULL, NULL, NULL, NULL);
   if (!SDDS_SetParameters(outTable, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, "ElapsedTimeToSave", endTime - RunStartTime,
                           "ElapsedTimeToCAConnect", control_name->ca_connect_time,
@@ -2005,12 +2002,12 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
         }
         if (control_name->waveformRootname) {
           if (control_name->waveformDir)
-            sprintf(vectorOut, "%s/%s.%s", control_name->waveformDir,
+            snprintf(vectorOut, sizeof(vectorOut), "%s/%s.%s", control_name->waveformDir,
                     control_name->waveformRootname, control_name->IndirectName[i]);
           else
-            sprintf(vectorOut, "%s.%s", control_name->waveformRootname, control_name->IndirectName[i]);
+            snprintf(vectorOut, sizeof(vectorOut), "%s.%s", control_name->waveformRootname, control_name->IndirectName[i]);
         } else if (outputFile)
-          sprintf(vectorOut, "%s.%s", outputFile, control_name->IndirectName[i]);
+          snprintf(vectorOut, sizeof(vectorOut), "%s.%s", outputFile, control_name->IndirectName[i]);
         if (control_name->logFp && !control_name->oneWaveformFile)
           fprintf(control_name->logFp, "writing to %s vector file.\n", vectorOut);
 
@@ -2020,8 +2017,6 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
                           TimeStamp, RunStartTime);
         }
       }
-
-      rowcount++;
     }
   }
   if (control_name->hasWaveform && control_name->oneWaveformFile) {
@@ -2217,11 +2212,11 @@ long WriteOneVectorFile(CONTROL_NAME *control_name, char *outputFile, char *Time
 
   if (control_name->waveformRootname) {
     if (control_name->waveformDir)
-      sprintf(vectorOut, "%s/%s.waveformDir", control_name->waveformDir, control_name->waveformRootname);
+      snprintf(vectorOut, sizeof(vectorOut), "%s/%s.waveformDir", control_name->waveformDir, control_name->waveformRootname);
     else
-      sprintf(vectorOut, "%s.waveform", control_name->waveformRootname);
+      snprintf(vectorOut, sizeof(vectorOut), "%s.waveform", control_name->waveformRootname);
   } else if (outputFile)
-    sprintf(vectorOut, "%s.waveform", outputFile);
+    snprintf(vectorOut, sizeof(vectorOut), "%s.waveform", outputFile);
 
   if (control_name->logFp)
     fprintf(control_name->logFp, "writing to %s vector file.\n", outputFile);
@@ -2415,7 +2410,7 @@ void GetUserInformation(CONTROL_NAME *control_name) {
   effective_uid = geteuid();
 
   if ((pp = getpwuid(effective_uid))) {
-    sprintf(control_name->userID, "%s (%s)", pp->pw_name, pp->pw_gecos);
+    snprintf(control_name->userID, sizeof(control_name->userID), "%s (%s)", pp->pw_name, pp->pw_gecos);
     control_name->effective_uid = pp->pw_uid;
     control_name->group_id = pp->pw_gid;
   } else {
@@ -2423,7 +2418,7 @@ void GetUserInformation(CONTROL_NAME *control_name) {
     exit(1);
   }
 #else
-  sprintf(control_name->userID, "");
+  snprintf(control_name->userID, sizeof(control_name->userID), "");
   control_name->effective_uid = 0;
   control_name->group_id = 0;
 #endif

@@ -154,7 +154,7 @@ int ReadArguments(int argc, char **argv, MONITOR_DATA *monitor) {
   monitor->executionTime = DBL_MAX;
 
   rcParam.Desc = (char *)realloc(rcParam.Desc, 41 * sizeof(char));
-  sprintf(rcParam.Desc, "sddspermissive session");
+  snprintf(rcParam.Desc, 41, "sddspermissive session");
 
   SDDS_RegisterProgramName("sddspermissive");
 
@@ -311,7 +311,7 @@ int ReadInput(MONITOR_DATA *monitor) {
         }
       } else {
         monitor->page[page-1].MaskProvider = (char*)malloc(sizeof(char) * 5);
-        sprintf(monitor->page[page-1].MaskProvider, "ca");
+        snprintf(monitor->page[page-1].MaskProvider, 5, "ca");
       }
       if (strlen(monitor->page[page-1].MaskControlName) > 0) {
         //monitor->page[page-1].pvCount++;
@@ -332,7 +332,7 @@ int ReadInput(MONITOR_DATA *monitor) {
       monitor->page[page-1].Provider = (char **)malloc(sizeof(char *) * input.n_rows);
       for (i = 0; i < input.n_rows; i++) {
         monitor->page[page-1].Provider[i] = (char *)malloc(sizeof(char) * 3);
-        sprintf(monitor->page[page-1].Provider[i], "ca");
+        snprintf(monitor->page[page-1].Provider[i], 3, "ca");
       }
     } else {
       if (!(monitor->page[page-1].Provider = (char **)SDDS_GetColumn(&input, (char *)"Provider"))) {
@@ -430,7 +430,7 @@ public:
   virtual void event(epics::pvaClient::PvaClientMonitorPtr const &monitor) {
     if (firstPV[0] == 0) {
       //This is the first monitored PV to change in the .01 second interval. It may or may not be out of range.
-      sprintf(firstPV, "%s", monitor->getPvaClientChannel()->getChannelName().c_str());
+      snprintf(firstPV, sizeof(firstPV), "%s", monitor->getPvaClientChannel()->getChannelName().c_str());
     }
   }
 };

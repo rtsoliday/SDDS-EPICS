@@ -1142,7 +1142,7 @@ int setupOutputFile(SDDS_DATASET *outTable, char *outputFile, short singleColumn
                     long scalars, char **scalarPV, long *scalarDataType, char **scalarUnits, char **scalarSymbol,
                     char *xParName, char *yParName, long device, long comments, char **commentParameter) {
   long i;
-  int32_t digits, pIndex = 0;
+  int32_t digits;
   char buffer[256], col_name[256];
 
   if (!SDDS_InitializeOutput(outTable, SDDS_BINARY, 1, "Area Dector", "Area Dector Devices", outputFile) ||
@@ -1157,7 +1157,6 @@ int setupOutputFile(SDDS_DATASET *outTable, char *outputFile, short singleColumn
   SDDS_EnableFSync(outTable);
   if (scalars) {
     for (i = 0; i < scalars; i++) {
-      pIndex++;
       if (scalarSymbol) {
         if (!SDDS_DefineParameter(outTable, scalarPV[i], scalarSymbol[i], scalarUnits[i], NULL, NULL, scalarDataType[i], NULL))
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);

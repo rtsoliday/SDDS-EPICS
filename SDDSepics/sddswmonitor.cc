@@ -961,7 +961,7 @@ int main(int argc, char **argv) {
     for (i = 0; i < readbacks; i++) {
       for (j = 0; j < bandwidthLimitedRMSCount; j++) {
         if (strlen(rmsPVPrefix[i]) > 0) {
-          sprintf(buffer, "%s:%ldHzBW", rmsPVPrefix[i], (long)(bandwidthLimitedRMS_MAX[j]));
+          snprintf(buffer, sizeof(buffer), "%s:%ldHzBW", rmsPVPrefix[i], (long)(bandwidthLimitedRMS_MAX[j]));
           if (bandwidthLimitedRMS_noPV[j] == 0) {
             if (ca_search(buffer, &(bandwidthLimitedRMS_CHID[n])) != ECA_NORMAL) {
               fprintf(stderr, "error: problem doing search for %s\n", buffer);
@@ -1101,7 +1101,7 @@ int main(int argc, char **argv) {
       if (recover) {
         char commandBuffer[1024];
         fprintf(stderr, "warning: file %s is corrupted--reconstructing before appending--some data may be lost.\n", outputfile);
-        sprintf(commandBuffer, "sddsconvert -recover -nowarnings %s", outputfile);
+        snprintf(commandBuffer, sizeof(commandBuffer), "sddsconvert -recover -nowarnings %s", outputfile);
         system(commandBuffer);
       } else {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1157,7 +1157,7 @@ int main(int argc, char **argv) {
     }
     for (j = 0; j < bandwidthLimitedRMSCount; j++) {
       for (i = 0; i < readbacks; i++) {
-        sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+        snprintf(buffer, sizeof(buffer), "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
         if (-1 == match_string(buffer, ParameterNames, NParameters, EXACT_MATCH)) {
           printf("%s doesn't match any columns in output file.\n", buffer);
           exit(1);
@@ -1166,7 +1166,7 @@ int main(int argc, char **argv) {
     }
     if (rms) {
       for (i = 0; i < readbacks; i++) {
-        sprintf(buffer, "%s:RMS", readbackName[i]);
+        snprintf(buffer, sizeof(buffer), "%s:RMS", readbackName[i]);
         if (-1 == match_string(buffer, ParameterNames, NParameters, EXACT_MATCH)) {
           printf("%s doesn't match any columns in output file.\n", buffer);
           exit(1);
@@ -1232,14 +1232,14 @@ int main(int argc, char **argv) {
     }
     for (j = 0; j < bandwidthLimitedRMSCount; j++) {
       for (i = 0; i < readbacks; i++) {
-        sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+        snprintf(buffer, sizeof(buffer), "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
         if (!SDDS_DefineSimpleParameter(&outTable, buffer, NULL, SDDS_DOUBLE))
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       }
     }
     if (rms) {
       for (i = 0; i < readbacks; i++) {
-        sprintf(buffer, "%s:RMS", readbackName[i]);
+        snprintf(buffer, sizeof(buffer), "%s:RMS", readbackName[i]);
         if (!SDDS_DefineSimpleParameter(&outTable, buffer, NULL, SDDS_DOUBLE))
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       }
@@ -1252,10 +1252,10 @@ int main(int argc, char **argv) {
     }
     if (xParGiven) {
       char buff[4][256];
-      sprintf(buff[0], "%sDimension", xParName);
-      sprintf(buff[1], "%sInterval", xParName);
-      sprintf(buff[2], "%sMinimum", xParName);
-      sprintf(buff[3], "%sMaximum", xParName);
+      snprintf(buff[0], sizeof(buff[0]), "%sDimension", xParName);
+      snprintf(buff[1], sizeof(buff[1]), "%sInterval", xParName);
+      snprintf(buff[2], sizeof(buff[2]), "%sMinimum", xParName);
+      snprintf(buff[3], sizeof(buff[3]), "%sMaximum", xParName);
       if (!SDDS_DefineSimpleParameter(&outTable, "Variable1Name", NULL, SDDS_STRING) ||
           !SDDS_DefineSimpleParameter(&outTable, buff[0], NULL, SDDS_LONG) ||
           !SDDS_DefineSimpleParameter(&outTable, buff[1], NULL, SDDS_DOUBLE) ||
@@ -1265,10 +1265,10 @@ int main(int argc, char **argv) {
     }
     if (yParGiven) {
       char buff[4][256];
-      sprintf(buff[0], "%sDimension", yParName);
-      sprintf(buff[1], "%sInterval", yParName);
-      sprintf(buff[2], "%sMinimum", yParName);
-      sprintf(buff[3], "%sMaximum", yParName);
+      snprintf(buff[0], sizeof(buff[0]), "%sDimension", yParName);
+      snprintf(buff[1], sizeof(buff[1]), "%sInterval", yParName);
+      snprintf(buff[2], sizeof(buff[2]), "%sMinimum", yParName);
+      snprintf(buff[3], sizeof(buff[3]), "%sMaximum", yParName);
       if (!SDDS_DefineSimpleParameter(&outTable, "Variable2Name", NULL, SDDS_STRING) ||
           !SDDS_DefineSimpleParameter(&outTable, buff[0], NULL, SDDS_LONG) ||
           !SDDS_DefineSimpleParameter(&outTable, buff[1], NULL, SDDS_DOUBLE) ||
@@ -1482,10 +1482,10 @@ int main(int argc, char **argv) {
             SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
           if (xParGiven) {
             char buff[4][256];
-            sprintf(buff[0], "%sDimension", xParName);
-            sprintf(buff[1], "%sInterval", xParName);
-            sprintf(buff[2], "%sMinimum", xParName);
-            sprintf(buff[3], "%sMaximum", xParName);
+            snprintf(buff[0], sizeof(buff[0]), "%sDimension", xParName);
+            snprintf(buff[1], sizeof(buff[1]), "%sInterval", xParName);
+            snprintf(buff[2], sizeof(buff[2]), "%sMinimum", xParName);
+            snprintf(buff[3], sizeof(buff[3]), "%sMaximum", xParName);
             if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
                                     "Variable1Name", xParName,
                                     buff[0], xParDim, buff[1], xParInterval, buff[2], xParMin,
@@ -1494,10 +1494,10 @@ int main(int argc, char **argv) {
           }
           if (yParGiven) {
             char buff[4][256];
-            sprintf(buff[0], "%sDimension", yParName);
-            sprintf(buff[1], "%sInterval", yParName);
-            sprintf(buff[2], "%sMinimum", yParName);
-            sprintf(buff[3], "%sMaximum", yParName);
+            snprintf(buff[0], sizeof(buff[0]), "%sDimension", yParName);
+            snprintf(buff[1], sizeof(buff[1]), "%sInterval", yParName);
+            snprintf(buff[2], sizeof(buff[2]), "%sMinimum", yParName);
+            snprintf(buff[3], sizeof(buff[3]), "%sMaximum", yParName);
             if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE,
                                     "Variable2Name", yParName,
                                     buff[0], yParDim, buff[1], yParInterval, buff[2], yParMin,
@@ -1581,7 +1581,7 @@ int main(int argc, char **argv) {
               return (1);
             }
             for (j = 0; j < bandwidthLimitedRMSCount; j++) {
-              sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+              snprintf(buffer, sizeof(buffer), "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
               bandwidthLimitedRMSResult = bandwidthLimitedRMS(fftIndepVariable, fftDepenQuantity, waveformLength, bandwidthLimitedRMS_MIN[j], bandwidthLimitedRMS_MAX[j], bandwidthLimitedRMS_Omega[j]);
               if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
                                       bandwidthLimitedRMSResult, NULL))
@@ -1605,7 +1605,7 @@ int main(int argc, char **argv) {
             }
           }
           if (rms) {
-            sprintf(buffer, "%s:RMS", readbackName[i]);
+            snprintf(buffer, sizeof(buffer), "%s:RMS", readbackName[i]);
             if (readbackDataType[i] == SDDS_DOUBLE) {
               if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
                                       rmsValue((double *)waveformData[i], waveformLength), NULL))
@@ -1661,7 +1661,7 @@ int main(int argc, char **argv) {
               return (1);
             }
             for (j = 0; j < bandwidthLimitedRMSCount; j++) {
-              sprintf(buffer, "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+              snprintf(buffer, sizeof(buffer), "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
               bandwidthLimitedRMSResult = bandwidthLimitedRMS(fftIndepVariable, fftDepenQuantity, waveformLength, bandwidthLimitedRMS_MIN[j], bandwidthLimitedRMS_MAX[j], bandwidthLimitedRMS_Omega[j]);
               if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
                                       bandwidthLimitedRMSResult, NULL))
@@ -1684,7 +1684,7 @@ int main(int argc, char **argv) {
             }
           }
           if (rms) {
-            sprintf(buffer, "%s:RMS", readbackName[i]);
+            snprintf(buffer, sizeof(buffer), "%s:RMS", readbackName[i]);
             if (readbackDataType[i] == SDDS_DOUBLE) {
               if (!SDDS_SetParameters(&outTable, SDDS_BY_NAME | SDDS_PASS_BY_VALUE, buffer,
                                       rmsValue((double *)accWaveformData[i], waveformLength), NULL))

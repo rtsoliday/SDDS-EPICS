@@ -341,7 +341,7 @@ typedef struct
 typedef struct
 {
   char **ControlName;
-  long variables, validCount; /*variables is the total number of pv, validCount is the number of valid pvs */
+  long variables; /*variables is the total number of pv */
   long *rowIndex;             /* rowIndex is the row position of PV in the input file */
   char **IndirectName;        /*same as ControlName for vectors, or "-" for scalar pvs */
   char **ValueString;         /*the value of pvs are saved as string, input/output column is ValueString */
@@ -969,7 +969,7 @@ long UpdateDataInfo(CONTROL_NAME *control_name, long variables, char **ControlNa
   }
   if (!control_name->variables) {
     /*the first time of reading input file, where the data is empty */
-    control_name->variables = control_name->validCount = variables;
+    control_name->variables = variables;
     control_name->ControlName = (char **)malloc(sizeof(*(control_name->ControlName)) * variables);
     control_name->IndirectName = (char **)malloc(sizeof(*(control_name->IndirectName)) * variables);
     control_name->ValueString = (char **)malloc(sizeof(*(control_name->ValueString)) * variables);
@@ -1352,7 +1352,7 @@ long WriteOutputLayout(SDDS_DATASET *outTable, SDDS_DATASET *inTable) {
 }
 
 long SetupCAConnection(CONTROL_NAME *control_name) {
-  long j, variables, validCount, newCount = 0, i;
+  long j, variables, newCount = 0, i;
   char **ControlName;
   CHANNEL_INFO *channelInfo;
   double starttime, endtime;
@@ -1361,14 +1361,12 @@ long SetupCAConnection(CONTROL_NAME *control_name) {
   channelInfo = control_name->channelInfo;
 
   variables = control_name->variables;
-  validCount = 0;
 
   if (!control_name->channelInfo)
     SDDS_Bomb("Memory has not been allocated for channelID.\n");
   getTimeBreakdown(&starttime, NULL, NULL, NULL, NULL, NULL, NULL);
   for (j = 0; j < variables; j++) {
     if (control_name->valid[j]) {
-      validCount++;
       if (control_name->newFlag[j]) {
         channelInfo[j].flag = 0;
         if (ca_search(ControlName[j], &(channelInfo[j].channelID)) != ECA_NORMAL) {
@@ -2051,7 +2049,7 @@ long ReadPVValue(CONTROL_NAME *control_name, long add, char *outputFile) {
 
 
 long ReadDataAndSave(CONTROL_NAME *control_name, SDDS_DATASET *outTable, char *inputFile, char *outputFile, long firstTime) {
-  long i, rowcount = 0, j;
+  long i, j;
   char vectorOut[1024];
   char *TimeStamp, groupID[256], effectID[256];
   double RunStartTime, endTime;
@@ -2098,7 +2096,6 @@ long ReadDataAndSave(CONTROL_NAME *control_name, SDDS_DATASET *outTable, char *i
       !SDDS_SetParameters(outTable, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, "SnapshotDescription", control_name->description, NULL))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   
-  rowcount = 0;
   getTimeBreakdown(&endTime, NULL, NULL, NULL, NULL, NULL, NULL);
   if (!SDDS_SetParameters(outTable, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, "ElapsedTimeToSave", endTime - RunStartTime,
                           "ElapsedTimeToCAConnect", control_name->ca_connect_time,
@@ -2142,8 +2139,6 @@ long ReadDataAndSave(CONTROL_NAME *control_name, SDDS_DATASET *outTable, char *i
                           TimeStamp, RunStartTime);
         }
       }
-
-      rowcount++;
     }
   }
   if (control_name->hasWaveform && control_name->oneWaveformFile) {

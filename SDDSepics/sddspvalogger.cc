@@ -14,6 +14,11 @@
 #ifdef USE_RUNCONTROL
 #  include <libruncontrol.h>
 #endif
+#ifdef _WIN32
+#  include <winsock.h>
+#else
+#  include <unistd.h>
+#endif
 
 #define NTimeUnitNames 4
 static char *TimeUnitNames[NTimeUnitNames] = {
@@ -779,7 +784,7 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
         replace_string(buffer, logger->readbackName[j], (char *)"/", (char *)"+");
         len = strlen(logger->onePv_OutputDirectory) + strlen(buffer) + 6;
         logger->onePv_outputfileOrig[j] = (char *)malloc(sizeof(char) * len);
-        sprintf(logger->onePv_outputfileOrig[j], "%s/%s", logger->onePv_OutputDirectory, buffer);
+        snprintf(logger->onePv_outputfileOrig[j], len, "%s/%s", logger->onePv_OutputDirectory, buffer);
         if (access(logger->onePv_outputfileOrig[j], F_OK) != 0) {
           mode_t mode;
           mode = umask(0);
@@ -790,7 +795,7 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
             return (1);
           }
         }
-        sprintf(logger->onePv_outputfileOrig[j], "%s/%s/log", logger->onePv_OutputDirectory, buffer);
+        snprintf(logger->onePv_outputfileOrig[j], len, "%s/%s/log", logger->onePv_OutputDirectory, buffer);
       }
       if (logger->generations) {
         if (logger->mallocNeeded == false) {
@@ -1073,8 +1078,8 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
     }
     for (j = 0; j < logger->glitch_pvCount; j++) {
       if (logger->glitch_TransitionThresholdDefined && logger->glitch_TransitionDirectionDefined && (logger->glitch_transitionDirection[j] != 0)) {
-        sprintf(buffer, "%sTriggered%ld", logger->glitch_controlName[j], numTrig);
-        sprintf(descrip, "trigger status of %s%ld", logger->glitch_controlName[j], numTrig);
+        snprintf(buffer, sizeof(buffer), "%sTriggered%ld", logger->glitch_controlName[j], numTrig);
+        snprintf(descrip, sizeof(descrip), "trigger status of %s%ld", logger->glitch_controlName[j], numTrig);
         logger->glitch_triggerIndex[j] = SDDS_DefineParameter(sdds, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL);
         if (logger->glitch_triggerIndex[j] < 0) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1087,15 +1092,15 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
       if (((logger->glitch_NoAlarmDefined) && (logger->glitch_noAlarm[j] != 0)) ||
           ((logger->glitch_MinorAlarmDefined) && (logger->glitch_minorAlarm[j] != 0)) ||
           ((logger->glitch_MajorAlarmDefined) && (logger->glitch_majorAlarm[j] != 0))) {
-        sprintf(buffer, "%sAlarmTrigger%ld", logger->glitch_controlName[j], numAlarm);
-        sprintf(descrip, "alarm-trigger status of %s%ld", logger->glitch_controlName[j], numAlarm);
+        snprintf(buffer, sizeof(buffer), "%sAlarmTrigger%ld", logger->glitch_controlName[j], numAlarm);
+        snprintf(descrip, sizeof(descrip), "alarm-trigger status of %s%ld", logger->glitch_controlName[j], numAlarm);
         logger->glitch_alarmIndex[j] = SDDS_DefineParameter(sdds, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL);
         if (logger->glitch_alarmIndex[j] < 0) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
           return (1);
         }
-        sprintf(buffer, "%sAlarmSeverity%ld", logger->glitch_controlName[j], numAlarm);
-        sprintf(descrip, "EPICS alarm severity of %s", logger->glitch_controlName[j]);
+        snprintf(buffer, sizeof(buffer), "%sAlarmSeverity%ld", logger->glitch_controlName[j], numAlarm);
+        snprintf(descrip, sizeof(descrip), "EPICS alarm severity of %s", logger->glitch_controlName[j]);
         logger->glitch_alarmSeverityIndex[j] = SDDS_DefineParameter(sdds, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL);
         if (logger->glitch_alarmSeverityIndex[j] < 0) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1107,8 +1112,8 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
     for (j = 0; j < logger->glitch_pvCount; j++) {
       if (logger->glitch_GlitchThresholdDefined && (logger->glitch_glitchThreshold[j] != 0) &&
           logger->glitch_GlitchBaselineSamplesDefined && (logger->glitch_glitchBaselineSamples[j] > 0)) {
-        sprintf(buffer, "%sGlitched%ld", logger->glitch_controlName[j], numGlitch);
-        sprintf(descrip, "glitch status of %s", logger->glitch_controlName[j]);
+        snprintf(buffer, sizeof(buffer), "%sGlitched%ld", logger->glitch_controlName[j], numGlitch);
+        snprintf(descrip, sizeof(descrip), "glitch status of %s", logger->glitch_controlName[j]);
         logger->glitch_glitchIndex[j] = SDDS_DefineParameter(sdds, buffer, NULL, NULL, descrip, NULL, SDDS_SHORT, NULL);
         if (logger->glitch_glitchIndex[j] < 0) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -3056,7 +3061,7 @@ long PingRunControl(PVA_OVERALL *pva, long mode, long step) {
       break;
     }
     if (mode == 1) {
-      sprintf(rcParam.message, "Initializing %d percent", (int)(100 * step / pva->numPVs));
+      snprintf(rcParam.message, sizeof(rcParam.message), "Initializing %d percent", (int)(100 * step / pva->numPVs));
     } else {
       strcpy(rcParam.message, "Running");
     }
