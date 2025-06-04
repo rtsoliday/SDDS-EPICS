@@ -112,14 +112,14 @@ int runControlInitPVA(PVA_OVERALL *pva, char *pv, char *desc, float timeout, cha
 
   /* Collect host, pid, username, and time information */
 #if defined(_WIN32) || defined(__APPLE__)
-  sprintf(username, "unknown");
+  snprintf(username, sizeof(username), "%s", "unknown");
 #else
   cuserid(username);
 #endif
   gethostname(hostname, 255);
 
   (*rcInfo).myPid = getpid();
-  sprintf(pid, "%d", getpid());
+  snprintf(pid, sizeof(pid), "%d", getpid());
 
   time(&calt);
   strcpy(localtimestring, ctime(&calt));

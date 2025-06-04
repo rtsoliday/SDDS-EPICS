@@ -638,7 +638,7 @@ void logDaemonRequestReadConfig(int sig) {
  * RETURNS  : nothing
  ************************************************************************/
 void logDaemonReadConfig() {
-  int i, j, k; /* counters for strtok loops */
+  int i, k; /* counters for strtok loops */
   char *p, *r; /* ptrs for strtok loops */
   char *string;
   FILE *config_fp;                  /* configuration file */
@@ -685,7 +685,7 @@ void logDaemonReadConfig() {
   } else {
     Debug("scanning sourceId->tagList database\n", NULL);
     /* for each line in file */
-    for (j = 0; (fgets(buffer, sizeof(buffer), sourceId_fp) != NULL);) {
+    for (; (fgets(buffer, sizeof(buffer), sourceId_fp) != NULL);) {
       /* for each field in line */
       for (i = 0, p = strtok(buffer, "~"); p; p = strtok(NULL, "~\n"), i++) {
         if (i == 0) {
@@ -711,14 +711,13 @@ void logDaemonReadConfig() {
   } else {
     Debug("Reading config file\n", 0);
 
-    for (j = 0; (fgets(buffer, sizeof(buffer), config_fp) != NULL);) {
+    for (; (fgets(buffer, sizeof(buffer), config_fp) != NULL);) {
       switch (buffer[0]) { /* skip all empty lines and comments */
       case '#':
       case '\n':
       case '\t':
         continue;
       }
-      Debug("j=%d\n", j);
 
       invalidEntry = 0;
       typeNode = (TYPENODE *)malloc(sizeof(TYPENODE));
@@ -829,7 +828,6 @@ void logDaemonReadConfig() {
         continue;
       }
 
-      j++;
       ellAdd(&typeList, (ELLNODE *)typeNode);
 
     } /* end foreach line in config file */
