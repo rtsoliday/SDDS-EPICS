@@ -1469,7 +1469,7 @@ int32_t SetNumericRowValue(SDDS_TABLE *sdds, long outputRow, long elementIndex, 
         case SDDS_LONG:
             return SDDS_SetRowValues(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, outputRow, elementIndex, (int32_t)value, -1);
         case SDDS_USHORT:
-            return SDDS_SetRowValues(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, outputRow, elementIndex, (ushort)value, -1);
+            return SDDS_SetRowValues(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, outputRow, elementIndex, (unsigned short)value, -1);
         case SDDS_SHORT:
             return SDDS_SetRowValues(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, outputRow, elementIndex, (short)value, -1);
         default:
@@ -1499,7 +1499,7 @@ int32_t SetNumericParameterValue(SDDS_TABLE *sdds, long elementIndex, int storag
         case SDDS_LONG:
             return SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, elementIndex, (int32_t)value);
         case SDDS_USHORT:
-            return SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, elementIndex, (ushort)value);
+            return SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, elementIndex, (unsigned short)value);
         case SDDS_SHORT:
             return SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE, elementIndex, (short)value);
         default:
@@ -1571,10 +1571,10 @@ int32_t SetNumericArrayValues(SDDS_TABLE *sdds, char *name, int storageType, dou
     break;
   case SDDS_USHORT:
     {
-      ushort *v;
-      v = (ushort*)malloc(sizeof(ushort) * length);
+      unsigned short *v;
+      v = (unsigned short*)malloc(sizeof(unsigned short) * length);
       for (int32_t i=0; i < length; i++)
-        v[i] = (ushort)(values[i]);
+        v[i] = (unsigned short)(values[i]);
       result = SDDS_SetArrayVararg(sdds, name, SDDS_CONTIGUOUS_DATA, v, length);
       free(v);
     }

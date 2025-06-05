@@ -9,8 +9,11 @@ endif
 
 include ../Makefile.rules
 
+ifneq ($(OS), Windows)
 PROD = logDaemon logMessage testLogger
 LIBRARY = LogD
+endif
+
 LIBRARY_SRC = logDaemonLib.c BSlib.c
 
 CFLAGS += -I$(EPICS_BASE)/include -I$(SDDS_REPO)/include -I. -I$(OBJ_DIR) -DSDDS
@@ -27,15 +30,6 @@ ifeq ($(OS), Darwin)
   PROD_SYS_LIBS := $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) -lreadline $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
   PROD_LIBS = -lLogD
-endif
-
-ifeq ($(OS), Windows)
-  LIBRARY_LIBS += Com.lib gsl.lib gslcblas.lib
-  LIB_LINK_DIRS += -LIBPATH:$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)
-  PROD_LIBS_SDDS = mdbcommon.lib matlib.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib \
-                  Com.lib
-  PROD_LIBS = LogD.lib
-  LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)
 endif
 
 include ../Makefile.build
