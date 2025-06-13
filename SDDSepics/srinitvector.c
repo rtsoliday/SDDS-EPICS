@@ -79,7 +79,7 @@ static char *USAGE1 = "setsrcorrectormode <inputFile> \n\
     [-pendIOtime=<seconds>] -plane=<h|v|both> \n\
     [-dryRun] [-verbose]  [-setsource] [-unified] [-AOAItolerance=<value>] [-dacAOtolerance=<value>] \n\
     [-setpointFile=<bpm setpoint ref file>] [-offsetFile=<bpm offset reference file>] [-gainFile=<bpm gain reference file>] \n\
-    [-corrType=<DP|dynmaic|plain|vector|scalar>] [-bpmType=<DP|plain>] [-corrSetpoint] \n\n\
+    [-corrType=<DP|dynamic|plain|vector|scalar>] [-bpmType=<DP|plain>] [-corrSetpoint] \n\n\
 <inputFile>        bpm waveform (vector) configuration files including bpm adjust vector and gain vectors. \n\
 pendIOTime         optional, wait time for channel access \n\
 verbose            print out the message \n\
@@ -92,7 +92,7 @@ dacAOtolerance     tolerance for DAC and AO difference (default 0.1), if bigger 
 setpointFile       bpm setpoint reference file.\n\
 offsetFile         bpm offset reference file.\n\
 gainFile           bpm gain File.\n\
-corrFile           SCR file with scalar corretor setpoints; if provided, the corrector vector \n\
+corrFile           SCR file with scalar corrector setpoints; if provided, the corrector vector \n\
                    will be initialized through this file; if not, the corrector setpoints will be read from ioc \n\
                    The corrector reference will be transferred from this file.\n\
 corrType           default is DP; if corrType is DP or vector, corrector vector will be initialized.\n\
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb("Invalid -plane option!");
         plane = scArg[i_arg].list[1];
         if (strcmp(plane, "h") != 0 && strcmp(plane, "v") != 0) {
-          fprintf(stderr, "invalid plane vlaue %s provided, has to be h or v!\n", plane);
+          fprintf(stderr, "invalid plane value %s provided, has to be h or v!\n", plane);
           exit(1);
         }
         break;
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb("Invalid -corrType option!");
         corrTypeInput = scArg[i_arg].list[1];
         if ((corrTypeIndex = match_string(corrTypeInput, corrType, corrTypes, EXACT_MATCH)) < 0) {
-          fprintf(stderr, "invalid corrector type vlaue %s provided, has to be h or v!\n", corrTypeInput);
+          fprintf(stderr, "invalid corrector type value %s provided, has to be h or v!\n", corrTypeInput);
           exit(1);
         }
         if (corrTypeIndex != 4)
@@ -532,7 +532,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
       vector[vectors].vectorType = 1;
       vector[vectors].scalarID = malloc(sizeof(chid) * vectorRows);
     } else if (wild_match(vector[vectors].waveformPV, "*SetPt:WF")) {
-      /*feedforward pv, need findout what the pv names are*/
+      /*feedforward pv, need find out what the pv names are*/
       vector[vectors].vectorType = 2;
       vector[vectors].scalarID = malloc(sizeof(chid) * vectorRows);
     }
@@ -693,7 +693,7 @@ void init_corr_vector(CORR_VECTOR *corrVector, char *plane, char *sourceModeInpu
 
 void init_bpm_vector(BPM_VECTOR *bpmVector, long bpmVectors, char *bpmType) {
   long i, j;
-  /*note that vectorType=2 FFwaveform, use the setpoint value, the scalar setpoint has beed taken care of by the adjust waveform */
+  /*note that vectorType=2 FFwaveform, use the setpoint value, the scalar setpoint has been taken care of by the adjust waveform */
   for (i = 0; i < bpmVectors; i++) {
     if (strcmp(bpmType, "DP") == 0) {
       if (ca_array_put(DBR_DOUBLE, bpmVector[i].waveformRows, bpmVector[i].vectorID, bpmVector[i].waveformValue) != ECA_NORMAL) {

@@ -211,7 +211,7 @@ void exServer::installAliasName(pvInfo &info, const char *pAliasName) {
 }
 
 //
-// More advanced pvExistTest() isnt needed so we forward to
+// More advanced pvExistTest() isn't needed so we forward to
 // original version. This avoids sun pro warnings and speeds
 // up execution.
 //
@@ -393,7 +393,7 @@ void exServer::show(uint32_t level) const {
   this->stringResTbl.show(level);
 
   //
-  // print information about ca server libarary
+  // print information about ca server library
   // internals
   //
   this->caServer::show(level);

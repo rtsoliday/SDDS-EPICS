@@ -48,7 +48,7 @@
  control PV from the correction matrix and the readback
  PV values.
  Also, if averaging is on, skip the iteration
- after the in-range condition has just occured.
+ after the in-range condition has just occurred.
  j) make corrections for the deltas if a delta limit
  is specified.
  k) calculate statistics for control variable deltas.
@@ -96,7 +96,7 @@
  Changed the flag for oag_ca_pend_event to a volatile variable
 
  Revision 1.16  2004/08/30 14:44:33  shang
- the despike threshold will only be ramped in the beggining (if requested) and when the
+ the despike threshold will only be ramped in the beginning (if requested) and when the
  despike threshold ramp pv is set to 1.
 
  Revision 1.15  2004/08/23 17:39:27  soliday
@@ -116,7 +116,7 @@
  fixed bugs in checking despike ramping arguments
 
  Revision 1.10  2004/07/23 21:54:04  shang
- removed unnecessary printing statments
+ removed unnecessary printing statements
 
  Revision 1.9  2004/07/23 21:50:57  shang
  allocated memory for rampThrehsoldPVInfo.count which is needed by setup ca connections.
@@ -213,7 +213,7 @@
  no longer use ezca.
 
  Revision 1.117  2002/09/09 18:44:04  soliday
- Fixed a few bugs found durring IOC testing.
+ Fixed a few bugs found during IOC testing.
 
  Revision 1.116  2002/08/14 20:00:32  soliday
  Added Open License
@@ -222,10 +222,10 @@
  Added a threshold pv.
 
  Revision 1.114  2002/08/07 00:11:01  soliday
- Commited after studies time. This has improved vxWorks functions.
+ Committed after studies time. This has improved vxWorks functions.
 
  Revision 1.113  2002/08/06 14:28:35  soliday
- Added additional debug statments when the DEBUGTIMES flag is used.
+ Added additional debug statements when the DEBUGTIMES flag is used.
 
  Revision 1.112  2002/08/05 14:14:50  soliday
  Changed the glitch logging memory to a circular buffer.
@@ -250,7 +250,7 @@
  Added the -messagePV option.
 
  Revision 1.105  2002/07/08 20:56:14  soliday
- Commited changes after studies period.
+ Committed changes after studies period.
 
  Revision 1.104  2002/07/02 16:45:31  soliday
  Removed some compiler warnings on Windows.
@@ -286,7 +286,7 @@
  Removed some memory leaks related to the scanargs function.
 
  Revision 1.94  2002/04/09 21:39:03  soliday
- Shang added some missing free statments for the loopParam
+ Shang added some missing free statements for the loopParam
 
  Revision 1.93  2002/04/03 20:32:49  soliday
  Fixed a small problem with vxWorks.
@@ -310,7 +310,7 @@
  Fixed some bugs for vxWorks.
 
  Revision 1.86  2002/03/18 19:04:48  soliday
- Commited Shang's waveform changes and my vxWorks changes.
+ Committed Shang's waveform changes and my vxWorks changes.
 
  Revision 1.85  2002/02/26 17:13:15  shang
  fixed the bug that the controlName of correctors was not setup if -actuator
@@ -351,7 +351,7 @@
 
  Revision 1.74  2001/05/14 21:19:21  emery
  Changed the overlap compensation functionality. We now
- expect a direct reponse matrix connecting the correctors used
+ expect a direct response matrix connecting the correctors used
  to the RT "FF" bpm setpoint. Changed the option name from
  overlapCompensation to auxiliaryOutput since RT ff bpms are
  a type of output.
@@ -388,7 +388,7 @@
  proportional control was specified in the command line.
  Changed the values of targetTime and timeLeft when
  the targetTime was passed the present clock time (this could
- happend when the process is suspendedd for some time).
+ happened when the process is suspended for some time).
 
  Revision 1.65  2000/07/18 19:40:45  emery
  Made arguments of pingWhileSleep equal to
@@ -432,7 +432,7 @@
  Revision 1.55  1999/08/06 20:29:57  emery
  Added -generations and -dailyFiles options.
  Added -readbcakLimit option which give the user
- a way to specifiy the maximum and minimum values
+ a way to specify the maximum and minimum values
  that readback PVs can have for the purposes of
  calculating a correction.
 
@@ -641,8 +641,8 @@
  * Changed interrupt handlers to have proper arguments for non-Solaris machines.
  *
  * Revision 1.5  1995/11/15  21:57:04  emery
- * Added realloc to some string variables passed to channel acces
- * in order to avoid the array bound error in purify compliation.
+ * Added realloc to some string variables passed to channel access
+ * in order to avoid the array bound error in purify compilation.
  *
  * Revision 1.4  1995/11/15  00:03:19  borland
  * Modified to use time routines in SDDSepics.c .
@@ -806,7 +806,7 @@ typedef struct
   MATRIX *historyFiltered;
   long integral; /*the default is integral */
   /*integral (integral=1): control->value[0] +=control->delta[0],
-     propotional(integral=0): control->value[0]=control->delta[0] */
+    proportional(integral=0): control->value[0]=control->delta[0] */
 } CONTROL_NAME;
 
 typedef struct
@@ -1250,7 +1250,7 @@ int main(int argc, char **argv)
        [-actionLimit={value=<value>|file=<filename>}]\n\
        [-testValues=<SDDSfile>] [-statistics=<filename>[,mode=<full|brief>]] \n\
        [-auxiliaryOutput=matrixFile=<file>,controlQuantityDefinition=<file>,\n\
-           filterFile=<file>],controlLogFile=<file>[,mode=<integral|propotional>] \n\
+          filterFile=<file>],controlLogFile=<file>[,mode=<integral|proportional>] \n\
        [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>\n\
        [-runControlDescription={string=<string>|parameter=<string>}]\n\
        [-launcherPV=<pvname>]\n\
@@ -1272,7 +1272,7 @@ actuatorColumn String column in the input file to be used for\n\
   char *USAGE3 = "\
 generations    The output is sent to the file <SDDSoutputfile>-<N>, where <N> is\n\
                the smallest positive integer such that the file does not already \n\
-               exist. By default, four digits are used for formating <N>, so that\n\
+               exist. By default, four digits are used for formatting <N>, so that\n\
                the first generation number is 0001.  If a row limit or time limit\n\
                is given, a new file is started when the given limit is reached.\n\
 dailyFiles     The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,\n\
@@ -1316,7 +1316,7 @@ auxiliaryOutput reads in an additional matrix to calculate values for PVs  \n\
                a0, b0, a1, etc, coefficients. \n\
                A control quantity definition file for the matrix \n\
                is available as option. The default mode is integral, if \n\
-               mode=propotional is given, proporptional control will be applied. \n\
+               mode=proportional is given, proportional control will be applied. \n\
 verbose        prints extra information.\n\
 dryRun         readback variables are read, but the control variables\n\
                aren't changed.\n";
@@ -1335,7 +1335,7 @@ deltaLimit     Specifies maximum change made in one step for any actuator,\n\
                DeltaName) from a file. The calculated change vector is scaled\n\
                to enforce these limits, if necessary.\n\
 readbackLimit  Specifies the maximum negative and positive error to\n\
-               recognize for each PV. The values can be speficied\n\
+               recognize for each PV. The values can be specified\n\
                as a single value, as two values, or as columns of\n\
                values in a file (clumns should be minValue and maxValue).\n\
 actionLimit    Specifies minimum values in readback before any action is\n\
@@ -1386,7 +1386,7 @@ waveforms=<filename>,<type> the waveform file name, and the type of\n\
                The waveform file contains \"WaveformPV\" parameter, \n\
                \"DeviceName\" and \"Index\" columns, which is the index of DeviceName in \n\
                the vector. Note that for actuators, if the reading and writing name are\n\
-               different, two paramters \"ReadWaveformPV\" and \"WriteWaveformPV\" \n\
+               different, two parameters \"ReadWaveformPV\" and \"WriteWaveformPV\" \n\
                should be given. For testing waveforms, there are two additional required columns: \n\
                MaximumValue and MinimumValue, and one optional short column - Ignore: \n\
                which set the flags of whether ignore the pvs in the waveform. If Ignore column \n\
@@ -2309,7 +2309,7 @@ Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VER
           if (sddscontrollawGlobal->loopParam.postChangeExec) {
             /*run post change execution */
             if (runPostChangeExec(sddscontrollawGlobal->loopParam.postChangeExec, control, verbose)) {
-              fprintf(stderr, "Error in running post change exection %s\n", sddscontrollawGlobal->loopParam.postChangeExec);
+              fprintf(stderr, "Error in running post change execution %s\n", sddscontrollawGlobal->loopParam.postChangeExec);
               FreeEverything();
               return (1);
             }
@@ -6038,7 +6038,7 @@ long parseArguments(char ***argv,
           waveform_tests->testFiles++;
           break;
         default:
-          fprintf(stderr, "unknow \"%s\" syntax for the <type> of -waveforms.\n", s_arg[i_arg].list[2]);
+          fprintf(stderr, "unknown \"%s\" syntax for the <type> of -waveforms.\n", s_arg[i_arg].list[2]);
           free_scanargs(&s_arg, *argc);
           FreeEverything();
           exit(1);
@@ -6113,7 +6113,7 @@ long parseArguments(char ***argv,
             free(mode);
             break;
           default:
-            fprintf(stderr, "invalid mode given for -statistics systax/values.\n");
+            fprintf(stderr, "invalid mode given for -statistics syntax/values.\n");
             s_arg[i_arg].n_items += 2;
             free_scanargs(&s_arg, *argc);
             free(mode);
@@ -6136,7 +6136,7 @@ long parseArguments(char ***argv,
           }
           s_arg[i_arg].n_items += 1;
         } else {
-          fprintf(stderr, "%s option ignored when a subsequent commmand is issued in server mode.\nThe option may have already been specified in the original command, and would stay in force.\n", s_arg[i_arg].list[0]);
+          fprintf(stderr, "%s option ignored when a subsequent command is issued in server mode.\nThe option may have already been specified in the original command, and would stay in force.\n", s_arg[i_arg].list[0]);
         }
 #endif
         break;
@@ -6401,7 +6401,7 @@ long parseArguments(char ***argv,
             free(mode);
             break;
           default:
-            fprintf(stderr, "invalid mode given for -auxiliaryOutput systax/values.\n");
+            fprintf(stderr, "invalid mode given for -auxiliaryOutput syntax/values.\n");
             s_arg[i_arg].n_items++;
             free_scanargs(&s_arg, *argc);
             free(mode);

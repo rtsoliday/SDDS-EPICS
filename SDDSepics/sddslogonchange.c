@@ -19,7 +19,7 @@
  * definitions will not change in the future.
  *
  * Revision 1.15  2007/12/12 17:17:26  soliday
- * Added code to hopefully stop an occational problem that occurs at Midnight.
+ * Added code to hopefully stop an occasional problem that occurs at Midnight.
  *
  * Revision 1.14  2007/07/27 16:31:18  soliday
  * Modified to fix a problem seen when many PVs change at once.
@@ -67,7 +67,7 @@
  * Updated the usage message to include the epics version string.
  *
  * Revision 1.2  2004/06/10 16:41:51  soliday
- * With Base 3.14.x it is no longer possible to setup the event handler stucture
+ * With Base 3.14.x it is no longer possible to setup the event handler structure
  * to return a double for a string PV. This was done instead of trying to strip
  * the input file of all the string PVs. It now just ignores the string PVs in
  * the event handler function.
@@ -266,7 +266,7 @@ static char *USAGE2 = "-timeDuration   Specifies time duration for logging.  The
 -generations    Specifies use of file generations.  The output is sent to the file \n\
                 <output>-<N>, where <N> is the smallest positive integer such that \n\
                 the file does not already exist.   By default, four digits are used \n\
-                for formating <N>, so that the first generation number is 0001.\n\
+                for formatting <N>, so that the first generation number is 0001.\n\
 dailyFiles      The output is sent to the file <output>-YYYY-JJJ-MMDD.<N>,\n\
                 where YYYY=year, JJJ=Julian day, and MMDD=month+day.  A new file is\n\
                 started after midnight.\n\

@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb("Invalid -plane option!");
         plane = scArg[i_arg].list[1];
         if (strcmp(plane, "h") != 0 && strcmp(plane, "v") != 0) {
-          fprintf(stderr, "invalid plane vlaue %s provided, has to be h or v!\n", plane);
+          fprintf(stderr, "invalid plane value %s provided, has to be h or v!\n", plane);
           exit(1);
         }
         break;
@@ -317,7 +317,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
       vector[vectors].vectorType = 1;
       vector[vectors].scalarID = malloc(sizeof(chid) * vectorRows);
     } else if (wild_match(vector[vectors].waveformPV, "*SetPt:WF")) {
-      /*feedforward pv, need findout what the pv names are*/
+      /*feedforward pv, need find out what the pv names are*/
       vector[vectors].vectorType = 2;
       vector[vectors].scalarID = malloc(sizeof(chid) * vectorRows);
     }
@@ -430,7 +430,7 @@ void freeBPMVectorMemory(BPM_VECTOR *bpmVector, long bpmVectors) {
 
 void init_bpm_vector(BPM_VECTOR *bpmVector, long bpmVectors, char *bpmType) {
   long i, j;
-  /*note that vectorType=2 FFwaveform, use the setpoint value, the scalar setpoint has beed taken care of by the adjust waveform */
+  /*note that vectorType=2 FFwaveform, use the setpoint value, the scalar setpoint has been taken care of by the adjust waveform */
   for (i = 0; i < bpmVectors; i++) {
     if (strcmp(bpmType, "DP") == 0) {
       if (ca_array_put(DBR_DOUBLE, bpmVector[i].waveformRows, bpmVector[i].vectorID, bpmVector[i].waveformValue) != ECA_NORMAL) {

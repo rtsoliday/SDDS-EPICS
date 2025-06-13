@@ -256,7 +256,7 @@ static char *USAGE3 = "-planeMode          the plane switch mode with values x, 
                     x plane, y plane, switch x/y per turn, or switch x/y every two turns. \n\
                     (each turn has 324 time slots.) Either one or 4 modes has to be provided, if only one mode is provided,\n\
                     then 4 receivers will take the plane mode as provided.\n\
--accumulatorMode   the accumlation switch mode with values x, y, xy1, or xy2, which stands for \n\
+-accumulatorMode   the accumulation switch mode with values x, y, xy1, or xy2, which stands for \n\
                     x plane, y plane, switch x/y per turn, or switch x/y every two turns. \n\
                     (each turn has 324 time slots.) If not provided, it will be the same as plane switch.\n\
                     Either one or 4 modes has to be provided, if only one mode is provided,\n\
@@ -293,10 +293,10 @@ static char *USAGE4 = "The output options are the same in the three usages.\n\
                     included as the second data page. \n\
 -setRAMWaveformPV   if provided, the control RAM long integer data will be written to this PV. \n\
                     Note that when used with -RAMWaveformPV input with the same PVs, \n\
-                    the same values are read and wrtten to the same PV. \n\
+                    the same values are read and written to the same PV. \n\
 -controlRAMFile     if provided, the control RAM long integer data will be written to this file. \n\
 -comment            comment string for output files.\n\
--receiver           obselete. now 4 receivers are included already. \n\
+-receiver           obsolete. now 4 receivers are included already. \n\
 Program by H. Shang, ANL\n\
 Link date: "__DATE__
                       " "__TIME__
@@ -512,7 +512,7 @@ int main(int argc, char **argv) {
     if (s_arg[i_arg].arg_type == OPTION) {
       switch (match_string(s_arg[i_arg].list[0], option, N_OPTIONS, 0)) {
       case SET_RECEIVER:
-        /*obselete*/
+        /*obsolete*/
         break;
       case SET_SETRAM_WAVEFORMPV:
         if (s_arg[i_arg].n_items != 2)
@@ -764,7 +764,7 @@ int main(int argc, char **argv) {
       RAMWaveformBinaryString = (char **)calloc(sizeof(char *), RAMArrayLength);
       for (i = 0; i < RAMArrayLength; i++) {
         /* Binary string will be 32 characters of either 0 or 1. 
-                 We need a null charactor at the end */
+                 We need a null character at the end */
         RAMWaveformBinaryString[i] = (char *)calloc(sizeof(char), 33);
       }
 
@@ -856,7 +856,7 @@ int main(int argc, char **argv) {
       RAMWaveformBinaryString = (char **)malloc(sizeof(char *) * RAM.arrayLength);
       for (i = 0; i < RAMArrayLength; i++) {
         /* Binary string will be 32 characters of either 0 or 1. 
-                 We need a null charactor at the end */
+                 We need a null character at the end */
         RAMWaveformBinaryString[i] = (char *)calloc(sizeof(char), 33);
       }
     }
@@ -1652,7 +1652,7 @@ void GenerateReceiverBitsFromPreset(long planeMode, long accumulatorMode, long c
          count += multiplicity + emptyBuckets ;
          } */
     /*the above method only works for 324 turn marker interval, when the turn marker interval is greater,
-        it will not sample the buckets that are beyong 1296.
+        it will not sample the buckets that are beyond 1296.
       */
     count = multipletStart;
     for (i = 0; i < buckets; i++) {
@@ -1710,7 +1710,7 @@ void GenerateReceiverBitsFromPreset(long planeMode, long accumulatorMode, long c
 
   /* Extend sampling using samplesPerBunch */
   /* should be used only for single bunchm, and bunch pattern */
-  /* For continous mode, the samples should stop at the transition
+  /* For continuous mode, the samples should stop at the transition
      of the plane and commutation switches. */
 
   if (sampleMode == SAMPLE_BUNCHPATTERN || sampleMode == SAMPLE_SINGLE) {
@@ -1754,7 +1754,7 @@ void GenerateControlBitsFromPreset(long *planeMode, long *accumulatorMode, long 
    *turnsPerWrap = 4; */
 
   /* transitionDeadTime used to be a double and with units ns */
-  /* Now it has the same meaning as local varaiable deadTimeslot */
+  /* Now it has the same meaning as local variable deadTimeslot */
   deadTimeSlots = (int)(transitionDeadTime);
   allocateControlBits(RAM, RAMArrayLength, RAM_RECORD);
   allocateControlBits(scope, scopeArrayLength, SCOPE_RECORD);
@@ -1953,8 +1953,8 @@ void ReadInputRAM(char *inputRAMFile, long *waveformLength, uint32_t **waveform,
   if (!(*waveform = (uint32_t *)SDDS_GetColumn(&ramData, "Waveform")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 
-  /* These parameters, if present, are read in sfrom teh input RAM file
-     so that they could be transfered to the output files.
+  /* These parameters, if present, are read in sfrom the input RAM file
+     so that they could be transferred to the output files.
   */
   if (SDDS_CheckParameter(&ramData, "Comment", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK &&
       !SDDS_GetParameter(&ramData, "Comment", comment))

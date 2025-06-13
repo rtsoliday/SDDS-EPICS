@@ -54,7 +54,7 @@ correctorList       provide the list of correctors if <configFile> is not provid
                     if <configFile> is provided, correctorList option will be ignored.\n\
                     either correctorList or configFile has to be provided.\n\
 referenceRampTable  the new ramp table to be loaded will be the amount to be changed plus the reference.\n\
-                    for example, /home/helios/oagData/booster/ramps/correctors/lattices/default/HVCorr.ramp is normaly used.\n\
+                    for example, /home/helios/oagData/booster/ramps/correctors/lattices/default/HVCorr.ramp is normally used.\n\
                     if not provided, it will read the ramp table from PVs.\n\
 rampTemplate        ramp template which the ramp changes based on, \n\
                     default is /home/helios/oagData/booster/ramps/correctors/lattices/default/ramp.sdds \n\
@@ -65,7 +65,7 @@ amplitude           amount to change the ramp by, if not provided, the value wil
                     <corrector>:CorrectionAI pvs.\n\
 regions             required, region 0, 1, ..., or 9 of the ramp; default region 0. \n\
                     or give a range of regions, start region and end region.\n\
-coeffients          give a list of coefficients for correctors. must be the same length as correctorList.\n\
+coefficients          give a list of coefficients for correctors. must be the same length as correctorList.\n\
 dryRun              if provided, the ramp table will not be loaded.\n\
 verbose             printout message.\n\
 changeboosterramp is a utility to change the provided booster corrector ramps by given amplitudes..\n\n";
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
         break;
       case CLO_REFERENCE_RAMP_TABLE:
         if (s_arg[i_arg].n_items != 2)
-          SDDS_Bomb("invalid -referenceRampTable synax.");
+          SDDS_Bomb("invalid -referenceRampTable syntax.");
         SDDS_CopyString(&refFile, s_arg[i_arg].list[1]);
         break;
       case CLO_RAMP_TEMPLATAE:
@@ -288,7 +288,7 @@ int main(int argc, char *argv[]) {
 
   /*read template file */
   if (verbose)
-    fprintf(stdout, "Reading tempalte file...\n");
+    fprintf(stdout, "Reading template file...\n");
   if (!SDDS_InitializeInput(&templateTable, templateFile) || SDDS_ReadTable(&templateTable) < 0)
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 
@@ -519,7 +519,7 @@ int main(int argc, char *argv[]) {
       fprintf(stdout, "loading new ramp table...ramprows=%ld\n", ramp_rows);
     for (j = 1; j < ramp_rows; j++) {
       if (rampTime[j] < rampTime[j - 1]) {
-        fprintf(stderr, "%s, ramp time descreases at %ld point.\n", argv[0], j);
+        fprintf(stderr, "%s, ramp time decreases at %ld point.\n", argv[0], j);
         exit(1);
       }
     }

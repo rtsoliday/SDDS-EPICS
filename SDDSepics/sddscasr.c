@@ -74,14 +74,14 @@
  *  it now takes both - and white spaces of IndirectName as scalar pv.
  *
  *  Revision 1.29  2005/01/10 16:32:16  shang
- *  the Time parameter will overwrited to double type if it exists in the input file; the input
+*  the Time parameter will be overwritten to double type if it exists in the input file; the input
  *  file now is not allowed to be overwritten.
  *
  *  Revision 1.28  2004/11/04 19:57:49  shang
- *  removed the debug printing statments
+ *  removed the debug printing statements
  *
  *  Revision 1.27  2004/11/04 16:36:48  shang
- *  added Time parameter to the output file and uses the libaries watchInput functions
+ *  added Time parameter to the output file and uses the libraries watchInput functions
  *  for checking the input file state.
  *
  *  Revision 1.26  2004/09/27 15:49:41  soliday
@@ -125,7 +125,7 @@
  *  made changes such that the input filename will be overwritten by inputFilePV's
  *  vale, and if only one filename is provided with inputFilePV provided, the filename
  *  will be given to output root; moved the ca connection setup in arguments parsing
- *  statments to where the parsing is done.
+ *  statements to where the parsing is done.
  *
  *  Revision 1.14  2004/03/16 20:57:16  shang
  *  fixed the cast problem in usleep()
@@ -206,7 +206,7 @@
  *  added checking for IndirectName column for restoring
  *
  *  Revision 1.8  2003/07/14 19:37:10  shang
- *  fixed the bug that segmenation fault occurred when the runcontrol record about is pressed
+ *  fixed the bug that segmentation fault occurred when the runcontrol record about is pressed
  *  in Linux system
  *
  *  Revision 1.7  2003/07/11 14:21:17  soliday
@@ -351,8 +351,8 @@ typedef struct
   short *valid;   /*indicates if the PV is still valid, if not, do nothing about it */
   double pendIOTime;
   short verbose, casave, carestore, numerical, verify, add;
-  FILE *logFp;    /*file pointer for logfile to log the print out infomation*/
-  char *logFile;  /*logfile to log the print out infomation*/
+  FILE *logFp;    /*file pointer for logfile to log the print out information*/
+  char *logFile;  /*logfile to log the print out information*/
   char *casavePV; /*monitor pv to turn on/off sddscasr */
   chid casavePV_ID, outputFilePV_ID, descriptPV_ID, inputFilePV_ID;
   double interval;
@@ -513,7 +513,7 @@ char *USAGE3 = "-pipe          input/output data to the pipe.\n\
                If saveWaveformFile is provided, the ValueString for waveform pv will the file name of \n\
                the waveform file, instead of \"WaveformPV\". If saveWaveformFile and full name provided, \n\
                the full filename will be recorded, if full name not provided, only the \n\
-               file root will be recored. \n\n\
+               file root will be recorded. \n\n\
 this is an alternative version of casave/carestore, \n\
 program by Hairong Shang, ANL\n\
 Link date: "__DATE__
@@ -800,7 +800,7 @@ int main(int argc, char **argv) {
     if (inputFile && pipeFlags & USE_STDIN)
       SDDS_Bomb("Too many file names!");
     if (pipeFlags & USE_STDOUT || outputRoot)
-      SDDS_Bomb("Invalid output argmument for restore!");
+      SDDS_Bomb("Invalid output argument for restore!");
   }
   if (pipeFlags) {
     if (control_name->verbose && daemon)
@@ -1197,10 +1197,10 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, char *inputFile, 
     SDDS_Bomb("No data provided in the input file.");
   if (IndirectNameExist)
     if (!(IndirectName = (char **)SDDS_GetColumn(&inSet, "IndirectName")))
-      SDDS_Bomb("Unable to get the vaue of IndirectName column in the input file");
+      SDDS_Bomb("Unable to get the value of IndirectName column in the input file");
   if (valuestringExist) {
     if (!(ValueString = (char **)SDDS_GetColumn(&inSet, "ValueString")))
-      SDDS_Bomb("Unable to get the vaue of ValueString column in the input file.");
+      SDDS_Bomb("Unable to get the value of ValueString column in the input file.");
     for (i = 0; i < variables; i++) {
       /* ca_put does not accept quotes, has to remove it before restore */
       if (ValueString[i][0] == '\"' && ValueString[i][strlen(ValueString[i]) - 1] == '\"') {
@@ -1816,7 +1816,7 @@ void sddscasaverestore(CONTROL_NAME *control_name, char *inputFile, char *output
     }
 #endif
     if (control_name->logFp)
-      fprintf(control_name->logFp, "%s, signal handle recieved.\n", getHourMinuteSecond());
+      fprintf(control_name->logFp, "%s, signal handle received.\n", getHourMinuteSecond());
 
     /*take a snapshot and save it into output file */
     if (control_name->casave) {
@@ -2224,7 +2224,7 @@ long SetPVValue(CONTROL_NAME *control_name, long dryRun) {
       }
     }
   }
-  /*new FPGA sectors 19,20,21,22 are installed behond a gateway, to make sure that gateway excute the setting command before exiting
+  /*new FPGA sectors 19,20,21,22 are installed behond a gateway, to make sure that gateway execute the setting command before exiting
     ca_pend_event() is required, H. Shang, 5/24/2013*/
   oag_ca_pend_event(0.5, &sigint);
   if (sigint) {

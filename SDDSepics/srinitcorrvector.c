@@ -74,7 +74,7 @@ char *commandline_option[COMMANDLINE_OPTIONS] = {"pendIOtime", "plane", "dryRun"
 static char *USAGE1 = "setsrcorrectormode  \n\
     [-pendIOtime=<seconds>] -plane=<h|v|both> \n\
     [-dryRun] [-verbose]  [-setsource] [-unified] [-AOAItolerance=<value>] [-dacAOtolerance=<value>] \n\
-    [-corrType=<DP|dynmaic|plain|vector|scalar>] \n\n\
+    [-corrType=<DP|dynamic|plain|vector|scalar>] \n\n\
 pendIOTime         optional, wait time for channel access \n\
 verbose            print out the message \n\
 dryRun             do not change pvs.\n\
@@ -83,7 +83,7 @@ setsource          if provided, the corrector source mode will be set.\n\
 unified            unified corrector or not.\n\
 AOAItolerance      tolerance for checking the corrector AO and AI difference (default 2), if bigger than the tolerance, nothing will be done.\n\
 dacAOtolerance     tolerance for DAC and AO difference (default 0.1), if bigger than the tolerance, nothing will be done.\n\
-corrFile           SCR file with scalar corretor setpoints; if provided, the corrector vector \n\
+corrFile           SCR file with scalar corrector setpoints; if provided, the corrector vector \n\
                    will be initialized through this file; if not, the corrector setpoints will be read from ioc \n\
                    The corrector reference will be transferred from this file.\n\
 corrType           default is DP; if corrType is DP or vector, corrector vector will be initialized.\n\
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb("Invalid -plane option!");
         plane = scArg[i_arg].list[1];
         if (strcmp(plane, "h") != 0 && strcmp(plane, "v") != 0) {
-          fprintf(stderr, "invalid plane vlaue %s provided, has to be h or v!\n", plane);
+          fprintf(stderr, "invalid plane value %s provided, has to be h or v!\n", plane);
           exit(1);
         }
         break;
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb("Invalid -corrType option!");
         corrTypeInput = scArg[i_arg].list[1];
         if ((corrTypeIndex = match_string(corrTypeInput, corrType, corrTypes, EXACT_MATCH)) < 0) {
-          fprintf(stderr, "invalid corrector type vlaue %s provided, has to be h or v!\n", corrTypeInput);
+          fprintf(stderr, "invalid corrector type value %s provided, has to be h or v!\n", corrTypeInput);
           exit(1);
         }
         if (corrTypeIndex != 4)

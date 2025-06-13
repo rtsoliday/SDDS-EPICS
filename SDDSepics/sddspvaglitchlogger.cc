@@ -109,7 +109,7 @@ typedef struct
   /* used with channel access routines to give index via callback: */
   long usrValue;
   long dataIndex, trigStep;
-  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that reponds to this trigger*/
+  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that responds to this trigger*/
   /* trigStep: the Step where trigger occurs */
   /* parameterIndex: the parameterIndex in corresponding dataset */
   char *glitchScript;
@@ -161,7 +161,7 @@ typedef struct
   short baselineAutoReset, glitchArmed;
   long parameterIndex, baselineSamples;
   long dataIndex, trigStep;
-  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that reponds to this trigger*/
+  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that responds to this trigger*/
   /* trigStep: the Step where trigger occurs */
   /* parameterIndex: the parameterIndex in corresponding dataset */
   char *glitchScript;
@@ -182,7 +182,7 @@ typedef struct
   /*direction=0, ignore transition-based trigger for this PV */
   double holdoff, triggerLevel;
   long dataIndex, trigStep, parameterIndex;
-  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that reponds to this trigger*/
+  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that responds to this trigger*/
   /* trigStep: the Step where trigger occurs */
   /* parameterIndex: the parameterIndex in corresponding dataset */
   char *glitchScript;
@@ -299,7 +299,7 @@ static char *USAGE2 = (char *)"<input>            the name of the input file\n\
                    2. GlitchScript(string) -- optional, provides the command to execute \n\
                       whenever a glitch occurs.\n\
                    a. TriggerControlName (string) -- PV to look at to determine\n\
-                      if a glitch/trigger has occured. \n\
+                      if a glitch/trigger has occurred. \n\
                    b. MajorAlarm (short) -- if nonzero, then severity of MAJOR on \n\
                                             TriggerControlName, results in a buffer dump \n\
                    c. MinorAlarm (short) -- if nonzero, then severity of MINOR results in \n\
@@ -341,7 +341,7 @@ triggerFile        when this option is given, the input file has no parameters, 
                    GlitchBaselineAutoReset(short),TransitionThreshold(double), \n\
                    TransitionDirection(short) etc. columns. \n\
                    It can have an optional column - GlitchScript, which will be execute when\n\
-                   the correspoding glitch/trigger/alarm occurs.\n\
+                   the corresponding glitch/trigger/alarm occurs.\n\
                    Additional columns are: Provider, ExpectNumeric, ExpectFieldType and ExpectElements.\n\
 lockFile           when this option is given, sddsglitchlogger uses the named file to prevent\n\
                    running multiple versions of the program.  If the named file exists and is\n\
@@ -367,7 +367,7 @@ delay              Used to delay reading PVs after the glitch or trigger occurs.
                    useful if the PVs are waveform PVs that acting as a circular buffer in the\n\
                    IOC.\n\
 watchInput         If it is given, then the programs checks the input file to see if it is \n\
-                   modifed. If the inputfile is modified,then read the input files again and \n\
+                   modified. If the inputfile is modified,then read the input files again and \n\
                    start the logging. \n\
 runControlPV       specifies a runControl PV name.\n\
 runControlDescription\n\
@@ -2170,7 +2170,7 @@ int ReadInputFiles(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, lo
     if (!getConditionsDataInfo(logger))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!(logger->CondDataBuffer = (double *)malloc(sizeof(*(logger->CondDataBuffer)) * logger->CondChannels)))
-      SDDS_Bomb((char *)"allocation faliure");
+      SDDS_Bomb((char *)"allocation failure");
   }
 
   //Read Input File
@@ -2227,7 +2227,7 @@ int ReadInputFiles(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, lo
     }
   }
 
-  //Allocate and initialize varaibles
+  //Allocate and initialize variables
   logger->disconnected = (short *)malloc(sizeof(*(logger->disconnected)) * logger->numDatasets);
   logger->servicingTrigger = (short *)malloc(sizeof(*(logger->servicingTrigger)) * logger->numDatasets);
   logger->writingPage = (short *)malloc(sizeof(*(logger->writingPage)) * logger->numDatasets);

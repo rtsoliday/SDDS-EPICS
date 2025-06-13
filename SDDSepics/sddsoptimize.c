@@ -137,7 +137,7 @@
  *  Altered to work with the newer version of runcontrol.
  *
  *  Revision 1.22  2002/11/12 20:35:07  shang
- *  added the disable ability to selectively exclude some of the control parameters from variation whill still setting their values.
+*  added the disable ability to selectively exclude some of the control parameters from variation while still setting their values.
  *
  *  Revision 1.21  2002/10/08 16:16:14  soliday
  *  Committed Shang's version
@@ -299,7 +299,7 @@ static char *USAGE2 = "       [-runControlDescription={string=<string>|parameter
             number of averages and interval between two readings respectively. \n\
 -measScript user given script for measuring PVs. Either -measScript or -measFile is given\n\
             for the measurement. \n\
--restartFile user given filename for writting the optimized values into this file, which \n\
+-restartFile user given filename for writing the optimized values into this file, which \n\
             could be used for the input of next optimization. \n\
 -varScript  user given script for setting setpoint PVs. \n\
 -simplex    Give parameters of the simplex optimization. Each start or restart allows \n\
@@ -313,12 +313,12 @@ static char *USAGE2 = "       [-runControlDescription={string=<string>|parameter
 -rcds       Give parameters for RCDS (robust conjugate direction method) optimization. \n\
             evaluations gives the maximum number of function evaluations, and cycles gives the maximum \n\
             iterations of bracket minimization search, noise gives the experimental noise (default 0.001)\n\
-            step is the normalized step size when the values of the variables are noramlized to between 0 and 1,\n\
+            step is the normalized step size when the values of the variables are normalized to between 0 and 1,\n\
             default step is 0.01, dmatFile provides the filename for initial Dmatrix which is used in computing \n\
             the initial conjugate direction.\n";
 static char *USAGE3 = "-1dscan     Give parameters of one dimensional scan optimization. Cycles gives the max. \n\
             number of cycles (i.e. loops) of 1dscan and with an maximum number of \n\
-            evaluations. Divisons is the max. number of division applied in 1dscan. \n\
+            evaluations. Divisions is the max. number of division applied in 1dscan. \n\
             Either 1dscan or simplex method is used for optimize. \n\
             repeat: read the measurement again if the variable PVs are set back \n\
             to their previous values to keep track with noise.\n\
@@ -616,9 +616,9 @@ int main(int argc, char **argv) {
         /* simplexFlags = 0;*/
         simplex = 1;
         if (scan)
-          SDDS_Bomb("1DScan has been choosen as optimization method!");
+          SDDS_Bomb("1DScan has been chosen as optimization method!");
         if (rcds)
-          SDDS_Bomb("rcds has been choosen as optimization method!");
+          SDDS_Bomb("rcds has been chosen as optimization method!");
         if (!scanItemList(&simplexFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
                           "restarts", SDDS_LONG, &nRestartMax, 1, 0,
                           "cycles", SDDS_LONG, &nPassMax, 1, 0,
@@ -634,9 +634,9 @@ int main(int argc, char **argv) {
       case SET_RCDS:
         rcds = 1;
         if (scan)
-          SDDS_Bomb("1DScan has been choosen as optimization method!");
+          SDDS_Bomb("1DScan has been chosen as optimization method!");
         if (simplex)
-          SDDS_Bomb("simplex has been choosen as optimization method!");
+          SDDS_Bomb("simplex has been chosen as optimization method!");
         s_arg[i_arg].n_items -= 1;
         rcdsFlags = 0;
         if (!scanItemList(&rcdsFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
@@ -1782,7 +1782,7 @@ double localfunc(double *pValue, long *invalid) {
 #endif
 
   if (!control->Variables || !control->ControlName) {
-    fprintf(stderr, "no PV varaibles for setting or reading");
+    fprintf(stderr, "no PV variables for setting or reading");
     *invalid = 1;
     exit(1);
   }
@@ -2205,7 +2205,7 @@ void setupOutputFile(SDDS_DATASET *outTable, COMMON_PARAM *param, char *outputFi
 	}
       }
       if (ca_pend_io(param->pendIOTime) != ECA_NORMAL)
-        fprintf(stderr, "error: problem doing search for exra log pvs\n");
+        fprintf(stderr, "error: problem doing search for extra log pvs\n");
       SDDS_FreeStringArray(name, names);
       if (!SDDS_DefineSimpleColumns(outTable, param->extra_pvs, param->extra_pvname, NULL, SDDS_DOUBLE))
 	SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);

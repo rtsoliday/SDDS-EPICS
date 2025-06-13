@@ -93,7 +93,7 @@ static char *USAGE =
 -totalTimeLimit \n\
              specifies maximum time cawait will run.  Default is infinite.\n\
 -waitFor     specifies PV name, plus criterion for ending wait.\n\
-             Each occurence pushes a result on the logic stack.\n\
+             Each occurrence pushes a result on the logic stack.\n\
 -and, -or, -not\n\
              Performs operations on the logic stack.\n\
 -repeat      specifies number of times to wait for the event. Default is\n\

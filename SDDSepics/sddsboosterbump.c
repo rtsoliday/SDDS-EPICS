@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
         correctors++;
         break;
       default:
-        fprintf(stderr, "unknonw option - %s given.\n", s_arg[i_arg].list[0]);
+        fprintf(stderr, "unknown option - %s given.\n", s_arg[i_arg].list[0]);
         exit(1);
         break;
       }
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
       exit(1);
     }
     I0 = corrector_ramp[i].ramp[0];                          /*start current (normalized) */
-    IE = corrector_ramp[i].ramp[corrector_ramp[i].nord - 2]; /* extraction corrent, normalized.*/
+    IE = corrector_ramp[i].ramp[corrector_ramp[i].nord - 2]; /* extraction current, normalized.*/
 
     /* I_bump is normalized to maxcurrent, while bumpValue is not */
     I_b0 = interp(corrector_ramp[i].ramp, corrector_ramp[i].time, corrector_ramp[i].nord, bumptime,
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
 
     /* t0 the is the time while I=0 with 1/ramp_time slope and I=I_b at bumptime */
     if (t0 < 0) {
-      fprintf(stderr, "Can not make bump for %s at %.3f ms, the slope from bump point to start point exceeds the maxium allowance.\n",
+      fprintf(stderr, "Can not make bump for %s at %.3f ms, the slope from bump point to start point exceeds the maximum allowance.\n",
               corrector_ramp[i].correctorName, bumptime);
       exit(1);
     }

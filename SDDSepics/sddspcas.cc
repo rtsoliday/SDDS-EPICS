@@ -72,7 +72,7 @@ by SDDS input files.\n\
                 type of PV to create. The value values are:\n\
                 char, uchar, short, ushort, int, uint, float, double, string.\n\
                 The default is double.\n\
-                The Equation column is optional. It will automatially update PV\n\
+                The Equation column is optional. It will automatically update PV\n\
                 values based on other PV values. An example might look like:\n\
                 ( ca:FirstPV + ca:SecondPV ) / 100.0\n";
 char *USAGE2 = (char *)"-masterPVFile   SDDS file containing all the IOC process variables.\n\

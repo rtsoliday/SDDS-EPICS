@@ -121,7 +121,7 @@ static char *USAGE2 = "-timeDuration   Specifies time duration for logging.  The
 -generations    Specifies use of file generations.  The output is sent to the file \n\
                 <output>-<N>, where <N> is the smallest positive integer such that \n\
                 the file does not already exist.   By default, four digits are used \n\
-                for formating <N>, so that the first generation number is 0001.\n\
+                for formatting <N>, so that the first generation number is 0001.\n\
 -dailyFiles     The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,\n\
                 where YYYY=year, JJJ=Julian day, and MMDD=month+day. A new file is\n\
                 started after the midnight. \n\

@@ -1911,7 +1911,7 @@ long PutPVAValues(PVA_OVERALL *pva) {
 }
 
 /*
-  Start monitoring the PVs. Use the PollMonitoredPVA values to identify if an event has occured.
+  Start monitoring the PVs. Use the PollMonitoredPVA values to identify if an event has occurred.
   FIX THIS There is a unique problem of what to do with PVs that are not connected when the program starts but become connected later
 */
 long MonitorPVAValues(PVA_OVERALL *pva) {
@@ -2006,7 +2006,7 @@ void ResumePVAMonitoring(PVA_OVERALL *pva) {
 }
 
 /*
-  Check to see if an event has occured on a monitored PV and if so, place the data into the pva structure.
+  Check to see if an event has occurred on a monitored PV and if so, place the data into the pva structure.
   Returns number of events found or -1 for error
 */
 long PollMonitoredPVA(PVA_OVERALL *pva) {

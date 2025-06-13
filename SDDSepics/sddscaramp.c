@@ -427,7 +427,7 @@ int main(int argc, char **argv) {
     /* Finished getting current value of PV */
 
     if (rampto[a].differentialMode) {
-      /* alter final values of numerical data to reflect offseting from the present value */
+      /* alter final values of numerical data to reflect offsetting from the present value */
       for (j = 0; j < rows; j++) {
         if (pvdata[j].isNumber) {
           pvdata[j].final_value = pvdata[j].current_value + rampto[a].differentialFactor*pvdata[j].final_value;

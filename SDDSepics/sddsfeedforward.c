@@ -109,12 +109,12 @@
  * and disabled output values.
  *
  * Revision 1.3  2003/12/19 16:50:25  soliday
- * Removed debuging printouts.
+ * Removed debugging printouts.
  *
  * Revision 1.2  2003/12/03 15:55:31  shang
  * added pingTimeout argument for runControlPV option and fixed the segmentation errors that occurred when
  * program crashes at the set-up data step, moved the runControlInit before the set-up data to avoid the
- * segmenation error occurred in runControlLogMessage when program aborted in set-up data step.
+ * segmentation error occurred in runControlLogMessage when program aborted in set-up data step.
  *
  * Revision 1.1  2003/08/27 19:51:13  soliday
  * Moved into subdirectory
@@ -184,7 +184,7 @@
  *
  * Revision 1.6  1999/08/26 21:02:28  borland
  * Added -offset option to sddsfeedforward.
- * Modified sddsstatmon.c and toggle.c to accomodate placement of
+ * Modified sddsstatmon.c and toggle.c to accommodate placement of
  * ../oagca/pvMultiList.h in SDDSepics.h in early revisions.
  *
  * Revision 1.5  1999/08/25 17:56:31  borland
@@ -2504,7 +2504,7 @@ long ComputeNewActuatorValues(FEEDFORWARD_DATA *feedforwardData, CONTROL_DATA *r
       fflush(FPINFO);
     }
   }
-  /*udpate acutator value */
+  /*update acutator value */
   for (iActuator = 0; iActuator < actuatorData->controlNames; iActuator++) {
     if (actuatorData->updated[iActuator]) {
       actuatorData->value[iActuator] = actuatorData->computeValue[iActuator];

@@ -227,7 +227,7 @@ caStatus exPV::getUnits(gdd &units) {
 // for a discrete channel
 //
 // The PVs in this example are purely analog,
-// and therefore this isnt appropriate in an
+// and therefore this isn't appropriate in an
 // analog context ...
 //
 caStatus exPV::getEnums(gdd &enumsIn) {

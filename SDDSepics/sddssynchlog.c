@@ -477,7 +477,7 @@ int main(int argc, char **argv) {
             chInfo[channel + controlNames].dataValue[i] *= slowScaleFactor[channel];
         for (i = 0; i < chInfo[channel + controlNames + waveformControlNames].sampleIndex; i++) {
           if (i == 0)
-            /* this is necessary to avoid bizzare interpolation, as the initial sample
+            /* this is necessary to avoid bizarre interpolation, as the initial sample
                      * time for the "slow" channel may be a very long time ago (last time the
                      * channel updated)
                      */

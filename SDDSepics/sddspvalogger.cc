@@ -340,7 +340,7 @@ Logger Options:\n\
 Glitch Logger Options:\n\
   [-triggerFile=<filename>]\n\
   [-circularBuffer=[before=<number>,][after=<number>]]\n\
-  [-delay=<steps>] [NOT YET IMPLIMENTED]\n\
+  [-delay=<steps>] [NOT YET IMPLEMENTED]\n\
   [-holdoffTime=<seconds>]\n\
   [-autoHoldoff]\n\
 \n\
@@ -515,7 +515,7 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "Starting logging\n");
   }
 
-  //Setup empty column data incase scalarArrays are disconnected
+  //Setup empty column data in case scalarArrays are disconnected
   logger.emptyColumn = (double *)malloc(sizeof(double) * logger.n_rows);
   logger.emptyStringColumn = (char **)malloc(sizeof(char *) * logger.n_rows);
   for (j = 0; j < logger.n_rows; j++) {
@@ -3710,7 +3710,7 @@ long SetupInhibitPV(PVA_OVERALL *pvaInhibit, LOGGER_DATA *logger) {
     //Exit if inhibit PV isn't set to 0
     if (pvaInhibit->pvaData[0].getData[0].values[0] > .1) {
       if (logger->verbose) {
-        fprintf(stdout, "Data colleciton inhibited--not starting\n");
+        fprintf(stdout, "Data collection inhibited--not starting\n");
       }
       exit(0);
     }

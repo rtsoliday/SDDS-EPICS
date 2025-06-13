@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb("Invalid -plane option!");
         plane = scArg[i_arg].list[1];
         if (strcmp(plane, "h") != 0 && strcmp(plane, "v") != 0) {
-          fprintf(stderr, "invalid plane vlaue %s provided, has to be h or v!\n", plane);
+          fprintf(stderr, "invalid plane value %s provided, has to be h or v!\n", plane);
           exit(1);
         }
         break;
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb("Invalid -corrType option!");
         corrTypeInput = scArg[i_arg].list[1];
         if ((corrTypeIndex = match_string(corrTypeInput, corrType, corrTypes, EXACT_MATCH)) < 0) {
-          fprintf(stderr, "invalid corrector type vlaue %s provided!\n", corrTypeInput);
+          fprintf(stderr, "invalid corrector type value %s provided!\n", corrTypeInput);
           exit(1);
         }
         if (corrTypeIndex != 4)

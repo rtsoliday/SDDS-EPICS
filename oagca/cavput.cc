@@ -15,7 +15,7 @@
 
  Revision 1.20  2009/02/17 19:52:14  soliday
  Updated so that ca_task_exit is called even if it exits with an error
- because this is needed on linux so it doen't segfault.
+ because this is needed on linux so it doesn't segfault.
 
  Revision 1.19  2008/02/19 20:13:56  soliday
  Found a memory freeing bug.
@@ -136,7 +136,7 @@
 #define CLO_RANGE 1
 #define CLO_PENDIOTIME 2
 #define CLO_DRYRUN 3
-/* obsolete options for commandline compatbility */
+/* obsolete options for commandline compatibility */
 #define CLO_EZCATIMING 4
 #define CLO_NOGROUPS 5
 #define CLO_DELTAMODE 6

@@ -79,7 +79,7 @@
 
  Revision 1.72  2003/03/14 00:55:27  shang
  fixed a bug in WriteScalarValues() where the caErrors was not counted when
- error occurrs in setting pv values.
+ error occurs in setting pv values.
 
  Revision 1.71  2003/03/14 00:48:14  shang
  replace "reading" by "writing" in WriteScalarPVs()
@@ -131,7 +131,7 @@
  Changes for cross only build.
 
  Revision 1.55  2002/05/07 18:51:00  soliday
- Removed rouge ezca references when not using ezca.
+ Removed rogue ezca references when not using ezca.
 
  Revision 1.54  2002/04/17 22:19:35  soliday
  Created some non-ezca functions to replace ezca functions. Hopefully all the
@@ -159,7 +159,7 @@
  Added the if defined(USE_EZCA) statement around functions that use ezca.
 
  Revision 1.47  2002/03/18 19:04:47  soliday
- Commited Shang's waveform changes and my vxWorks changes.
+ Committed Shang's waveform changes and my vxWorks changes.
 
  Revision 1.46  2001/01/31 17:04:19  borland
  When getting waveform input data, now properly uses the desired type for
@@ -306,7 +306,7 @@
  * file appends.
  *
  * Revision 1.6  1995/11/15  00:00:48  borland
- * Added conditional compilation for SOLARIS compitability (usleep and other
+ * Added conditional compilation for SOLARIS compatibility (usleep and other
  * time routines).
  *
  * Revision 1.5  1995/11/14  04:35:03  borland
@@ -382,7 +382,7 @@ void oag_ca_exception_handler(struct exception_handler_args args) {
     }
     fprintf(stderr, "This sometimes indicates an IOC that is hung up.\n");
     /*I am using _exit instead of exit because some EPICS atexit functions
-        are stoping the program from exiting.*/
+        are stopping the program from exiting.*/
     _exit(1);
   } else {
     fprintf(stdout, "CA.Client.Exception................\n");
@@ -776,7 +776,7 @@ long ReadWaveforms(char **readbackName, void **waveform, long length,
     exit(1);
   }
   if (!cid) {
-    fprintf(stderr, "error: NULL pinter passed to ReadWaveforms\n");
+    fprintf(stderr, "error: NULL pointer passed to ReadWaveforms\n");
     exit(1);
   }
 

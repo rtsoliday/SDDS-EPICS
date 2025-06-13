@@ -686,9 +686,9 @@ int main(int argc, char **argv) {
     free(Measurement);
 
   if (dev_timeout_errors)
-    fprintf(FPINFO, "%ld device timeout errors occured\n", dev_timeout_errors);
+    fprintf(FPINFO, "%ld device timeout errors occurred\n", dev_timeout_errors);
   if (total_limit_errors)
-    fprintf(FPINFO, "%ld limit errors occured\n", total_limit_errors);
+    fprintf(FPINFO, "%ld limit errors occurred\n", total_limit_errors);
   free_scanargs(&s_arg, argc);
   return 0;
 }
@@ -2119,7 +2119,7 @@ void reset_initial_variable_values(COUNTER *counter, long counters, long flags, 
     if (flags & FL_DRY_RUN)
       puts("Pretending to reset variables to original values.");
     else
-      puts("Reseting variables to original values.");
+      puts("Resetting variables to original values.");
     fflush(FPINFO);
   }
  
@@ -2981,13 +2981,13 @@ void read_knob_file(VARIABLE_DATA *variable, VARIABLESPEC *NewVariable, double p
   }
 }
 
-void check_knob_settings(KNOB *knob,  double tolerance, long attemps, double pendIOtime) {
+void check_knob_settings(KNOB *knob,  double tolerance, long attempts, double pendIOtime) {
   double *readback=NULL;
   long i, k, done;
   if (!knob->ReadbackName)
     return;
   readback = malloc(sizeof(double)*knob->PVs);
-  for (k=0; k<attemps; k++)  {
+  for (k=0; k<attempts; k++)  {
     done = 1;
     for (i=0; i<knob->PVs; i++) {
       if (ca_get(DBR_DOUBLE, knob->RBPVchid[i], &readback[i])!=ECA_NORMAL) {
@@ -3006,7 +3006,7 @@ void check_knob_settings(KNOB *knob,  double tolerance, long attemps, double pen
     if (done)
       break;
   }
-  if (k==attemps) {
+  if (k==attempts) {
     fprintf(stderr, "Some PVs in knob %s did not go to setpoint within specified tolerance in allotted time\n", knob->knobName);
     for (i=0; i<knob->PVs; i++) {
       if (!within_tolerance(readback[i], knob->value[i], tolerance)) {

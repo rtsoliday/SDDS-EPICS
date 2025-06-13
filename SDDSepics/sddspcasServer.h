@@ -124,7 +124,7 @@ private:
 // o Since there may be aliases then we may end up
 // with several of this class all referencing
 // the same pv info class (justification
-// for this breaking out into a seperate class
+// for this breaking out into a separate class
 // from pvInfo)
 //
 class pvEntry // X aCC 655
@@ -156,7 +156,7 @@ public:
   void show(unsigned level) const;
 
   //
-  // Called by the server libary each time that it wishes to
+  // Called by the server library each time that it wishes to
   // subscribe for PV the server tool via postEvent() below.
   //
   caStatus interestRegister();
@@ -501,7 +501,7 @@ inline pvInfo::pvInfo(const pvInfo &copyIn) :
 inline pvInfo::~pvInfo() {
   //
   // GDD cleanup gets rid of GDD's that are in use
-  // by the PV before the file scope destructer for
+  // by the PV before the file scope destructor for
   // this class runs here so this does not seem to
   // be a good idea
   //

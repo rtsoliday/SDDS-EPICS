@@ -134,7 +134,7 @@ typedef struct
   MATRIX *historyFiltered;
   long integral; /*the default is integral */
   /*integral (integral=1): control->value[0] +=control->delta[0],
-     propotional(integral=0): control->value[0]=control->delta[0] */
+    proportional(integral=0): control->value[0]=control->delta[0] */
 } CONTROL_NAME;
 
 typedef struct
@@ -542,7 +542,7 @@ int main(int argc, char **argv)
        [-actionLimit={value=<value>|file=<filename>}]\n\
        [-testValues=<SDDSfile>] [-statistics=<filename>[,mode=<full|brief>]] \n\
        [-auxiliaryOutput=matrixFile=<file>,controlQuantityDefinition=<file>,\n\
-           filterFile=<file>],controlLogFile=<file>[,mode=<integral|propotional>] \n\
+          filterFile=<file>],controlLogFile=<file>[,mode=<integral|proportional>] \n\
        [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>\n\
        [-runControlDescription={string=<string>|parameter=<string>}]\n\
        [-launcherPV=<pvname>]\n\
@@ -563,7 +563,7 @@ actuatorColumn String column in the input file to be used for\n\
                the file must contain DeviceName, a0, a1,..., b0, b1,... columns";
   char *USAGE3 = (char*)"generations    The output is sent to the file <SDDSoutputfile>-<N>, where <N> is\n\
                the smallest positive integer such that the file does not already \n\
-               exist. By default, four digits are used for formating <N>, so that\n\
+               exist. By default, four digits are used for formatting <N>, so that\n\
                the first generation number is 0001.  If a row limit or time limit\n\
                is given, a new file is started when the given limit is reached.\n\
 dailyFiles     The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,\n\
@@ -604,7 +604,7 @@ auxiliaryOutput reads in an additional matrix to calculate values for PVs  \n\
                a0, b0, a1, etc, coefficients. \n\
                A control quantity definition file for the matrix \n\
                is available as option. The default mode is integral, if \n\
-               mode=propotional is given, proporptional control will be applied. \n\
+               mode=proportional is given, proportional control will be applied. \n\
 verbose        prints extra information.\n\
 dryRun         readback variables are read, but the control variables\n\
                aren't changed.\n";
@@ -622,7 +622,7 @@ deltaLimit     Specifies maximum change made in one step for any actuator,\n\
                DeltaName) from a file. The calculated change vector is scaled\n\
                to enforce these limits, if necessary.\n\
 readbackLimit  Specifies the maximum negative and positive error to\n\
-               recognize for each PV. The values can be speficied\n\
+               recognize for each PV. The values can be specified\n\
                as a single value, as two values, or as columns of\n\
                values in a file (clumns should be minValue and maxValue).\n\
 actionLimit    Specifies minimum values in readback before any action is\n\
@@ -670,7 +670,7 @@ CASecurityTest checks the channel access write permission of the control PVs.\n\
                The waveform file contains \"WaveformPV\" parameter, \n\
                \"DeviceName\" and \"Index\" columns, which is the index of DeviceName in \n\
                the vector. Note that for actuators, if the reading and writing name are\n\
-               different, two paramters \"ReadWaveformPV\" and \"WriteWaveformPV\" \n\
+               different, two parameters \"ReadWaveformPV\" and \"WriteWaveformPV\" \n\
                should be given. For testing waveforms, there are two additional required columns: \n\
                MaximumValue and MinimumValue, and one optional short column - Ignore: \n\
                which set the flags of whether ignore the pvs in the waveform. If Ignore column \n\
@@ -1409,7 +1409,7 @@ Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VER
           if (sddscontrollawGlobal->loopParam.postChangeExec) {
             /*run post change execution */
             if (runPostChangeExec(sddscontrollawGlobal->loopParam.postChangeExec, control, verbose)) {
-              fprintf(stderr, "Error in running post change exection %s\n", sddscontrollawGlobal->loopParam.postChangeExec);
+              fprintf(stderr, "Error in running post change execution %s\n", sddscontrollawGlobal->loopParam.postChangeExec);
               FreeEverything();
               return (1);
             }
@@ -5004,7 +5004,7 @@ long parseArguments(char ***argv,
           waveform_tests->testFiles++;
           break;
         default:
-          fprintf(stderr, "unknow \"%s\" syntax for the <type> of -waveforms.\n", s_arg[i_arg].list[2]);
+          fprintf(stderr, "unknown \"%s\" syntax for the <type> of -waveforms.\n", s_arg[i_arg].list[2]);
           free_scanargs(&s_arg, *argc);
           FreeEverything();
           exit(1);
@@ -5071,7 +5071,7 @@ long parseArguments(char ***argv,
             free(mode);
             break;
           default:
-            fprintf(stderr, "invalid mode given for -statistics systax/values.\n");
+            fprintf(stderr, "invalid mode given for -statistics syntax/values.\n");
             s_arg[i_arg].n_items += 2;
             free_scanargs(&s_arg, *argc);
             free(mode);
@@ -5093,7 +5093,7 @@ long parseArguments(char ***argv,
           }
           s_arg[i_arg].n_items += 1;
         } else {
-          fprintf(stderr, "%s option ignored when a subsequent commmand is issued in server mode.\nThe option may have already been specified in the original command, and would stay in force.\n", s_arg[i_arg].list[0]);
+          fprintf(stderr, "%s option ignored when a subsequent command is issued in server mode.\nThe option may have already been specified in the original command, and would stay in force.\n", s_arg[i_arg].list[0]);
         }
         break;
       case CLO_VERBOSE:
@@ -5357,7 +5357,7 @@ long parseArguments(char ***argv,
             free(mode);
             break;
           default:
-            fprintf(stderr, "invalid mode given for -auxiliaryOutput systax/values.\n");
+            fprintf(stderr, "invalid mode given for -auxiliaryOutput syntax/values.\n");
             s_arg[i_arg].n_items++;
             free_scanargs(&s_arg, *argc);
             free(mode);

@@ -105,7 +105,7 @@ static char *USAGE1 = "sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]]
     [-verbose] [-singleShot{=noprompt|stdout}] [-precision={single|double}]\n\
     [-dataType={short|long|float|double|character|string}]\n\
     [-onCAerror={useZero|skipPage|exit}] \n\
-    [-scalars=<filename>] [-flushSteps=<interger>]\n\
+    [-scalars=<filename>] [-flushSteps=<integer>]\n\
     [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]\n\
     [-comment=<parameterName>,<text>] [-nowarnings] \n\
     [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>] \n\
@@ -116,14 +116,14 @@ static char *USAGE2 = "Writes values of process variables to a binary SDDS file.
                    for example AR:SLM1:image1.\n\
                    the default dataType for image data is unsigned short. For now, we only consider two dimensional image data.\n\
 PVnames            specifies a list of image PV names to read for example AR:SLM1:image1, the image data is stored \n\
-                   by pv <imagePV>:ArrayData, the column size is provided by <imagePV>:ArraySize0_RBV, the row size is provived \n\
+                   by pv <imagePV>:ArrayData, the column size is provided by <imagePV>:ArraySize0_RBV, the row size is provided \n\
                    by <imagePV>:ArraySize1_RBV, for now, we only consider two dimensional image data.\n\
 <outputfile>       SDDS output file, each page contains the data for one image pv, the number of columns is provided by  \n\
                    <imagePV>:ArraySize0_RBV, and the number of rows is provided  <imagePV>:ArraySize1_RBV, the data is provided by \n\
                    <imagePV>:ArrayData. \n\
 generations        The output is sent to the file <outputfile>-<N>, where <N> is\n\
                    the smallest positive integer such that the file does not already \n\
-                   exist.   By default, four digits are used for formating <N>, so that\n\
+                   exist.   By default, four digits are used for formatting <N>, so that\n\
                    the first generation number is 0001.\n\
 erase              outputfile is erased before execution.\n\
 steps              number of reads for each process variable.\n\
@@ -144,7 +144,7 @@ singleShot         single shot read initiated by a <cr> key press; time_interval
 precision          specify single (default) or double precision for PV data.\n\
 dataType           Optionally specifies the data type for the output file (default datatype for image data is unsigned char).  Overrides\n\
                    the precision option.\n\
-singleColumn       if provided, the image data will be written into one column, and the row and column numner will be saved in the parameter\n\
+singleColumn       if provided, the image data will be written into one column, and the row and column number will be saved in the parameter\n\
                    the output file can be directly plotted by sddscontour with \n\
                    'sddscontour -quantity=Waveform -swapxy <filename> -shade'\n\
 x|yParameter       provide the required information for the parameters that are needed by sddscontour quantity plot\n";
@@ -610,16 +610,16 @@ int main(int argc, char **argv) {
                            CondFile))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!(CondDataBuffer = (double *)malloc(sizeof(*CondDataBuffer) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     if (!(CondCHID = (chid *)malloc(sizeof(*CondCHID) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     for (i = 0; i < conditions; i++)
       CondCHID[i] = NULL;
   }
 
   /*check how many output columns */
   for (i = 0; i < readbacks; i++) {
-    /*dimenion 0 is the number of rows of image data, and dimension 1 is the number of columns of image data */
+    /*dimension 0 is the number of rows of image data, and dimension 1 is the number of columns of image data */
     if (ca_get(DBR_LONG, readbackDim0CHID[i], &dim0[i]) != ECA_NORMAL)
       SDDS_Bomb("problem reading dimension0 size of image pv");
     if (ca_get(DBR_LONG, readbackDim1CHID[i], &dim1[i]) != ECA_NORMAL)

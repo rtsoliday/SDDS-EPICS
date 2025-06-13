@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
   bool steps_set = 0, totalTimeSet = 0, verbose = 0;
   double TotalTime = 0, pendIOtime = 10.0;
 
-  SampleTimeInterval = -1; // The actual update rate on the IOC is .20457 seconds per update at the time of writting this
+  SampleTimeInterval = -1; // The actual update rate on the IOC is .20457 seconds per update at the time of writing this
 
   argc = scanargs(&s_arg, argc, argv);
   if (argc == 1) {

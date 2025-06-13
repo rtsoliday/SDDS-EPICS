@@ -400,10 +400,10 @@ int main(int argc, char **argv) {
   }
 
   if (doRepeat && doStats)
-    SDDS_Bomb((char *)"-repeat and -statistics are imcompatible.");
+    SDDS_Bomb((char *)"-repeat and -statistics are incompatible.");
 
   /*if (cavputForm && doStats)
-    SDDS_Bomb((char*)"-cavputForm and -statistics are imcompatible."); */
+    SDDS_Bomb((char*)"-cavputForm and -statistics are incompatible."); */
   if (doDespike) {
     if (!doRepeat && !doStats)
       SDDS_Bomb((char *)"neither repeat or statistics is given, can not do despiking!");

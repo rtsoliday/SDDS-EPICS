@@ -367,14 +367,14 @@ static char *USAGE2 = (char *)"Writes values of process variables to a binary SD
 <inputfile>        SDDS input file containing the columns \"WaveformPV\" and\n\
                    \"WaveformName\", plus a parameter \"WaveformLength\".  A \"DataType\"\n\
                    column is optional to specify the data type (short, long, float, double,\n\
-                   character, or string) for each pv, but this will be overidden if the\n\
+                   character, or string) for each pv, but this will be overridden if the\n\
                    -dataType option is specified on the command line.\n\
 PVnames            specifies a list of PV names to read.  If the waveforms are\n\
                    of different lengths, the short ones are padded with zeros.\n\
 <outputfile>       SDDS output file, each page of which one instance of each waveform.\n\
 generations        The output is sent to the file <outputfile>-<N>, where <N> is\n\
                    the smallest positive integer such that the file does not already \n\
-                   exist.   By default, four digits are used for formating <N>, so that\n\
+                   exist.   By default, four digits are used for formatting <N>, so that\n\
                    the first generation number is 0001.\n\
 erase              outputfile is erased before execution.\n\
 append             Appends new values in a new SDDS page in the output file.\n\
@@ -708,11 +708,11 @@ int main(int argc, char **argv) {
           SDDS_Bomb((char *)"invalid -versus syntax/values");
         s_arg[i_arg].n_items += 1;
         if (!indeptName) {
-          fprintf(stderr, "The indepent column name is not provided!\n");
+          fprintf(stderr, "The independent column name is not provided!\n");
           exit(1);
         }
         if (!indeptDeltaPV && !indeptDelta) {
-          fprintf(stderr, "Either the delta or detla pv for indepent column name has to be provided!\n");
+          fprintf(stderr, "Either the delta or detla pv for independent column name has to be provided!\n");
           exit(1);
         }
         break;
@@ -1037,9 +1037,9 @@ int main(int argc, char **argv) {
                            CondFile))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!(CondDataBuffer = (double *)malloc(sizeof(*CondDataBuffer) * conditions)))
-      SDDS_Bomb((char *)"allocation faliure");
+      SDDS_Bomb((char *)"allocation failure");
     if (!(CondCHID = (chid *)malloc(sizeof(*CondCHID) * conditions)))
-      SDDS_Bomb((char *)"allocation faliure");
+      SDDS_Bomb((char *)"allocation failure");
     for (i = 0; i < conditions; i++)
       CondCHID[i] = NULL;
   }
@@ -1127,7 +1127,7 @@ int main(int argc, char **argv) {
     }
     if (indeptName) {
       if (-1 == match_string(indeptName, ColumnNames, NColumnNames, EXACT_MATCH)) {
-        printf("Indepent column %s doesn't exist in output file.\n", indeptName);
+        printf("Independent column %s doesn't exist in output file.\n", indeptName);
         exit(1);
       }
     }
@@ -1177,7 +1177,7 @@ int main(int argc, char **argv) {
     SDDS_FreeStringArray(ParameterNames, NParameters);
     free(ParameterNames);
 
-    /*check if output has Step, CAerros,Time,TimeOfDay, DayOfMonth auxilliary parameters*/
+    /*check if output has Step, CAerros,Time,TimeOfDay, DayOfMonth auxiliary parameters*/
     if (SDDS_ReadPage(&originalfile_page) != 1) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       SDDS_Bomb((char *)"unable to get data from existing file---try -append=recover");
@@ -1189,7 +1189,7 @@ int main(int argc, char **argv) {
         SDDS_CheckParameter(&originalfile_page, (char *)"CAerrors", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY ||
         SDDS_CheckParameter(&originalfile_page, (char *)"PageTimeStamp", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-      SDDS_Bomb((char *)"unable to get auxilliary paramters from existing file.");
+      SDDS_Bomb((char *)"unable to get auxiliary parameters from existing file.");
     }
 
     if (!SDDS_GetParameter(&originalfile_page, (char *)"StartHour", &StartHour) ||
@@ -1462,7 +1462,7 @@ int main(int argc, char **argv) {
       fflush(stdout);
     }
     if (accumulateNumber == 0 || accumulateNumber == accumulate) {
-      /* must write out data as there is no accumulation or accumualtors are full */
+      /* must write out data as there is no accumulation or accumulators are full */
       if (firstPage) {
         if (append && outputPreviouslyExists) {
           if (!SDDS_StartTable(&outTable, waveformLength) ||
@@ -1735,7 +1735,7 @@ int main(int argc, char **argv) {
     fputs("Done.\n", singleShot == SS_STDOUTPROMPT ? stdout : stderr);
     fflush(singleShot == SS_STDOUTPROMPT ? stdout : stderr);
   }
-  /*clean up memeory */
+  /*clean up memory */
   if (accWaveformData) {
     for (i = 0; i < readbacks; i++)
       free(accWaveformData[i]);

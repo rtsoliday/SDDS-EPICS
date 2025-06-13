@@ -104,7 +104,7 @@
  Revision 1.7  1997/08/27 19:24:44  borland
  Added -maximize mode.  -average now accepts time-between-samples value.
  Input file may now have OffsetValue column to give fixed offsets for
- optmization.
+ optimization.
 
  Revision 1.6  1997/04/24 16:34:33  borland
  Put remaining informational messages inside tests against `verbose` variable.

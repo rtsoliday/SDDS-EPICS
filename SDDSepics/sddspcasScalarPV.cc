@@ -184,7 +184,7 @@ void exScalarPV::scan() {
 // incoming value in all of its various data types can
 // be translated into a real number?
 // 2) We prefer to unreference the old PV value here and
-// reference the incomming value because this will
+// reference the incoming value because this will
 // result in each value change events retaining an
 // independent value on the event queue.
 //

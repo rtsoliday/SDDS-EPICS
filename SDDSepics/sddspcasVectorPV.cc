@@ -422,10 +422,10 @@ void exVectorPV::scan() {
 // incoming value in all of its various data types can
 // be translated into a real number?
 // 2) We prefer to unreference the old PV value here and
-// reference the incomming value because this will
+// reference the incoming value because this will
 // result in value change events each retaining an
 // independent value on the event queue. With large arrays
-// this may result in too much memory consumtion on
+// this may result in too much memory consumption on
 // the event queue.
 //
 caStatus exVectorPV::updateValue(const gdd &value) {

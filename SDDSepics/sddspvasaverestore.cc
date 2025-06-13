@@ -135,8 +135,8 @@ typedef struct
   short *valid;   /*indicates if the PV is still valid, if not, do nothing about it */
   double pendIOTime;
   short verbose, pvasave, pvarestore, numerical, verify;
-  FILE *logFp;                          /*file pointer for logfile to log the print out infomation*/
-  char *logFile;                        /*logfile to log the print out infomation*/
+  FILE *logFp;                          /*file pointer for logfile to log the print out information*/
+  char *logFile;                        /*logfile to log the print out information*/
   char *triggerPV, *triggerPV_provider; /*monitor pv to turn on/off sddspvasaverestore */
   double interval;
   short unique;
@@ -294,7 +294,7 @@ char *USAGE3 = (char *)"-pipe          input/output data to the pipe.\n\
                If saveWaveformFile is provided, the ValueString for waveform pv will the file name of \n\
                the waveform file, instead of \"WaveformPV\". If saveWaveformFile and full name provided, \n\
                the full filename will be recorded, if full name not provided, only the \n\
-               file root will be recored. \n\n\
+               file root will be recorded. \n\n\
 program by Hairong Shang and Robert Soliday, ANL\n\
 Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VERSION_STRING "\n";
 
@@ -596,7 +596,7 @@ int main(int argc, char **argv) {
       return (1);
     }
     if (pipeFlags & USE_STDOUT || outputRoot) {
-      fprintf(stderr, "Invalid output argmument for restore!\n");
+      fprintf(stderr, "Invalid output argument for restore!\n");
       return (1);
     }
   }
@@ -1045,10 +1045,10 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
   }
   if (IndirectNameExist)
     if (!(IndirectName = (char **)SDDS_GetColumn(&inSet, (char *)"IndirectName")))
-      SDDS_Bomb((char *)"Unable to get the vaue of IndirectName column in the input file");
+      SDDS_Bomb((char *)"Unable to get the value of IndirectName column in the input file");
   if (valuestringExist) {
     if (!(ValueString = (char **)SDDS_GetColumn(&inSet, (char *)"ValueString")))
-      SDDS_Bomb((char *)"Unable to get the vaue of ValueString column in the input file.");
+      SDDS_Bomb((char *)"Unable to get the value of ValueString column in the input file.");
     for (i = 0; i < variables; i++) {
       if (ValueString[i][0] == '\"' && ValueString[i][strlen(ValueString[i]) - 1] == '\"') {
         strslide(ValueString[i], -1);
@@ -1232,7 +1232,7 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
         pva->pvaData[j].skip = false;
       }
     } else {
-      //In deamon mode we previously connected to this PV but don't need it at the moment
+      //In daemon mode we previously connected to this PV but don't need it at the moment
       pva->pvaData[j].skip = true;
     }
   }
@@ -1737,7 +1737,7 @@ void sddspvasaverestore(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERAL
     }
 #endif
     if (control_name->logFp)
-      fprintf(control_name->logFp, "%s, signal handle recieved.\n", getHourMinuteSecond());
+      fprintf(control_name->logFp, "%s, signal handle received.\n", getHourMinuteSecond());
 
     /*take a snapshot and save it into output file */
     if (control_name->pvasave) {
@@ -2068,7 +2068,7 @@ long SetPVValue(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
     }
   }
 
-  /*new FPGA sectors 19,20,21,22 are installed behond a gateway, to make sure that gateway excute the setting command before exiting
+  /*new FPGA sectors 19,20,21,22 are installed behond a gateway, to make sure that gateway execute the setting command before exiting
     ca_pend_event() is required, H. Shang, 5/24/2013*/
   usleepSystemIndependent(.5 * 1000000);
 

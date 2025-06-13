@@ -285,7 +285,7 @@ erase              outputfile is erased before execution.\n\
 append             appends new data to the output file.\n\
 generations        The output is sent to the file <outputfile>-<N>, where <N> is\n\
                    the smallest positive integer such that the file does not already \n\
-                   exist.   By default, four digits are used for formating <N>, so that\n\
+                   exist.   By default, four digits are used for formatting <N>, so that\n\
                    the first generation number is 0001.\n\
 scalars            specifies sddsmonitor input file to get names of scalar PVs\n\
                    from.  These will be logged in the output file as parameters.\n\
@@ -666,9 +666,9 @@ int main(int argc, char **argv) {
                            CondFile))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!(CondDataBuffer = (double *)malloc(sizeof(*CondDataBuffer) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     if (!(CondCHID = (chid *)malloc(sizeof(*CondCHID) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     for (i = 0; i < conditions; i++)
       CondCHID[i] = NULL;
   }

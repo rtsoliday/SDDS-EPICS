@@ -13,7 +13,7 @@
  *  Revision 1.12  2008/03/07 22:11:06  shang
  *  removed the long type variable interval in runControlPingWhileSleeop() because its value
  *  is set to 0 if the loop interval or runcontrol ping interval is less than 1 seconds and this will cause
- *  the runcontrol ping without sleeping. Remove it because it is not required, Or change its tyoe
+*  the runcontrol ping without sleeping. Remove it because it is not required, Or change its type
  *   to double will solve the problem also.
  *
  *  Revision 1.11  2007/09/27 15:08:23  shang
@@ -1088,7 +1088,7 @@ Link date: "__DATE__
       case EXIT_IF_ALL_PASS:
         if (!result && nValid==sddspvtestGlobal->pvNumber) {
           if (verbose)
-            fprintf(stderr, "Exiting due to satisifed conditions.\n");
+            fprintf(stderr, "Exiting due to satisfied conditions.\n");
           return 1;
         }
         break;
@@ -1271,7 +1271,7 @@ int runControlPingWhileSleep(double sleepTime) {
       return (RUNCONTROL_ERROR);
     default:
 #  ifdef USE_LOGDAEMON
-      logArguments(sddspvtestGlobal->logHandle, sddspvtestGlobal->rcParam.PV, "Unknown run conrol error code.", NULL);
+      logArguments(sddspvtestGlobal->logHandle, sddspvtestGlobal->rcParam.PV, "Unknown run control error code.", NULL);
 #  endif
       fprintf(stderr, "Unknown run control error code.\n");
       break;

@@ -50,7 +50,7 @@
   * circular buffer before reading the trigger PVs. This happened for every
   * step. I switched this around and I have it set so that the non-trigger
   * PVs will not be read if -circular=before=0 is set and no
-  * trigger/glitch/alarm has occured. This will reduce the CA activity.
+  * trigger/glitch/alarm has occurred. This will reduce the CA activity.
   *
   * Revision 1.11  2005/12/12 16:21:15  soliday
   * Fixed two usage message typos.
@@ -231,7 +231,7 @@ typedef struct
   /* used with channel access routines to give index via callback: */
   long usrValue;
   long dataIndex, trigStep;
-  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that reponds to this trigger*/
+  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that responds to this trigger*/
   /* trigStep: the Step where trigger occurs */
   /* parameterIndex: the parameterIndex in corresponding dataset */
   char *glitchScript;
@@ -280,7 +280,7 @@ typedef struct
   short baselineAutoReset, glitchArmed;
   long parameterIndex, baselineSamples;
   long dataIndex, trigStep;
-  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that reponds to this trigger*/
+  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that responds to this trigger*/
   /* trigStep: the Step where trigger occurs */
   /* parameterIndex: the parameterIndex in corresponding dataset */
   char *glitchScript;
@@ -298,7 +298,7 @@ typedef struct
   /*direction=0, ignore transition-based trigger for this PV */
   double holdoff, triggerLevel;
   long dataIndex, trigStep, parameterIndex;
-  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that reponds to this trigger*/
+  /* dataIndex: the dataset index of the trigger,i.e., the index of dataset that responds to this trigger*/
   /* trigStep: the Step where trigger occurs */
   /* parameterIndex: the parameterIndex in corresponding dataset */
   char *glitchScript;
@@ -391,7 +391,7 @@ static char *USAGE1 = "sddsglitchlogger <input> <outputDirectory>|<outputRootnam
  [-runControlDescription=string=<string>]\n\n";
 static char *USAGE2 = "<input>            the name of the input file\n\
                    the input file contains ControlName, ReabbackName, and ReadbackUnits \n\
-                   colummns and it has following parameters: \n\
+                   columns and it has following parameters: \n\
                    1. OutputRootname(string) -- the rootname for output file that log PVs \n\
                       defined in the input file. Different OutputRootmames go to different \n\
                       output files. If different pages have the same OutputRootname,\n\
@@ -400,7 +400,7 @@ static char *USAGE2 = "<input>            the name of the input file\n\
                    2. GlitchScript(string) -- optional, provides the command to execute \n\
                       whenever a glitch occurs.\n\
                    a. TriggerControlName (string) -- PV to look at to determine\n\
-                      if a glitch/trigger has occured. \n\
+                      if a glitch/trigger has occurred. \n\
                    b. MajorAlarm (short) -- if nonzero, then severity of MAJOR on \n\
                                             TriggerControlName, results in a buffer dump \n\
                    c. MinorAlarm (short) -- if nonzero, then severity of MINOR results in \n\
@@ -442,7 +442,7 @@ triggerFile        when this option is given, the input file has no parameters, 
                    GlitchBaselineAutoReset(short),TransitionThreshold(double), \n\
                    TransitionDirection(short) etc. columns. \n\
                    It can have an optional column - GlitchScript, which will be execute when\n\
-                   the correspoding glitch/trigger/alarm occurs.\n\
+                   the corresponding glitch/trigger/alarm occurs.\n\
 lockFile           when this option is given, sddsglitchlogger uses the named file to prevent\n\
                    running multiple versions of the program.  If the named file exists and is\n\
                    locked, the program exits.  If it does not exist or is not locked, it is\n\
@@ -467,7 +467,7 @@ delay              Used to delay reading PVs after the glitch or trigger occurs.
                    useful if the PVs are waveform PVs that acting as a circular buffer in the\n\
                    IOC.\n\
 watchInput         If it is given, then the programs checks the input file to see if it is \n\
-                   modifed. If the inputfile is modified,then read the input files again and \n\
+                   modified. If the inputfile is modified,then read the input files again and \n\
                    start the logging. \n\
 runControlPV       specifies a runControl PV name.\n\
 runControlDescription\n\
@@ -983,9 +983,9 @@ int main(int argc, char **argv) {
                            CondFile))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!(CondDataBuffer = (double *)malloc(sizeof(*CondDataBuffer) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     if (!(CondCHID = (chid *)malloc(sizeof(*CondCHID) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     for (i = 0; i < conditions; i++)
       CondCHID[i] = NULL;
   }

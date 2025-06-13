@@ -68,7 +68,7 @@
  * Changes for cross only build.
  *
  * Revision 1.28  2002/05/07 18:51:00  soliday
- * Removed rouge ezca references when not using ezca.
+ * Removed rogue ezca references when not using ezca.
  *
  * Revision 1.27  2002/04/17 22:19:36  soliday
  * Created some non-ezca functions to replace ezca functions. Hopefully all the
@@ -79,7 +79,7 @@
  * defined USE_TIMETAG constant and modified declaration of MakeDailyGenerationFilename(..)
  *
  * Revision 1.25  2002/03/18 19:04:48  soliday
- * Commited Shang's waveform changes and my vxWorks changes.
+ * Committed Shang's waveform changes and my vxWorks changes.
  *
  * Revision 1.24  2000/11/29 19:48:25  borland
  * Added getWaveformMonitorData().

@@ -63,7 +63,7 @@
 
  Revision 1.7  1999/08/26 21:02:29  borland
  Added -offset option to sddsfeedforward.
- Modified sddsstatmon.c and toggle.c to accomodate placement of
+ Modified sddsstatmon.c and toggle.c to accommodate placement of
  ../oagca/pvMultiList.h in SDDSepics.h in early revisions.
 
  Revision 1.6  1999/04/15 13:27:54  borland
@@ -176,7 +176,7 @@ their values may be specified explicitly on the command line.\n\
                   Unexpected results occur if the PV's in the\n\
                   files don't match.\n\
                   If only one file is specified on the command line,\n\
-                  The orginal values make up set 2.\n\
+                  The original values make up set 2.\n\
 controlname       defines a PV name and the values to be alternated.\n\
                   If only one value is given, then the second value\n\
                   is given by the current value.\n\
@@ -188,7 +188,7 @@ cycles            number of cycles. Default is 1.\n\
 finalSet          specifies which PV value set to apply at normal termination.\n\
                   During abnormal termination, the PVs are\n\
                   returned to their original values.\n\
-prompt            toggle values only on a <CR> key press. Same as singleShot with no suboptions for backward compatbility.\n\
+prompt            toggle values only on a <CR> key press. Same as singleShot with no suboptions for backward compatibility.\n\
 singleShot        single shot set initiated by a <cr> key press; time_interval is disabled.\n\
                   By default, a prompt is issued to stderr.  The qualifiers may be used to\n\
                   remove the prompt or have it go to stdout. If \"resend\" is given, the value will be sent twice with 1 second interval.\n\

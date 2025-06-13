@@ -510,9 +510,9 @@ int main(int argc, char **argv) {
     }
   }
   if (dev_timeout_errors)
-    printf("%ld device timeout errors occured\n", dev_timeout_errors);
+    printf("%ld device timeout errors occurred\n", dev_timeout_errors);
   if (total_limit_errors)
-    printf("%ld limit errors occured\n", total_limit_errors);
+    printf("%ld limit errors occurred\n", total_limit_errors);
   return 0;
 }
 
@@ -1013,7 +1013,7 @@ void reset_initial_variable_values(COUNTER *counter, long counters, long flags, 
     if (flags & FL_DRY_RUN)
       puts("Pretending to reset variables to original values.");
     else
-      puts("Reseting variables to original values.");
+      puts("Resetting variables to original values.");
   }
   addRampPV(NULL, 0.0, RAMPPV_CLEAR, NULL, pendIOtime);
   for (i = 0; i < counters; i++) {

@@ -10,7 +10,7 @@
 /*
  * $Log: not supported by cvs2svn $
  * Revision 1.35  2010/12/16 15:50:51  soliday
- * Added a gap time that is to be printed if the file writting takes too long.
+ * Added a gap time that is to be printed if the file writing takes too long.
  *
  * Revision 1.34  2009/12/04 16:49:57  soliday
  * Improved the last changes.
@@ -25,7 +25,7 @@
  * Fixed a typo.
  *
  * Revision 1.31  2009/09/08 18:02:50  soliday
- * Added an addtitional diagnostics message when run in verbose mode.
+ * Added an additional diagnostics message when run in verbose mode.
  *
  * Revision 1.30  2008/06/03 16:27:58  soliday
  * Fixed WIN32 problem.
@@ -137,7 +137,7 @@
  * Moved into subdirectory
  *
  * Revision 1.33  2003/05/05 15:08:40  soliday
- * Fixed a problem when most of the PVs are inaccessable.
+ * Fixed a problem when most of the PVs are inaccessible.
  *
  * Revision 1.32  2003/04/21 18:18:15  soliday
  * Improved the logging interval accuracy.
@@ -394,7 +394,7 @@ static char *USAGE2 = "Writes values of process variables or devices to a binary
 <SDDSoutputfile>   Contains the data read from the process variables.\n\
 generations        The output is sent to the file <SDDSoutputfile>-<N>, where <N> is\n\
                    the smallest positive integer such that the file does not already \n\
-                   exist.   By default, four digits are used for formating <N>, so that\n\
+                   exist.   By default, four digits are used for formatting <N>, so that\n\
                    the first generation number is 0001.  If a row limit or time limit\n\
                    is given, a new file is started when the given limit is reached.\n";
 static char *USAGE3 = "dailyFiles         The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,\n\
@@ -999,9 +999,9 @@ int main(int argc, char **argv) {
                            CondFile))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!(CondDataBuffer = (double *)malloc(sizeof(*CondDataBuffer) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     if (!(CondCHID = (chid *)malloc(sizeof(*CondCHID) * conditions)))
-      SDDS_Bomb("allocation faliure");
+      SDDS_Bomb("allocation failure");
     for (i = 0; i < conditions; i++)
       CondCHID[i] = NULL;
   }
@@ -1857,24 +1857,24 @@ int main(int argc, char **argv) {
         if (doDisconnect && !SDDS_DisconnectFile(&output_page[i]))
           SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 
-        /* Initially I thought it would be good to check if the data strobe tiggered
-                 while we were writting to the file system. The idea would be to then stop
-                 writting the data and lengthen the SDDS tables. Then next time through the
-                 loop we would then finish writting the SDDS files. One problem with this
+        /* Initially I thought it would be good to check if the data strobe triggered
+                 while we were writing to the file system. The idea would be to then stop
+                 writing the data and lengthen the SDDS tables. Then next time through the
+                 loop we would then finish writing the SDDS files. One problem with this
                  method is that we would just continue to allocate memory if there was a problem
                  with the file system. So instead I have opted to ignore the data strobe
                  until all the files have been written. This will mean we don't have to
                  allocate any more memory. The downside is that it will log the data with an
                  an offset to the data strobe and it may miss a strobe entirely.
                  if (datastrobeTrigger.triggered) {
-                 fprintf(stderr, "%lf - data strobe detected while writting files\n", getTimeInSecs());
+                 fprintf(stderr, "%lf - data strobe detected while writing files\n", getTimeInSecs());
                  break;
                  }
               */
       }
       if (datastrobeTrigger.triggered) {
         t2 = getTimeInSecs();
-        fprintf(stderr, "Data strobe detected while writting files (%lf). Gap time = %lf\n", t2, t2 - t1);
+        fprintf(stderr, "Data strobe detected while writing files (%lf). Gap time = %lf\n", t2, t2 - t1);
       }
       /*
             if (i+1 >= numFiles) {

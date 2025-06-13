@@ -750,7 +750,7 @@ long setupBPMmatrix(char *filename, CORRBPM_MAT *bpm_mat, CORRBPM_MAT *corr_mat,
       if (!(data[i] = SDDS_GetColumnInDoubles(&SDDSin, corr_mat->name[i])))
         SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     }
-    /*now transpose to bpm reponse matrix */
+    /*now transpose to bpm response matrix */
     for (i = 0; i < bpm_mat->names; i++) {
       for (j = 0; j < corr_mat->names; j++)
         bpm_mat->matrix[i][j] = data[j][i];

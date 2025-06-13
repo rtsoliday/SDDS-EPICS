@@ -103,7 +103,7 @@ steps              number of steps to run.\n\
 infiniteLoop       if given, it will run endless.\n\
 prefix, suffix     the prefix and suffix of the scalar pvs, they overrides the waveform file parameter\n\
                    Prefix and Suffix. \n\
-watchInput         watch the input file, if it is modifed, reload the input file and restart the loop. \n\
+watchInput         watch the input file, if it is modified, reload the input file and restart the loop. \n\
 verbose            print out the message \n\
 Program by H. Shang.\n\
 Link date: "__DATE__
@@ -780,7 +780,7 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
       if (ca_state(data[i].waveformCID) != cs_conn)
         fprintf(stderr, "%s not connected\n", data[i].waveformPV);
       for (j = 0; j < data[i].waveformRows; j++) {
-        /*remove illegal device names such as 16, Illigal for FF setpoint waveform */
+        /*remove illegal device names such as 16, Illegal for FF setpoint waveform */
         if (data[i].isValid[j]) {
           sprintf(pvName, "%s%s%s", data[i].prefix, data[i].DeviceName[j], data[i].suffix);
           if (ca_state(data[i].scalarCID[j]) != cs_conn)

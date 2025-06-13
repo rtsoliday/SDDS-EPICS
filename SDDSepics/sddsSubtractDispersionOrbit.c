@@ -450,7 +450,7 @@ int main(int argc, char **argv) {
           if (waveformData[i].isValid[j]) {
             if (ca_put(DBR_DOUBLE, waveformData[i].setpointID[j], &(waveformData[i].setpoint[j])) != ECA_NORMAL ||
                 ca_put(DBR_DOUBLE, waveformData[i].offsetID[j], &(waveformData[i].offset[j])) != ECA_NORMAL) {
-              fprintf(stderr, "Error settting setpoint and offset pvs\n");
+              fprintf(stderr, "Error setting setpoint and offset pvs\n");
               exit(1);
             }
           }
@@ -808,7 +808,7 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
       if (ca_state(data[i].waveformCID) != cs_conn)
         fprintf(stderr, "%s not connected\n", data[i].waveformPV);
       for (j = 0; j < data[i].waveformRows; j++) {
-        /*remove illegal device names such as 16, Illigal for FF setpoint waveform */
+        /*remove illegal device names such as 16, Illegal for FF setpoint waveform */
         if (data[i].isValid[j]) {
           sprintf(pvName, "%s:ms:x:SetpontAO", data[i].DeviceName[j]);
           if (ca_state(data[i].setpointID[j]) != cs_conn)
