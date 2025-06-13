@@ -2,7 +2,7 @@ SDDS_REPO = $(firstword $(wildcard ../../SDDS))
 ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the SDDS-EPICS repository)
 endif
-EPICS_BASE = $(firstword $(wildcard ../../epics-base $(USER)/epics/base))
+EPICS_BASE = $(firstword $(wildcard ../../epics-base $(HOME)/epics/base /usr/local/oag/base))
 ifeq ($(EPICS_BASE),)
   $(error EPICS base not found. Run 'git clone --recursive -b 7.0 https://github.com/epics-base/epics-base.git' next to the SDDS-EPICS repository)
 endif
