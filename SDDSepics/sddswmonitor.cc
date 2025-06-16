@@ -1,249 +1,75 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-
-/* program: sddswmonitor.c
- * purpose: reads process variable waveform and scalar values. 
- * output: each page of the output file is a separate snapshot of the
- *   waveforms and scalars.
+/**
+ * @file sddswmonitor.cc
+ * @brief Capture waveforms and scalars from EPICS PVs into an SDDS file.
  *
- * based on sddsmonitor2.c
- * L. Emery, M. Borland, 1994-1995.
- $Log: not supported by cvs2svn $
- Revision 1.13  2008/06/30 21:50:42  shang
- added ability to read string scalar PVs and write them as parameters to the output file, and added two optional columns ReadbackSymbol and UnitsPV to the scalar monitor file.
-
- Revision 1.12  2007/12/07 22:31:59  shang
- added -xparameter and -yparameter, modified to use the ca data type for SDDS data type if the data
- type is not provided from commandline or input file.
-
- Revision 1.11  2006/10/20 15:21:08  soliday
- Fixed problems seen by linux-x86_64.
-
- Revision 1.10  2005/11/09 19:42:30  soliday
- Updated to remove compiler warnings on Linux
-
- Revision 1.9  2005/11/08 22:05:05  soliday
- Added support for 64 bit compilers.
-
- Revision 1.8  2004/12/02 22:48:44  soliday
- Updated to build on WIN32
-
- Revision 1.7  2004/11/29 23:18:01  shang
- added newline to the usage message for versus option.
-
- Revision 1.6  2004/11/29 23:13:51  shang
- added -versus option to write the meaningful physical values that is
- related to the index as a column to the output file.
-
- Revision 1.5  2004/09/23 21:03:39  soliday
- Added missing ca_task_exit command.
-
- Revision 1.4  2004/07/19 17:39:39  soliday
- Updated the usage message to include the epics version string.
-
- Revision 1.3  2004/07/16 21:24:40  soliday
- Replaced sleep commands with ca_pend_event commands because Epics/Base
- 3.14.x has an inactivity timer that was causing disconnects from PVs
- when the log interval time was too large.
-
- Revision 1.2  2004/01/03 19:35:18  borland
- sddswmonitor no longer requires the WaveformLength parameter in the input
- file.  If it is there, it is used.  If not, the waveform length is determined
- from the waveform PVs.
-
- Revision 1.1  2003/08/27 19:51:27  soliday
- Moved into subdirectory
-
- Revision 1.50  2002/10/31 20:43:14  soliday
- Removed commented out old code.
-
- Revision 1.49  2002/10/30 22:55:50  soliday
- sddswmonitor no longer uses ezca
-
- Revision 1.48  2002/08/14 20:00:38  soliday
- Added Open License
-
- Revision 1.47  2002/07/01 21:12:12  soliday
- Fsync is no longer the default so it is now set after the file is opened.
-
- Revision 1.46  2002/04/08 19:25:51  soliday
- Changed free_scanargs argument.
-
- Revision 1.45  2002/03/25 20:42:33  shang
- fixed the big memory leak problem by allocating the memory for waveform
- data (once) outside the ReadWaveforms().
-
- Revision 1.44  2002/01/03 22:11:42  soliday
- Fixed problems on WIN32.
-
- Revision 1.43  2001/12/13 17:15:29  borland
- Removed warning message when -comment is used with -append.
- No longer aborts if units can't be obtained.
-
- Revision 1.42  2001/10/16 21:02:28  shang
- fixed the bug in version 3
-
- Revision 1.41  2001/10/09 21:45:55  shang
- fixed the problem that EnforceTimeLimit did not work for -append mode.
-
- Revision 1.40  2001/10/05 16:10:45  shang
- added -append option
-
- Revision 1.39  2001/05/29 21:27:55  borland
- Added waveformOnly, scalarsOnly, and anyChange qualifiers to -logOnChange option.
-
- Revision 1.38  2001/05/03 19:53:48  soliday
- Standardized the Usage message.
-
- Revision 1.37  2000/11/29 19:48:36  borland
- Now uses getWaveformMonitorData() to read input file.
-
- Revision 1.36  2000/04/20 15:59:53  soliday
- Fixed WIN32 definition of usleep.
-
- Revision 1.35  2000/04/19 15:53:31  soliday
- Removed some solaris compiler warnings.
-
- Revision 1.34  2000/03/08 17:15:15  soliday
- Removed compiler warnings under Linux.
-
- Revision 1.33  1999/09/17 22:13:43  soliday
- This version now works with WIN32
-
- Revision 1.32  1999/08/27 22:06:04  soliday
- logOnChange is no longer incompatible with the accumulate option
-
- Revision 1.31  1999/08/27 21:11:30  soliday
- Added the -logOnChange option
-
- Revision 1.30  1999/02/10 16:44:32  borland
- Now does averaging of scalars when in accumulation mode.
-
- Revision 1.29  1999/01/27 22:42:38  borland
- Added noquery qualifier to -accumulate option.  If this is given, then in
- accumulate more with -singleShot also given, the program only prompts at
- the beginning of every accumulation series.
-
- Revision 1.28  1998/11/18 14:33:59  borland
- Brought up to date with latest version of MakeGenerationFilename().
-
- Revision 1.27  1998/10/05 17:57:13  borland
- Minor change to use macro AA_AVERAGE in place of the macro's value.
-
- Revision 1.26  1998/09/09 21:13:53  soliday
- Added accumulate option to average or sum multiple waveforms.
-
- Revision 1.25  1998/07/30 16:53:17  borland
- Control over data type of each waveform (short, long, float, double, string,
- character) added by B. Dolin.
-
- Revision 1.24  1998/06/15 14:25:06  borland
- Added dead-band feature to sddsmonitor.  Required changing getScalarMonitorData,
- which is used to read data from SDDS file specifying how to scalar logging.
-
- Revision 1.23  1998/06/11 17:17:57  borland
- Changed the usage message so that it gives the correct usage for
- ezcaTiming.
-
- Revision 1.22  1998/06/11 15:22:08  borland
- Added some error messages for ezcaGetUnits problems.
-
- Revision 1.21  1997/07/31 18:42:09  borland
- Added conditions holdoff feature.
-
- Revision 1.20  1997/05/30 14:53:44  borland
- Added -offsetTimeOfDay option.  When given, causes TimeOfDay data to be
- offset by 24 hours if more than half of the time of the run will fall
- in the following day.  This permits starting a 24+ hour job before midnight
- with the TimeOfDay values starting at negative numbers, then running 0
- to 24 in the following day.  An identical job started just after midnight
- will have the same TimeOfDay values as the first.
-
- Revision 1.19  1997/02/28 21:47:28  borland
- Made use of ezcaGetNelem instead of reading .NORD field.
-
- Revision 1.18  1997/02/04 22:06:16  borland
- Improved function of -PVNames option by checking for a field name on the
- PV and removing it before appending .NORD when trying to get the waveform
- length.
-
- Revision 1.17  1996/12/13 20:48:09  borland
- Added -enforceTimeLimit option.
-
- Revision 1.16  1996/08/21 17:16:49  borland
- Check prompt/noprompt mode before emitting "Done." message at end.
-
- Revision 1.15  1996/06/13 19:46:36  borland
- Improved function of -singleShot option by providing control of whether
- prompts go to stderr or stdout.  Also added "Done." message before program
- exits.
-
- * Revision 1.14  1996/02/28  21:14:38  borland
- * Added mode argument to getScalarMonitorData() for control of units control.
- * sddsmonitor and sddsstatmon now have -getUnits option. sddswmonitor and
- * sddsvmonitor now get units from EPICS for any scalar that has a blank
- * units string.
+ * sddswmonitor reads one or more waveform PVs along with optional scalar
+ * PVs and writes the values to a binary SDDS file. Numerous options
+ * control timing, file handling, accumulation, and data selection.
  *
- * Revision 1.13  1996/02/16  17:20:50  borland
- * Added recover qualifier to -append option.  However, since this option isn't
- * actually implemented, I removed mention of it from the usage message.
+ * @section Usage
+ * ```
+ * sddswmonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
+ *               {-erase | -generations[=digits=<integer>][,delimiter=<string>]}
+ *               [-append[=recover]] [-pendIOtime=<seconds>]
+ *               [-steps=<integer> | -time=<value>[,<units>]]
+ *               [-interval=<value>[,<units>]] [-enforceTimeLimit]
+ *               [-offsetTimeOfDay] [-verbose]
+ *               [-singleShot[=noprompt|stdout]]
+ *               [-precision={single|double}]
+ *               [-dataType={short|long|float|double|character|string}]
+ *               [-onCAerror={useZero|skipPage|exit}]
+ *               [-scalars=<filename>]
+ *               [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]
+ *               [-accumulate={average|sum},number=<number>[,noquery]]
+ *               [-logOnChange[=waveformOnly][,scalarsOnly][,anyChange]]
+ *               [-comment=<parameter>,<text>] [-nowarnings] [-nounits]
+ *               [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
+ *               [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
+ *               [-versus=name=<columnName>[,unitsValue=<string>|unitsPV=<string>][,deltaValue=<number>|deltaPV=<string>][,offsetValue=<integer>|offsetPV=<string>]]
+ *               [-rms] [-bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV]]
+ * ```
  *
- * Revision 1.12  1996/02/15  03:41:46  borland
- * Made some changes to the usage message for -conditions option to make it
- * consistent with actual function of programs.
+ * @section Options
+ * | Option                | Description |
+ * |-----------------------|-------------|
+ * | `-PVnames`            | Comma-separated list of PV names to monitor. |
+ * | `-erase`              | Delete output file before writing. |
+ * | `-generations`        | Create numbered output files. |
+ * | `-append`             | Append data to existing file. |
+ * | `-pendIOtime`         | Maximum time to wait for Channel Access I/O. |
+ * | `-steps`              | Number of acquisition cycles. |
+ * | `-time`               | Total run time. |
+ * | `-interval`           | Time between readings. |
+ * | `-enforceTimeLimit`   | Honor the time limit even if samples are missing. |
+ * | `-offsetTimeOfDay`    | Adjust starting time of day. |
+ * | `-verbose`            | Print messages during acquisition. |
+ * | `-singleShot`         | Wait for user input before each sample. |
+ * | `-precision`          | Choose single or double precision. |
+ * | `-dataType`           | Override PV data type. |
+ * | `-onCAerror`          | Action when Channel Access fails. |
+ * | `-scalars`            | File listing scalar PVs to read. |
+ * | `-conditions`         | File specifying PV limits that must be satisfied. |
+ * | `-accumulate`         | Average or sum repeated samples. |
+ * | `-logOnChange`        | Log data only when PV values change. |
+ * | `-comment`            | Parameter and text to store in output file. |
+ * | `-nowarnings`         | Suppress connection warnings. |
+ * | `-nounits`            | Do not read PV units from database. |
+ * | `-versus`             | Define physical units for waveform index. |
+ * | `-xParameter`         | Define x-axis parameter information. |
+ * | `-yParameter`         | Define y-axis parameter information. |
+ * | `-rms`                | Create RMS parameters for each waveform. |
+ * | `-bandwidthLimitedRMS`| RMS filtered by a bandwidth. |
  *
- * Revision 1.11  1996/02/14  05:08:03  borland
- * Switched from obsolete scan_item_list() routine to scanItemList(), which
- * offers better response to invalid/ambiguous qualifiers.
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
  *
- * Revision 1.10  1996/02/10  06:30:40  borland
- * Converted Time column/parameter in output from elapsed time to time-since-
- * epoch.
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
  *
- * Revision 1.9  1996/02/07  18:32:01  borland
- * Brought up-to-date with new time routines; now uses common setup routines
- * for time data in SDDS output.
- *
- * Revision 1.8  1996/01/02  18:38:09  borland
- * Added -comment and -generations options to monitor and logging programs;
- * added support routines in SDDSepics.c .
- *
- * Revision 1.7  1995/11/13  16:24:01  borland
- * Cleaned up some parsing statements to check for presence of data before
- * scanning.  Fixed harmless uninitialized memory read problem with scalar
- * data lists.
- *
- * Revision 1.6  1995/11/09  03:22:48  borland
- * Added copyright message to source files.
- *
- * Revision 1.5  1995/11/04  04:45:42  borland
- * Added new program sddsalarmlog to Makefile.  Changed routine
- * getTimeBreakdown in SDDSepics, and modified programs to use the new
- * version; it computes the Julian day and the year now.
- *
- * Revision 1.4  1995/10/15  21:18:03  borland
- * Fixed bug in getScalarMonitorData (wasn't initializing *scaleFactor).
- * Fixed bug in sdds[vw]monitor argument parsing for -onCAerror option (had
- * exit outside of if branch).
- *
- * Revision 1.3  1995/09/30  00:05:11  borland
- * Added -PVnames option for command-line specification of waveform PVs to
- * read.  Added support for using ReadbackUnits, ReadbackScale, and ReadbackOffset
- * from input file.
- *
- * Revision 1.2  1995/09/29  19:08:16  borland
- * Added -PVnames option and code to support it; allows listing PV names on
- * the commandline rather than in a file.
- *
- * Revision 1.1  1995/09/25  20:15:57  saunders
- * First release of SDDSepics applications.
- *
+ * @authors
+ * M. Borland, L. Emery, H. Shang, R. Soliday
  */
 
 #include <complex>

@@ -1,83 +1,70 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-
-/* program: BPSmonitor.c
- * purpose: monitor booster power supplies
- *   Produces an SDDS output file containing data for
- *   the following for each power supply: AFG, Vo, Io
+/**
+ * @file BPS16monitor.c
+ * @brief Monitor booster power supplies and store waveforms in an SDDS file.
  *
- * M. Borland, 1995
- $Log: not supported by cvs2svn $
- Revision 1.4  2005/11/08 22:05:02  soliday
- Added support for 64 bit compilers.
-
- Revision 1.3  2004/07/19 17:39:35  soliday
- Updated the usage message to include the epics version string.
-
- Revision 1.2  2004/07/15 21:22:45  soliday
- Replaced sleep commands with ca_pend_event commands because Epics/Base 3.14.x
- has an inactivity timer that was causing disconnects from PVs when the
- log interval time was too large.
-
- Revision 1.1  2003/08/27 19:52:27  soliday
- Moved to subdirectory.
-
- Revision 1.15  2002/10/31 15:47:23  soliday
- It now converts the old ezca option into a pendtimeout value.
-
- Revision 1.14  2002/10/17 18:32:56  soliday
- BPS16monitor.c and sddsvmonitor.c no longer use ezca.
-
- Revision 1.13  2002/08/14 20:00:30  soliday
- Added Open License
-
- Revision 1.12  2001/05/03 19:53:42  soliday
- Standardized the Usage message.
-
- Revision 1.11  2000/04/20 15:57:38  soliday
- Fixed WIN32 definition of usleep.
-
- Revision 1.10  2000/04/19 15:49:11  soliday
- Removed some solaris compiler warnings.
-
- Revision 1.9  2000/03/08 17:12:36  soliday
- Removed compiler warnings under Linux.
-
- Revision 1.8  1999/09/17 22:11:07  soliday
- This version now works with WIN32
-
- Revision 1.7  1999/03/12 18:30:42  borland
- No changes.  Spurious need to commit due to CVS mixing up the commenting
- of update notes.
-
- * Revision 1.6  1996/02/10  06:30:23  borland
- * Converted Time column/parameter in output from elapsed time to time-since-
- * epoch.
+ * BPS16monitor periodically reads booster power supply waveforms and optional
+ * scalar PVs. Various analysis parameters control the portion of the waveform
+ * evaluated and the output format.
  *
- * Revision 1.5  1996/02/07  18:49:49  borland
- * Brought up-to-date with new time routines and common SDDS time output format.
+ * @section Usage
+ * ```
+ * BPS16monitor <outputfile> -assignments=<filename>
+ *                [-scalars=<filename>]
+ *                [-interval=<seconds>[,units]]
+ *                [-steps=<integer> | -time=<seconds>[,units]]
+ *                [-singleShot[=noprompt]]
+ *                [-onCAerror={skippage|exit}]
+ *                [-sparse=<interval>]
+ *                [-baselineFraction=<value>]
+ *                [-headFraction=<value>]
+ *                [-tailFraction=<value>]
+ *                [-slopesStartFraction=<value>]
+ *                [-expIntervalFraction=<value>]
+ *                [-meanRegion=<region>,<start>,<length>]
+ *                [-pendIOtime=<seconds>]
+ *                [-logWaveforms] [-listAnalyses]
+ *                [-waveformLength=<integer>] [-sampleInterval=<ms>]
+ *                [-verbose] [-ezcaTiming=<timeout>,<retries>]
+ * ```
  *
- * Revision 1.4  1995/11/14  23:57:21  borland
- * Fixed non-ANSI use of char * return from sprintf.
+ * @section Options
+ * | Option                 | Description |
+ * |------------------------|-------------|
+ * | `-assignments`         | File mapping PV names to signal names. |
+ * | `-scalars`             | Additional scalar PV list. |
+ * | `-interval`            | Time between samples. |
+ * | `-steps`               | Number of iterations. |
+ * | `-time`                | Total monitoring time. |
+ * | `-singleShot`          | Take one sample when user presses enter. |
+ * | `-onCAerror`           | Action on Channel Access error. |
+ * | `-sparse`              | Record every *n*th point only. |
+ * | `-baselineFraction`    | Fraction of waveform for baseline analysis. |
+ * | `-headFraction`        | Fraction of waveform to analyze at head. |
+ * | `-tailFraction`        | Fraction of waveform to analyze at tail. |
+ * | `-slopesStartFraction` | Start fraction for slope analysis. |
+ * | `-expIntervalFraction` | Fraction for exponential interval analysis. |
+ * | `-meanRegion`          | Define mean region number,start,length. |
+ * | `-pendIOtime`          | Maximum time to wait for CA I/O. |
+ * | `-logWaveforms`        | Store waveform data in output. |
+ * | `-listAnalyses`        | List available waveform analyses. |
+ * | `-waveformLength`      | Maximum waveform length. |
+ * | `-sampleInterval`      | Sample interval in milliseconds. |
+ * | `-verbose`             | Increase diagnostic output. |
+ * | `-ezcaTiming`          | Obsolete option for EZCA timing. |
+ * ```
  *
- * Revision 1.3  1995/11/09  03:22:24  borland
- * Added copyright message to source files.
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
  *
- * Revision 1.2  1995/11/04  04:45:30  borland
- * Added new program sddsalarmlog to Makefile.  Changed routine
- * getTimeBreakdown in SDDSepics, and modified programs to use the new
- * version; it computes the Julian day and the year now.
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
  *
- * Revision 1.1  1995/09/25  20:15:17  saunders
- * First release of SDDSepics applications.
- *
+ * @authors
+ * M. Borland, R. Soliday
  */
+
 #include "mdb.h"
 #include "scan.h"
 #include "match_string.h"

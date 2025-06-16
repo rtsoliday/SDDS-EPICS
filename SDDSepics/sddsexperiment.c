@@ -1,219 +1,44 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-
-/* program: sddsexperiment.c
- * purpose: conduct an experiment by varying any number of devices
- *          and reading back any number of devices
+/**
+ * @file sddsexperiment.c
+ * @brief Vary devices and measure responses using EPICS PVs.
  *
- * Michael Borland, 1993, 1994, 1995
- $Log: not supported by cvs2svn $
- Revision 1.8  2005/11/09 19:42:30  soliday
- Updated to remove compiler warnings on Linux
-
- Revision 1.7  2004/09/10 14:37:56  soliday
- Changed the flag for oag_ca_pend_event to a volatile variable
-
- Revision 1.6  2004/08/16 01:01:10  borland
- Fixed two bugs:
- 1. The substep ramping was incorrectly setting the controls to less than the
- desired initial value (assuming final>initial) on the first step, then ramping
- back to the initial value.
- 2. The rc_interrupt_handler was calling doRampPVs even though the counter
- structure was free'd in do_experiment.
-
- Revision 1.5  2004/07/22 22:05:18  soliday
- Improved signal support when using Epics/Base 3.14.6
-
- Revision 1.4  2004/07/19 17:39:37  soliday
- Updated the usage message to include the epics version string.
-
- Revision 1.3  2004/07/16 21:24:39  soliday
- Replaced sleep commands with ca_pend_event commands because Epics/Base
- 3.14.x has an inactivity timer that was causing disconnects from PVs
- when the log interval time was too large.
-
- Revision 1.2  2004/06/15 15:13:27  borland
- Added optional min and max statistics output for measurements.
-
- Revision 1.1  2003/08/27 19:51:11  soliday
- Moved into subdirectory
-
- Revision 1.49  2003/08/04 15:49:26  soliday
- Fixed issue with setting character to NULL instead of 0.
-
- Revision 1.48  2003/06/13 23:17:43  shang
- initialized the child id of variable readback name to fix the uninitialization error
- and the caused segmentation fault
-
- Revision 1.47  2003/05/20 19:50:43  soliday
- Fixed a memory initialization problem related to the last change.
-
- Revision 1.46  2003/05/20 16:56:59  soliday
- Tried to solve a problem with connecting to the same PV multiple times.
-
- Revision 1.45  2003/03/04 20:45:53  soliday
- Fixed a bug with add_measurement where did not set the chid to NULL before.
-
- Revision 1.44  2003/02/24 22:24:08  borland
- Found simple experiments did not work on Linux.  Problem appeared to
- be related to having the CHID variables in the input namelist structures.
- I moved the CHID variables to the VARIBLE_DATA and MEASUREMENT_DATA
- structures.  I also no longer expect a NULL chid to indicate an
- unconnected PV.  This seemed unnecessary since we only try to connect
- to each variable or measurement once.
-
- Revision 1.43  2002/12/11 01:21:04  shang
- added -comment, pre_experiment and post_experiment feature which runs the script before
- and after the experiment
-
- Revision 1.42  2002/11/14 22:28:06  soliday
- Added sddsbcontrol and fixed a problem with sddsexperiment
-
- Revision 1.41  2002/10/31 20:45:16  soliday
- Removed old commented out code.
-
- Revision 1.40  2002/10/31 20:43:50  soliday
- sddsexperiment no longer uses ezca.
-
- Revision 1.39  2002/10/29 23:18:22  shang
- added -comment feature
-
- Revision 1.38  2002/08/14 20:00:33  soliday
- Added Open License
-
- Revision 1.37  2001/10/19 23:16:06  shang
- added -macro option
-
- Revision 1.36  2001/04/02 05:30:06  emery
- Inserted a usleep command for the substep_pause inside the
- substep loop. Somehow it has been missing. There is another
- usleep command with substep_pause value, but is located outside the loop.
-
- Revision 1.35  2001/03/26 16:28:48  soliday
- If a measurement PV is invalid, it now resets the variables to their
- initial values.
-
- Revision 1.34  2000/11/15 07:41:33  emery
- Added flag skip_first_pause in execute command.
- This allows immediate measurement when the first data
- points doesn't require any change to the PVs.
-
- Revision 1.33  2000/10/31 15:56:37  borland
- Sends informational output to stdout, rather than stderr.  This can be
- changed back by changing the FPINFO macro.
-
- Revision 1.32  2000/10/30 20:47:08  soliday
- The ReadbackUnits column in a measurements file is now used.
-
- Revision 1.31  2000/10/16 21:48:04  soliday
- Removed tsDefs.h include statement.
-
- Revision 1.30  2000/07/31 00:35:02  borland
- Took system() command outside #ifdef.
-
- Revision 1.29  2000/07/30 22:23:35  borland
- Fixed memory management bug introduced into last version.
-
- Revision 1.28  2000/07/18 19:57:02  borland
- Changes by D. Blachowicz:  Added to system_call command ability to scan
- values from stdout of the UNIX command and put them in the main sdds output
- file.
-
- Revision 1.26  2000/04/19 15:50:49  soliday
- Removed some solaris compiler warnings.
-
- Revision 1.25  2000/03/08 17:13:31  soliday
- Removed compiler warnings under Linux.
-
- Revision 1.24  1999/09/17 22:12:01  soliday
- This version now works with WIN32
-
- Revision 1.23  1998/11/16 14:58:12  borland
- Fixed an indexing bug that caused failure for nested loops.
-
- Revision 1.22  1997/07/31 18:44:41  borland
- Now uses group puts for varying variables.
-
- Revision 1.21  1997/02/20 16:22:14  borland
- More diagnostic output now in verbose mode (some "very verbose" output
- now included in verbose output).
-
- Revision 1.20  1996/09/18 02:49:55  borland
- Added an additional update page call on interrupts.
-
- Revision 1.19  1996/08/29 19:54:47  borland
- Replaced SDDS_WriteTable() call after experiment loop by
- SDDS_UpdatePage() call inside the loop.  This places data in the file
- as the experiment proceeds.
-
- * Revision 1.18  1996/06/13  22:08:44  borland
- * Improved function of rootname substitution in system_call commands.
+ * sddsexperiment reads an SDDS input file describing devices to vary and
+ * devices to measure. Values are written to an SDDS output file while
+ * optional macros and comments may be supplied on the command line.
  *
- * Revision 1.17  1996/05/01  14:12:10  borland
- * Added exec_command namelist command (immediate command execution).
+ * @section Usage
+ * ```
+ * sddsexperiment <inputfile> [<outputfile-rootname|outputfilename>]
+ *     [-echoinput] [-dryrun] [-summarize] [-verbose]
+ *     [-pendIOtime=<seconds>] [-describeInput]
+ *     [-macro=<tag>=<value>,...] [-comment=<string>]
+ *     [-scalars=<filename>] [-ezcaTiming=<timeout>,<retries>]
+ * ```
  *
- * Revision 1.16  1996/04/24  23:09:45  borland
- * Does binary SDDS output now.
+ * @section Options
+ * | Option          | Description |
+ * |-----------------|-------------|
+ * | `-echoinput`    | Echo commands as they are executed. |
+ * | `-dryrun`       | Parse input without executing commands. |
+ * | `-summarize`    | Summarize commands before execution. |
+ * | `-verbose`      | Provide additional status output. |
+ * | `-pendIOtime`   | Channel Access timeout in seconds. |
+ * | `-describeInput`| Describe acceptable input file contents and exit. |
+ * | `-macro`        | Perform macro substitutions on the input file. |
+ * | `-comment`      | Comment text to store in the output file. |
+ * | `-scalars`      | File containing additional scalar PVs. |
+ * | `-ezcaTiming`   | Obsolete option for EZCA timing. |
  *
- * Revision 1.15  1996/03/08  23:39:29  borland
- * Added more signals to list of signals trapped for restoring initial
- * setpoints.
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
  *
- * Revision 1.14  1996/03/07  00:37:43  borland
- * Now tries to get units for measurements and variables for which the user
- * supplies no units.
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
  *
- * Revision 1.13  1996/02/10  06:29:42  borland
- * Added feature to variable command to support setting from a column of
- * values in an SDDS file.  Converted Time parameter/column from elapsed time to
- * time-since-epoch; added new ElapsedTime parameter/column.
- *
- * Revision 1.12  1996/02/07  18:50:42  borland
- * Added capability to load measurement requests from sddsmonitor input files.
- *
- * Revision 1.11  1996/01/09  17:12:47  borland
- * Fixed bug in ramping when user function was given; added more output for
- * ramping when dry run mode is used.
- *
- * Revision 1.10  1996/01/04  00:22:34  borland
- * Added ganged ramping to experiment programs.
- *
- * Revision 1.9  1995/12/11  21:24:36  borland
- * Removed second linefeed from percentage complete printout.
- *
- * Revision 1.8  1995/12/05  20:20:25  borland
- * Improved function of ramping feature; ramp-back on interrupt and completion
- * works properly now.
- *
- * Revision 1.7  1995/12/03  01:31:37  borland
- * Added ramping feature as per sddsvexperiment; removed support for devices;
- * added fflush(stdout) calls after informational printouts.
- *
- * Revision 1.6  1995/11/15  21:58:57  borland
- * Changed interrupt handlers to have proper arguments for non-Solaris machines.
- *
- * Revision 1.5  1995/11/15  01:32:29  borland
- * Fixed problems with use of new time routines.
- *
- * Revision 1.4  1995/11/15  00:04:21  borland
- * Modified to use time routines in SDDSepics.c .
- *
- * Revision 1.3  1995/11/14  04:34:02  borland
- * Added conditionals to support Solaris requirement for function arguments
- * to signal().
- *
- * Revision 1.2  1995/11/09  03:22:34  borland
- * Added copyright message to source files.
- *
- * Revision 1.1  1995/09/25  20:15:35  saunders
- * First release of SDDSepics applications.
- *
+ * @authors
+ * M. Borland, R. Soliday, D. Blachowicz
  */
 #include "mdb.h"
 #include "scan.h"

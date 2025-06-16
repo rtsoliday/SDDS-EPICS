@@ -1,18 +1,39 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-
-/*
- *  $Log: not supported by cvs2svn $
- *  Revision 1.1  2006/10/30 22:11:04  shang
- *  first version, for generating booster ramp table with bumping correctors.
+/**
+ * @file sddsboosterbump.c
+ * @brief Generate a booster ramp table with orbit bumps.
  *
- *  for generating booster ramp table per provided parameters, H. Shang, Oct. 2006
+ * This program creates a new booster ramp table based on one or more
+ * correctors and a specified bump time. The resulting table can be
+ * written to a file or piped to another program.
+ *
+ * @section Usage
+ * ```
+ * sddsboosterbump <outputFile>|-pipe=out
+ *                 -corrector=name=<string>,bumpValue=<value>
+ *                 [-bumpTime=<ms>]
+ *                 [-maximumCurrent=<amps>]
+ *                 [-orbitChange=<value>]
+ * ```
+ *
+ * @section Options
+ * | Option             | Description |
+ * |--------------------|-------------|
+ * | `-pipe=out`        | Write output to stdout. |
+ * | `-corrector`       | Specify corrector name and bump value. |
+ * | `-bumpTime`        | Time during ramp when bump begins. |
+ * | `-maximumCurrent`  | Maximum current for correctors. |
+ * | `-orbitChange`     | Orbit change in millimeters. |
+ *
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * H. Shang, R. Soliday
  */
 
 #include "mdb.h"
