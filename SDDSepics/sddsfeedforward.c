@@ -1,210 +1,58 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-
-/* sddsfeedforward
- * A generalized SDDS-compliant feed-forward program for EPICS
- *  * Vector feedforward equation:
- * Actuator(New) = Actuator(Actual) + 
- *                 [ActuatorFF(PresentReadback) - ActuatorFF(LastReadback)]
+/**
+ * @file sddsfeedforward.c
+ * @brief Generalized SDDS-based feed-forward application for EPICS.
  *
- * ActuatorFF is a vector function (or look-up table) returning actuator values for
- * specific readback values.  I use this equation by default to allow 
- * Actuator(Actual)!=ActuatorFF(LastReadback).
- * However, if the program is run in 'absolute' mode (the default), then we use
- * Actuator(New) = ActuatorFF(PresentReadback)
+ * Implements vector feed-forward using an SDDS table of readbacks and
+ * actuators. Options provide logging, run control integration, and
+ * various execution controls.
  *
- * The readback is always a scalar.  We may have many readbacks in the context of
- * the program, but each is handled with a separate equation.
+ * @section Usage
+ * ```
+ * sddsfeedforward <inputfile>
+ *       [-controlLog=<rootname>]
+ *       [-interval=<seconds>] 
+ *       [-steps=<value>]
+ *       [-verbose] 
+ *       [-dryRun] 
+ *       [-offsetOnly]
+ *       [-averageOf=<number>[,interval=<seconds>]]
+ *       [-advance=<seconds>]
+ *       [-testValues=<SDDSfile>]
+ *       [-runControlPV=string=<string>[,pingTimeout=<value>]]
+ *       [-runControlDescription=<string>]
+ *       [-CASecurityTest]
+ *       [-pendIOtime=<seconds>] 
+ *       [-infiniteLoop]
+ * ```
  *
- * The structure of the main input file is:
- * Parameters:
- *    ReadbackName   PV name for the readback
- *    ActuatorName   PV name for the actuator
- *    ReadbackChangeThreshold  
- *                   (Optional) value by which readback must change
- *                   before any action will be taken for the named actuator.
- *    ActuatorChangeLimit
- *                   (Optional) maximum change that will be performed
- *                   in one step for the named actuator.
- * Columns:
- *    ReadbackValue  values of the readback
- *    ActuatorValue  values of the actuator
- * Each page must have a different actuator but any number may have the
- * same readback.
+ * @section Options
+ * | Option                 | Description |
+ * |------------------------|-------------|
+ * | `-controlLog`          | Log input and output data to an SDDS file. |
+ * | `-interval`            | Time interval between corrections. |
+ * | `-steps`               | Total number of correction steps. |
+ * | `-verbose`             | Print additional information. |
+ * | `-dryRun`              | Compute corrections without changing actuators. |
+ * | `-offsetOnly`          | Offset tables by initial readback values. |
+ * | `-averageOf`           | Average readbacks before applying corrections. |
+ * | `-advance`             | Advance readback value by given seconds. |
+ * | `-testValues`          | File of ranges that suspend feedback when exceeded. |
+ * | `-runControlPV`        | Run control PV name with optional ping timeout. |
+ * | `-runControlDescription`| Description string for run control record. |
+ * | `-CASecurityTest`      | Check Channel Access write permissions. |
+ * | `-pendIOtime`          | Maximum time to wait for Channel Access I/O. |
+ * | `-infiniteLoop`        | Run indefinitely. |
  *
- * Based on Louis Emery's sddscontrollaw.
- * Michael Borland, May 1998.
- */
-
-/*
- * $Log: not supported by cvs2svn $
- * Revision 1.20  2009/12/18 00:07:13  lemery
- * Added comment useful to me.
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
  *
- * Revision 1.19  2009/01/28 22:48:27  soliday
- * Updated so that the prevSettingOutOfRange variable is set properly when
- * not using a conditions file. Also made sure the runcontrol alarm status
- * is set correctly.
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
  *
- * Revision 1.18  2008/03/10 19:02:18  shang
- * changed print the message to stdout instead of stderr (but can change back to stderr if define FPINFO to stderr),
- * and added fflush() after each print statement; fixed the problem that runcontrol ping continuously without sleep when
- * the loop interval or runcontrol ping interval is less than 1 seconds.
- *
- * Revision 1.17  2008/03/04 19:16:06  shang
- * added one more feedforward enable condition
- *
- * Revision 1.16  2007/03/06 16:39:23  shang
- * added "ExitOnFailure" column to test file to terminate the program when test fails.
- *
- * Revision 1.15  2007/01/23 16:16:50  emery
- * Removed unnecessary declaration for variable i.
- * Added a necessary one for prevOutOfRange.
- *
- * Revision 1.14  2006/04/04 21:44:18  soliday
- * Xuesong Jiao modified the error messages if one or more PVs don't connect.
- * It will now print out all the non-connecting PV names.
- *
- * Revision 1.13  2006/03/24 19:47:22  shang
- * added ActuatorLowerLimit and ActuatorUpperLimit (which are two parameters from the input file) to prevent setting values that are not in the specified range.
- *
- * Revision 1.12  2005/11/09 19:42:30  soliday
- * Updated to remove compiler warnings on Linux
- *
- * Revision 1.11  2005/10/01 20:25:57  borland
- * Fixed long-standing bugs in ActuatorChangeLimit and ReadbackChangeThreshold
- * features:  1. Incorrect use of SDDS_GetParameterInDouble, resulting in
- * a memory overwrite error.  2. Code isn't designed to use both of these
- * together, and now exits if the user tries.
- *
- * Revision 1.10  2005/08/30 21:41:07  soliday
- * Updated to compile on WIN32.
- *
- * Revision 1.9  2005/08/22 22:12:58  shang
- * added -controlLog option to log the values of acutators, readbacks and enable pvs during
- * experiment
- *
- * Revision 1.8  2004/09/10 14:37:56  soliday
- * Changed the flag for oag_ca_pend_event to a volatile variable
- *
- * Revision 1.7  2004/07/22 22:05:18  soliday
- * Improved signal support when using Epics/Base 3.14.6
- *
- * Revision 1.6  2004/07/19 17:39:37  soliday
- * Updated the usage message to include the epics version string.
- *
- * Revision 1.5  2004/07/16 21:24:39  soliday
- * Replaced sleep commands with ca_pend_event commands because Epics/Base
- * 3.14.x has an inactivity timer that was causing disconnects from PVs
- * when the log interval time was too large.
- *
- * Revision 1.4  2004/01/21 18:46:56  borland
- * Modified Shang's version to allow per-actuator enable/disable PVs, limits,
- * and disabled output values.
- *
- * Revision 1.3  2003/12/19 16:50:25  soliday
- * Removed debugging printouts.
- *
- * Revision 1.2  2003/12/03 15:55:31  shang
- * added pingTimeout argument for runControlPV option and fixed the segmentation errors that occurred when
- * program crashes at the set-up data step, moved the runControlInit before the set-up data to avoid the
- * segmentation error occurred in runControlLogMessage when program aborted in set-up data step.
- *
- * Revision 1.1  2003/08/27 19:51:13  soliday
- * Moved into subdirectory
- *
- * Revision 1.26  2002/11/27 16:22:06  soliday
- * Fixed issues on Windows when built without runcontrol
- *
- * Revision 1.25  2002/11/19 22:33:04  soliday
- * Altered to work with the newer version of runcontrol.
- *
- * Revision 1.24  2002/11/05 15:49:18  soliday
- * Fixed a problem with runcontrol
- *
- * Revision 1.23  2002/11/04 20:48:25  soliday
- * There were issues running runcontrol because it is still using ezca calls.
- *
- * Revision 1.22  2002/10/31 15:47:25  soliday
- * It now converts the old ezca option into a pendtimeout value.
- *
- * Revision 1.21  2002/10/29 23:27:26  shang
- * added -infiniteLoop feature
- *
- * Revision 1.20  2002/10/16 19:55:04  soliday
- * Changed sddscontrollaw, sddsfeedforward, and sddspvtest so that they
- * no longer use ezca.
- *
- * Revision 1.19  2002/08/14 20:00:34  soliday
- * Added Open License
- *
- * Revision 1.18  2002/04/18 21:05:00  soliday
- * Removed static variables.
- *
- * Revision 1.17  2002/04/18 15:37:27  soliday
- * Fixed a bug from my last change.
- *
- * Revision 1.16  2002/04/17 22:21:20  soliday
- * Added support for vxWorks and removed memory leaks.
- *
- * Revision 1.15  2001/05/03 19:53:45  soliday
- * Standardized the Usage message.
- *
- * Revision 1.14  2000/04/20 15:58:39  soliday
- * Fixed WIN32 definition of usleep.
- *
- * Revision 1.13  2000/04/19 15:51:22  soliday
- * Removed some solaris compiler warnings.
- *
- * Revision 1.12  2000/03/08 17:13:43  soliday
- * Removed compiler warnings under Linux.
- *
- * Revision 1.11  1999/11/29 23:08:34  borland
- * No longer print out lookup tables in verbose mode.
- *
- * Revision 1.10  1999/10/08 18:24:17  borland
- * Added an error message if timing advance is less than 0.
- *
- * Revision 1.9  1999/10/08 15:13:32  emery
- * Changed DEFAULT_TIME_ADVANCE to 0.0, otherwise, the
- * advance option was on by default.
- *
- * Revision 1.8  1999/09/17 22:12:39  soliday
- * This version now works with WIN32
- *
- * Revision 1.7  1999/09/17 20:32:33  emery
- * Added advance option which anticipates the true
- * readback value based on past trend.
- *
- * Revision 1.6  1999/08/26 21:02:28  borland
- * Added -offset option to sddsfeedforward.
- * Modified sddsstatmon.c and toggle.c to accommodate placement of
- * ../oagca/pvMultiList.h in SDDSepics.h in early revisions.
- *
- * Revision 1.5  1999/08/25 17:56:31  borland
- * Rewrote code for data logging inhibiting.  Collected code in SDDSepics.c
- *
- * Revision 1.4  1998/05/21 20:22:25  borland
- * Removed updateInterval option.  Allow any floating-point data type in
- * tests data, rather than just double.
- *
- * Revision 1.3  1998/05/21 19:59:46  borland
- * Fixed the usage message.  Note that I haven't tested the following yet:
- * averaging of readbacks, run-control, logging of stop/start.
- *
- * Revision 1.2  1998/05/21 19:44:16  borland
- * Added implementation of change limits.  Debugged implementation of
- * action thresholds.
- *
- * Revision 1.1  1998/05/21 16:41:50  borland
- * First version.  Seems to work.
- *
+ * @authors
+ * M. Borland, L. Emery, R. Soliday, H. Shang
  */
 
 #include "mdb.h"

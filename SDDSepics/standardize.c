@@ -1,25 +1,36 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution.
-\*************************************************************************/
-/* SCCS ID: @(#)UnixStandardize.c	1.9 2/16/94 */
-/*************************************************************************
- * FILE:      UnixStandardize.c
- * Author:    Claude Saunders
+/**
+ * @file standardize.c
+ * @brief Standardize magnets using an SDDS specification file.
  *
- * Purpose:   Program for standardizing magnets. An SDDS data file is
- *            read which specifies which devices (or PV's) are to be
- *            standardized and how. Subroutine records on IOC's are
- *            configured appropriately and processed to begin standard-
- *            ization. Various options allow the user to start/stop/query
- *            standardization.
+ * Reads an SDDS file describing devices and standardization parameters,
+ * configures the appropriate subroutine records, and optionally starts,
+ * stops, or queries the standardization process.
  *
- * Mods:      login mm/dd/yy: description
- *************************************************************************/
+ * @section Usage
+ * ```
+ * standardize [-query|-configure|-stop]
+ *             [-pendIoTime <seconds>] [--] <spec-file>
+ * ```
+ *
+ * @section Options
+ * | Option        | Description |
+ * |---------------|-------------|
+ * | `-query`      | Print the standardization state of devices in the specification file. |
+ * | `-configure`  | Configure records for standardization but do not initiate. |
+ * | `-stop`       | Halt standardization of devices in the specification file. |
+ * | `-pendIoTime` | Maximum time to wait for Channel Access I/O. |
+ *
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * C. Saunders, J. Anderson, R. Soliday, H. Shang
+ */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

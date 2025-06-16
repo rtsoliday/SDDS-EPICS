@@ -1,4 +1,42 @@
-#include <complex>
+/**
+ * @file sddspermissive.cc
+ * @brief Monitor PVs and update run control based on permissive ranges.
+ *
+ * Reads an SDDS file of PV names and allowed ranges, then checks values
+ * and sets run control messages when readings fall outside the limits.
+ *
+ * @section Usage
+ * ```
+ * sddspermissive <inputfile>
+ *  -executionTime=<seconds>
+ *  -runControlPV=string=<string>,pingTimeout=<value>,pingInterval=<value>
+ *  -runControlDescription=string=<string>
+ * [-verbose] 
+ * [-pendIOTime=<seconds>]
+ * ```
+ *
+ * @section Options
+ * | Option                  | Description |
+ * |-------------------------|-------------|
+ * | `-executionTime`        | Total time to run before exiting. |
+ * | `-runControlPV`         | Run control PV name with ping parameters. |
+ * | `-runControlDescription`| Description string for the run control record. |
+ * | `-verbose`              | Enable verbose output. |
+ * | `-pendIOTime`           | Maximum time to wait for Channel Access I/O. |
+ *
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * R. Soliday
+ */
+
+ #include <complex>
 #include <iostream>
 #include <cerrno>
 #include <csignal>

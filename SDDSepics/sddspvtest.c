@@ -1,103 +1,48 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-
-/*
+/**
+ * @file sddspvtest.c
+ * @brief Test EPICS PVs against limits and log results.
  *
- *  $Log: not supported by cvs2svn $
- *  Revision 1.12  2008/03/07 22:11:06  shang
- *  removed the long type variable interval in runControlPingWhileSleeop() because its value
- *  is set to 0 if the loop interval or runcontrol ping interval is less than 1 seconds and this will cause
-*  the runcontrol ping without sleeping. Remove it because it is not required, Or change its type
- *   to double will solve the problem also.
+ * Reads an SDDS file listing PV names and limits, periodically checks
+ * their values, and optionally writes to an output PV or exits based on
+ * pass/fail conditions.
  *
- *  Revision 1.11  2007/09/27 15:08:23  shang
- *  added logdaemon
+ * @section Usage
+ * ```
+ * sddspvtest <inputFile> [-pvOutput=<pv>[,passValue=<integer>,failValue=<integer>]]
+ *            [-time=<timeToRun>,<units>]
+ *            [-interval=<interval>,<units>]
+ *            [-monitor]
+ *            [-exitCondition={allPass|anyFail|converged=<cycles>|changed}]
+ *            [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]
+ *            [-runControlDescription={string=<string>|parameter=<string>}]
+ *            [-pendIOtime=<seconds>] 
+ *            [-verbose]
+ * ```
  *
- *  Revision 1.10  2005/11/08 22:34:39  soliday
- *  Updated to remove compiler warnings on Linux.
+ * @section Options
+ * | Option                   | Description |
+ * |--------------------------|-------------|
+ * | `-pvOutput`              | Output PV for storing results with optional values. |
+ * | `-time`                  | Total time to run the test. |
+ * | `-interval`              | Interval between value checks. |
+ * | `-monitor`               | Use CA monitoring instead of polling. |
+ * | `-exitCondition`         | Terminate when the specified condition is met. |
+ * | `-runControlPV`          | Run control PV name with optional ping settings. |
+ * | `-runControlDescription` | Run control description string or parameter. |
+ * | `-pendIOtime`            | Maximum time to wait for Channel Access I/O. |
+ * | `-verbose`               | Enable verbose output. |
  *
- *  Revision 1.9  2005/05/31 13:06:18  shang
- *  the runcontrol ping interval now is at least 1.0 seconds to reduce the CPU
- *  usage.
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
  *
- *  Revision 1.8  2005/04/21 19:28:24  soliday
- *  Added the ability to use CA monitoring instead of the CA gets every iteration.
- *  This can be done for all PVs using the -monitor option. Or it can be setup
- *  to only monitor selected PVs by creating a Monitor column with Y or N for values.
- *  This should reduce network traffic and CPU time.
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
  *
- *  Revision 1.7  2004/09/10 14:37:56  soliday
- *  Changed the flag for oag_ca_pend_event to a volatile variable
- *
- *  Revision 1.6  2004/07/22 22:05:19  soliday
- *  Improved signal support when using Epics/Base 3.14.6
- *
- *  Revision 1.5  2004/07/19 17:39:38  soliday
- *  Updated the usage message to include the epics version string.
- *
- *  Revision 1.4  2004/07/16 21:24:40  soliday
- *  Replaced sleep commands with ca_pend_event commands because Epics/Base
- *  3.14.x has an inactivity timer that was causing disconnects from PVs
- *  when the log interval time was too large.
- *
- *  Revision 1.3  2004/06/15 22:23:20  soliday
- *  Catch problems with calls to ca_pend_io now.
- *
- *  Revision 1.2  2004/06/11 18:26:39  soliday
- *  Added missing break statement.
- *
- *  Revision 1.1  2003/08/27 19:51:19  soliday
- *  Moved into subdirectory
- *
- *  Revision 1.15  2003/03/04 19:13:11  soliday
- *  Changed the default pend time to 10 seconds.
- *
- *  Revision 1.14  2002/11/27 16:22:06  soliday
- *  Fixed issues on Windows when built without runcontrol
- *
- *  Revision 1.13  2002/11/19 22:33:05  soliday
- *  Altered to work with the newer version of runcontrol.
- *
- *  Revision 1.12  2002/11/05 15:49:19  soliday
- *  Fixed a problem with runcontrol
- *
- *  Revision 1.11  2002/11/04 20:48:25  soliday
- *  There were issues running runcontrol because it is still using ezca calls.
- *
- *  Revision 1.10  2002/08/14 20:00:35  soliday
- *  Added Open License
- *
- *  Revision 1.9  2002/04/19 19:02:44  shang
- *  added printout of time message
- *
- *  Revision 1.8  2002/04/19 15:15:37  soliday
- *  Removed memory leaks.
- *
- *  Revision 1.7  2002/04/18 22:25:33  soliday
- *  Added support for vxWorks. I still need to check for memory leaks.
- *
- *  Revision 1.6  2001/10/30 21:20:54  shang
- *  modified printout message when tests fail
- *
- *  Revision 1.5  2001/10/28 05:13:31  shang
- *  added -verbose option to print out the test-failed pv names.
- *
- *  Revision 1.4  2001/10/27 00:42:42  shang
- *  added -pendIOtime option
- *
- *  Revision 1.3  2001/09/10 19:35:07  soliday
- *  Fixed Linux compiler warnings.
- *
- *
+ * @authors
+ * R. Soliday, H. Shang
  */
-
-/*sddspvtest.c */
 
 #include "mdb.h"
 #include "scan.h"

@@ -12,7 +12,6 @@
  *            [-pipe=[input][,output]]
  *            [-makeLoggerInput[=withStorageType]]
  *            [-makeSCRInput]
- *            [-includeStorageType]
  *            [-verbose]
  *            [-pendIOTime=<seconds>]
  * ```
