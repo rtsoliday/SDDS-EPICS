@@ -1,17 +1,69 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-/* program: cawait.c
- * purpose: waits for a set of PVs to take on values satisfying
- *          given criteria
- * sections lifted from rpn code.
- * M. Borland, 1995.
+/**
+ * @file cawait.cc
+ * @brief Wait for EPICS process variables to reach specified conditions.
+ *
+ * cawait monitors one or more process variables and waits until user-defined
+ * criteria are satisfied. Logical combinations of conditions and event
+ * notifications are supported for flexible automation.
+ *
+ * @section Usage
+ * ```
+ * cawait [-interval=<seconds>] 
+ *        [-timelimit=<seconds>] 
+ *        [-totaltimelimit=<seconds>]
+ *         -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed]
+ *        [-and | -or | -not] 
+ *        [-repeat[=<number>]] 
+ *        [-emit=event=<string>[,timeout=<string>][,end=<string>]]
+ *        [-preevent=<command>] 
+ *        [-onevent=<command>] 
+ *        [-postevent=<command>] 
+ *        [-onend=<command>]
+ *        [-subprocess=<command>[,event=<string>][,timeout=<string>][,end=<string>]]
+ *        [-pendiotime=<seconds>] [-nowarnings] 
+ *        [-provider={ca|pva}]
+ * ```
+ *
+ * @section Options
+ * | Required                | Description                                                             |
+ * |-------------------------|-------------------------------------------------------------------------|
+ * | `-waitFor`              | Define PV and completion criterion.                                      |
+ *
+ * | Optional                | Description                                                             |
+ * |-------------------------|-------------------------------------------------------------------------|
+ * | `-interval`             | Interval between checks (default 0.1 s).                                |
+ * | `-ezcatiming`           | Enable EZCA timing mode.                                                |
+ * | `-timelimit`            | Maximum time to wait for the condition.                                  |
+ * | `-totaltimelimit`       | Maximum total runtime for cawait.                                        |
+ * | `-repeat`               | Number of events to wait for (default 1; infinite if no number given).   |
+ * | `-emit`                 | Emit strings on event, timeout, or end.                                  |
+ * | `-usemonitor`           | Use CA monitors instead of polling.                                      |
+ * | `-not`, `-and`, `-or`   | Logical NOT, AND, OR on conditions.                                      |
+ * | `-preevent`             | Command to execute before each event.                                    |
+ * | `-onevent`              | Command to execute when an event occurs.                                 |
+ * | `-postevent`            | Command to execute after an event clears.                                |
+ * | `-onend`                | Command to execute after final event.                                    |
+ * | `-subprocess`           | Spawn subprocess and send notifications.                                  |
+ * | `-pendiotime`           | Time allowed for CA operations (default 10 s).                           |
+ * | `-nowarnings`           | Suppress timeout warnings.                                               |
+ * | `-provider`             | Choose Channel Access or PVAccess provider.                              |
+ *
+ * @subsection Incompatibilities
+ * - `-not` requires a preceding `-waitFor` option.
+ * - `-and` and `-or` require at least two `-waitFor` options.
+ *
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * M. Borland, R. Soliday
  */
+
 #include <complex>
 #include <iostream>
 #include <queue>

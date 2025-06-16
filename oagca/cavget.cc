@@ -1,15 +1,73 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-/* program: cavget.c
- * purpose: vector CA gets from command line
- * M. Borland, 1995.
+/**
+ * @file cavget.cc
+ * @brief Retrieve values from EPICS process variables using Channel Access.
+ *
+ * cavget performs vector gets on one or more process variables specified on the
+ * command line.  Various formatting and statistical options are provided for
+ * scripting and data collection tasks.
+ *
+ * @section Usage
+ * ```
+ * cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
+ *        [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
+ *        [-floatformat=<printfString>] 
+ *        [-charArray] 
+ *        [-delimiter=<string>] 
+ *        [-labeled] 
+ *        [-noQuotes] 
+ *        [-embrace=start=<string>,end=<string>] 
+ *        [-cavputForm]
+ *        [-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename]]] 
+ *        [-pendIoTime=<seconds>] 
+ *        [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]
+ *        [-numerical] 
+ *        [-errorValue=<string>] 
+ *        [-excludeErrors]
+ *        [-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]
+ *        [-provider={ca|pva}]
+ *        [-info]
+ *        [-printErrors]
+ * ```
+ *
+ * @section Options
+ * | Option           | Description |
+ * |------------------|-------------|
+ * | `-list`          | Specify PV name components or explicit names. |
+ * | `-range`         | Provide a range of integer suffixes. |
+ * | `-floatformat`   | Specify printf style format for floating point values. |
+ * | `-charArray`     | Print character arrays as strings. |
+ * | `-delimiter`     | Set string to separate values. |
+ * | `-labeled`       | Prepend labels to values. |
+ * | `-noQuotes`      | Do not enclose string values in quotes. |
+ * | `-embrace`       | Surround output with specified strings. |
+ * | `-cavputForm`    | Format output suitable for input to cavput. |
+ * | `-statistics`    | Compute statistics over multiple readings. |
+ * | `-pendIoTime`    | Maximum time to wait for connections. |
+ * | `-repeat`        | Perform repeated readings. |
+ * | `-numerical`     | Use numerical PV names instead of labels. |
+ * | `-errorValue`    | Value to use when an error occurs. |
+ * | `-excludeErrors` | Omit values when an error occurs. |
+ * | `-despike`       | Remove spikes using optional parameters. |
+ * | `-provider`      | Use Channel Access or PVAccess. |
+ * | `-info`          | Display connection and PV information. |
+ * | `-printErrors`   | Print error messages without halting execution. |
+ *
+ * @subsection Incompatibilities
+ * - `-cavputForm` cannot be used with `-floatformat`, `-delimiter`, `-labeled`, `-noQuotes`, `-embrace`, or `-charArray`.
+ * - `-excludeErrors` cannot be used with `-errorValue`.
+ *
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * M. Borland, R. Soliday
  */
+
 #include <complex>
 #include <iostream>
 #include <cstdlib>

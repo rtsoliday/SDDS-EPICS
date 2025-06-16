@@ -1,113 +1,57 @@
-/*************************************************************************\
- * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
- * National Laboratory.
- * Copyright (c) 2002 The Regents of the University of California, as
- * Operator of Los Alamos National Laboratory.
- * This file is distributed subject to a Software License Agreement found
- * in the file LICENSE that is included with this distribution. 
-\*************************************************************************/
-/* program: cavput.c
- * purpose: vector CA puts from command line
- * M. Borland, 1995.
- $Log: not supported by cvs2svn $
- Revision 1.21  2010/04/16 15:52:12  soliday
- Added internal CA.Client.Exception handling.
-
- Revision 1.20  2009/02/17 19:52:14  soliday
- Updated so that ca_task_exit is called even if it exits with an error
- because this is needed on linux so it doesn't segfault.
-
- Revision 1.19  2008/02/19 20:13:56  soliday
- Found a memory freeing bug.
-
- Revision 1.18  2006/10/19 22:19:28  soliday
- Added support for linux-x86_64.
-
- Revision 1.17  2005/11/08 22:04:35  soliday
- Added support for 64 bit compilers.
-
- Revision 1.16  2004/09/27 14:45:26  soliday
- Updated the section where the arguments are parsed.
-
- Revision 1.15  2004/09/25 15:11:47  borland
- Encountered problem with program hanging when setting large numbers of
- PVs on Linux.  It hung when doing free(channelID).  For some reason,
- freeing this first fixed the problem.
-
- Revision 1.14  2004/07/19 18:20:38  soliday
- Replaced sleep commands with ca_pend_event commands because
- Epics/Base 3.14.x has an inactivity timer that was causing disconnects
- from PVs when the log interval time was too large. Updated the usage
- message so that it displays the Epics version.
-
- Revision 1.13  2003/12/04 22:32:30  soliday
- If a channel is not connect and blunderAhead silently is set it will not
- notify the user.
-
- Revision 1.12  2003/09/02 21:20:49  soliday
- Cleaned up the code for Linux.
-
- Revision 1.11  2003/08/08 18:06:37  soliday
- Added missing ca_task_end call.
-
- Revision 1.10  2003/07/21 18:14:57  soliday
- Fixed issue with last change.
-
- Revision 1.9  2003/07/19 23:56:36  borland
- Moved a ca_pend_io() statement and added a very short usleep() call to
- get it to work on R3.14.  Doesn't make sense, but it works now.
-
- Revision 1.8  2002/11/26 22:34:01  soliday
- Removed references to ezca.
-
- Revision 1.7  2002/10/09 07:48:46  shang
- added -ramp option
-
- revision 1.6  2002/08/02 15:39:55;  author: jba
- Added license information
- 
- Revision 1.5  2002/06/25 16:48:56  shang
- freed memory leaks
-
- Revision 1.4  2002/05/08 19:52:36  shang
- freed memory leaks
-
- Revision 1.3  2000/10/16 16:22:22  soliday
- Removed tsDefs.h include statement.
-
- Revision 1.2  2000/10/11 20:03:04  soliday
- Removed warnings on Solaris with gcc
-
- Revision 1.1.1.1  1999/03/11 22:23:32  borland
- Moved from ca area
-
- Revision 1.7  1996/09/21 21:00:59  borland
- Added -blunderAhead option to allow puts to proceed in spite of unconnected
- PVs.
-
- Revision 1.6  1996/05/03 23:39:54  borland
- Added error checking to ca_pend_io() call.  Added -numerical option.
- Reformatted code.
-
- * Revision 1.5  1996/05/03  02:18:09  borland
- * Added error checking and messages for case when no values are supplied.
- * Fixed format statement for -dryRun printout.
+/**
+ * @file cavput.cc
+ * @brief Send values to EPICS process variables using Channel Access.
  *
- * Revision 1.4  1996/02/14  05:37:36  borland
- * Change from obsolete scan_item_list() routine to scanItemList(), which
- * offers better error detection and flagging.
+ * cavput performs vector puts to one or more process variables.  It supports
+ * ramping, delta mode, and other features useful for scripting accelerator
+ * operations.
  *
- * Revision 1.3  1996/01/04  21:50:03  borland
- * Added factor qualifier to -deltaMode option for multiplying offsets by
- * a number.
+ * @section Usage
+ * ```
+ * cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
+ *        [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
+ *        [-pendIoTime=<seconds>] 
+ *        [-deltaMode[=factor=<value>]] 
+ *        [-ramp=step=<n>,pause=<sec>] 
+ *        [-numerical] 
+ *        [-charArray] 
+ *        [-blunderAhead[=silently]]
+ *        [-provider={ca|pva}]
+ * ```
  *
- * Revision 1.2  1996/01/04  15:32:29  borland
- * Added -deltaMode option for sending delta values instead of absolute values.
+ * @section Options
+ * | Option          | Description                                                                                   |
+ * |-----------------|-----------------------------------------------------------------------------------------------|
+ * | `-list`         | Specify PV name components with optional values.                                               |
+ * | `-range`        | Generate PV names from a range.                                                              |
+ * | `-pendIoTime`   | Maximum time to wait for connections and I/O. Default is 1.0s.                                |
+ * | `-deltaMode`    | Send values as deltas from current PV values; optional factor (defaults to 1).                |
+ * | `-ramp`         | Ramp to the target value in steps (default steps=1); optional pause between steps (default 0.1s). |
+ * | `-numerical`    | Force conversion to numeric mode.                                                             |
+ * | `-charArray`    | Force string mode for array values.                                                           |
+ * | `-blunderAhead` | Continue puts on errors; `silently` suppresses error messages.                                |
+ * | `-dryRun`       | Display operations without performing I/O.                                                    |
+ * | `-ezcaTiming`   | Obsolete; use `-pendIoTime` instead.                                                         |
+ * | `-noGroups`     | Obsolete; no effect.                                                                           |
+ * | `-provider`     | Choose `ca` (Channel Access) or `pva` (PVAccess) provider.                                     |
  *
- * Revision 1.1  1995/09/18  20:00:29  saunders
- * Cavput and cawait (by Michael Borland) added and makefile modified as needed.
+ * @subsection Incompatibilities
+ * - `-ezcaTiming` cannot be used with `-pendIoTime`; use `-pendIoTime` exclusively.  
+ * - `-deltaMode` and `-ramp` require numeric, scalar PVs; incompatible with `-charArray`.  
+ * - `-numerical` and `-charArray` are mutually exclusive.                                 
  *
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * M. Borland, R. Soliday
  */
+
 #include <complex>
 #include <iostream>
 #include <cstdlib>
