@@ -10,6 +10,7 @@ endif
 include ../Makefile.rules
 
 PROD = MV20image2sdds sddssnapshot sddscontrollaw sddscaramp sddsgencontrolbits sddslogTurnByTurnDAQ \
+       degauss standardize \
        sddssynchlog sddsmonitor sddsstatmon sddsvmonitor sddswmonitor BPS16monitor squishPVs \
        sddsalarmlog toggle sddslogger sddsfeedforward  sddsglitchlogger sddsoptimize \
        sddspvtest sddslogonchange  sddswput sddsbcontrol sddscasr sddsimagemonitor makesrbump \
