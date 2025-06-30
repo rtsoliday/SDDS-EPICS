@@ -262,14 +262,15 @@ void abortSimplex(int sig);
 #define SET_RCDS 18
 #define SET_DRYRUN 19
 #define SET_EXTRALOGFILE 20
-#define N_OPTIONS 21
+#define SET_CONDITIONING 21
+#define N_OPTIONS 22
 char *option[N_OPTIONS] = {
   "measFile", "measScript", "varfile", "knobFiles", "simplex", "logfile", "verbose", "tolerance",
   "maximize", "1dscan", "target", "testValues", "runControlPV", "runControlDescription", "varScript",
-  "restartFile", "ezcatiming", "pendiotime", "rcds", "dryRun", "extraLogFile"};
+  "restartFile", "ezcatiming", "pendiotime", "rcds", "dryRun", "extraLogFile", "conditioning"};
 
 static char *USAGE1 = "sddsoptimize [-measFile=<filename>|-measScript=<script>] \n\
-       [-varScript=<scriptname>] [-restartFile=<filename>] [-pendIOtime=<seconds>] \n\
+       [-varScript=<scriptname>] [-restartFile=<filename>] [-pendIOtime=<seconds>] [-conditioning=<script>] \n\
        -varFile=<filename> -knobFiles=<filename1> , <filename2>,... \n\
        [-simplex=[restarts=<nRestarts>][,cycles=<nCycles>,] \n\
        [evaluations=<nEvals>,][no1dscans][,divisions=<int>][,randomSigns]] \n\
@@ -417,6 +418,7 @@ typedef struct
   /*test parameters*/
   int32_t limit;
   TESTS *test;
+  char *conditioningCommand;
 } COMMON_PARAM;
 
 #ifdef USE_RUNCONTROL
@@ -567,6 +569,11 @@ int main(int argc, char **argv) {
   for (i_arg = 1; i_arg < argc; i_arg++) {
     if (s_arg[i_arg].arg_type == OPTION) {
       switch (match_string(s_arg[i_arg].list[0], option, N_OPTIONS, 0)) {
+      case SET_CONDITIONING:
+	if (s_arg[i_arg].n_items != 2)
+          bomb("invalid -conditioning syntax", NULL);
+        SDDS_CopyString(&param->conditioningCommand, s_arg[i_arg].list[1]);
+        break;
       case SET_INPUTMEAS:
         if (s_arg[i_arg].n_items > 2)
           bomb("invalid -measFile syntax", NULL);
@@ -1937,6 +1944,14 @@ double localfunc(double *pValue, long *invalid) {
       fprintf(stdout, "Dry run mode, pretending changing variables...\n");
     }
   }
+  /*conditioning after setting pvs*/
+  if (!param->dryRun && param->conditioningCommand) {
+    if (param->verbose) {
+      fprintf(stdout, "start conditioning...)");
+      fflush(stdout);
+    }
+    system(param->conditioningCommand);
+  }
   RunTest(param->test);
   if (param->extra_pvs) {
     caErrors = 0;
@@ -2079,7 +2094,7 @@ double localfunc(double *pValue, long *invalid) {
       free(message1);
       exit(1);
     }
-
+    
     /*run tests again after the script running*/
     if (param->verbose) {
       fprintf(stdout, "the script value is %le now\n", ave);
@@ -2812,6 +2827,7 @@ void InitializeParam(COMMON_PARAM *param) {
   param->logData = NULL;
   param->nEvalMax = 100;
   param->varScript = param->measScript = NULL;
+  param->conditioningCommand = NULL;
   param->extraLogFile = NULL;
   param->limit = 2;
   param->test = malloc(sizeof(*(param->test)));
@@ -2925,6 +2941,8 @@ void FreeEverything(CONTROL_NAME *control, READBACK_NAME *readback, COMMON_PARAM
     free(param->varScript);
   if (param->measScript)
     free(param->measScript);
+  if (param->conditioningCommand)
+    free(param->conditioningCommand);
   if (param->logData)
     free(param->logData);
   if (param->logFile)
