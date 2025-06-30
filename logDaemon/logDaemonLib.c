@@ -218,17 +218,20 @@ int logOpen(LOGHANDLE *handle, char *serviceId, char *sourceId,
       Debug("log server bcast port found from env var: %d\n", log_port);
     }
 
-    /* Add tag list to outgoing broadcast packet, changing ' ' to '~'  */
-    i = 0;
-    while (tagList[i] != '\0') {
-      if (tagList[i] == ' ')
-        tagList[i] = '~';
-      i++;
-    }
+    /*
+     * Add tag list to outgoing broadcast packet.  Do not modify the
+     * caller supplied string since it may be read-only.  Instead copy
+     * it to our output buffer while converting spaces to '~'.
+     */
     strcat(omsg, FIELD_DELIMITER);
-    if (((int)strlen(omsg) + (int)strlen(tagList) + 1) >= MAX_MESSAGE_SIZE)
-      return (LOG_TOOBIG);
-    strcat(omsg, tagList);
+    i = strlen(omsg);
+    while (*tagList) {
+      if (i >= MAX_MESSAGE_SIZE - 1)
+        return (LOG_TOOBIG);
+      omsg[i++] = (*tagList == ' ') ? '~' : *tagList;
+      tagList++;
+    }
+    omsg[i] = '\0';
 
     Debug("broadcasting for log server, port: %d\n", log_port);
     Debug("broadcast msg: %s\n", omsg);
