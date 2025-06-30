@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
   }
   pvaClientPtr = epics::pvaClient::PvaClient::get("pva");
   try {
-    PvaClientChannelPtr = pvaClientPtr->channel("tbt_data", "pva", pendIOtime);
+    PvaClientChannelPtr = pvaClientPtr->channel("S-DAQTBT:TurnsOnSrInjection", "pva", pendIOtime);
   } catch (std::exception &e) {
     std::cerr << "exception " << e.what() << std::endl;
     return (1);
