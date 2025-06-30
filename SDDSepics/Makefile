@@ -12,7 +12,7 @@ include ../Makefile.rules
 PROD = MV20image2sdds sddssnapshot sddscontrollaw sddscaramp sddsgencontrolbits sddslogTurnByTurnDAQ \
        degauss standardize \
        sddssynchlog sddsmonitor sddsstatmon sddsvmonitor sddswmonitor BPS16monitor squishPVs \
-       sddsalarmlog toggle sddslogger sddsfeedforward  sddsglitchlogger sddsoptimize \
+       sddsalarmlog toggle sddslogger sddsfeedforward sdds2dfeedforward sddsglitchlogger sddsoptimize \
        sddspvtest sddslogonchange  sddswput sddsbcontrol sddscasr sddsimagemonitor makesrbump \
        sddsexperiment sddsvexperiment sddspvalogger sddswget sddspvasaverestore sddspermissive \
        sddspvaglitchlogger sddscainfo sddspvacontrollaw
@@ -28,6 +28,7 @@ sddsalarmlog_SRC = sddsalarmlog.c SDDSepics.c
 toggle_SRC = toggle.c SDDSepics.c
 sddslogger_SRC = sddslogger.c SDDSepics.c
 sddsfeedforward_SRC = sddsfeedforward.c SDDSepics.c
+sdds2dfeedforward_SRC = sdds2dfeedforward.c SDDSepics.c
 sddsglitchlogger_SRC = sddsglitchlogger.c SDDSepics.c
 sddsoptimize_SRC = sddsoptimize.c SDDSepics.c
 sddspvtest_SRC = sddspvtest.c SDDSepics.c
@@ -162,6 +163,12 @@ $(OBJ_DIR)/sddslogger$(EXEEXT): $(sddslogger_OBJS) $(PROD_DEPS)
 
 $(OBJ_DIR)/sddsfeedforward$(EXEEXT): $(sddsfeedforward_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsfeedforward_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
+	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
+
+$(OBJ_DIR)/sdds2dfeedforward$(EXEEXT): $(sdds2dfeedforward_OBJS) $(PROD_DEPS)
+	$(LINKEXE) $(OUTPUTEXE) $(sdds2dfeedforward_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
