@@ -226,7 +226,7 @@ void addScalarParameters(SDDS_TABLE *outTable, char ***processVariable, char ***
                          chid **PVchid, double pendIOtime);
 long getUnits(char **PVname, char **buffer, long PVs, chid *PVchid, double pendIOtime);
 long Read16BitWaveforms(unsigned short **waveform, long waveformLength, CHANNEL_ASSIGNMENT *assignment, long PVs, double pendIOtime);
-long ReadWaveforms(char **readbackName, void **waveform, long length, long waveforms, int32_t *readbackDataType, chid *cid, double pendIOTime);
+long ReadWaveforms(char **readbackName, void **waveform, long length, int32_t *waveformOffset, long waveforms, int32_t *readbackDataType, chid *cid, double pendIOTime);
 void addRampPV(char *PV, double rampTo, unsigned long mode, chid cid, double pendIOtime);
 void doRampPVs(long steps, double pause, short verbose, double pendIOtime);
 void showRampPVs(FILE *fp, double pendIOtime);
@@ -260,7 +260,7 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
                             char ***rmsPVPrefix,
                             double **readbackOffset, double **readbackScale,
                             int32_t **readbackDataType, long *readbacks,
-                            long *waveformLength, char *inputFile, long desiredDataType);
+                            long *waveformLength, int32_t **waveformOffset, char *inputFile, long desiredDataType);
 long getConditionsData(char ***DeviceName, char ***ReadMessage,
                        double **scaleFactor, double **lowerLimit,
                        double **upperLimit, double **holdoffTime,

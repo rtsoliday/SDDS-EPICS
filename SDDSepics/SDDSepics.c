@@ -765,7 +765,7 @@ long CaTypeToDataType(long caType) {
   return (result);
 }
 
-long ReadWaveforms(char **readbackName, void **waveform, long length,
+long ReadWaveforms(char **readbackName, void **waveform, long length, int32_t *offset,
                    long waveforms, int32_t *readbackDataType, chid *cid, double pendIOTime) {
   long i, j, numBuffers = 0, pend = 0;
   long caErrors = 0;
@@ -785,7 +785,7 @@ long ReadWaveforms(char **readbackName, void **waveform, long length,
 
   for (i = 0; i < waveforms; i++) {
     if (!waveform[i])
-      waveform[i] = tmalloc(SizeOfDataType(readbackDataType[i]) * length);
+      waveform[i] = tmalloc(SizeOfDataType(readbackDataType[i]) * length+(offset?offset[i]:0));
     if (!cid[i]) {
       pend = 1;
       if (ca_search(readbackName[i], &(cid[i])) != ECA_NORMAL) {
@@ -807,13 +807,13 @@ long ReadWaveforms(char **readbackName, void **waveform, long length,
     if (ca_state(cid[i]) == cs_conn) {
       if (readbackDataType[i] == SDDS_STRING) {
         buffer[numBuffers] = tmalloc(sizeof(char) * (40 * length));
-        if (ca_array_get(DBR_STRING, length, cid[i], buffer[numBuffers]) != ECA_NORMAL) {
+        if (ca_array_get(DBR_STRING, length+(offset?offset[i]:0), cid[i], buffer[numBuffers]) != ECA_NORMAL) {
           fprintf(stderr, "error: problem reading %s\n", readbackName[i]);
           exit(1);
         }
         numBuffers++;
       } else {
-        if (ca_array_get(DataTypeToCaType(readbackDataType[i]), length, cid[i], waveform[i]) != ECA_NORMAL) {
+        if (ca_array_get(DataTypeToCaType(readbackDataType[i]), length+(offset?offset[i]:0), cid[i], waveform[i]) != ECA_NORMAL) {
           fprintf(stderr, "error: problem reading %s\n", readbackName[i]);
           exit(1);
         }
@@ -824,6 +824,13 @@ long ReadWaveforms(char **readbackName, void **waveform, long length,
   }
   if (ca_pend_io(pendIOTime) != ECA_NORMAL) {
     fprintf(stderr, "error: problem doing search for some channels\n");
+  }
+  if (offset) {
+    for (i=0; i<waveforms; i++) {
+      if (offset[i]>0) {
+        memmove(waveform[i], waveform[i]+offset[i]*SizeOfDataType(readbackDataType[i]), length*SizeOfDataType(readbackDataType[i]));
+      }
+    }
   }
   numBuffers = 0;
   for (i = 0; i < waveforms; i++) {
@@ -1236,13 +1243,15 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
                             char ***rmsPVPrefix,
                             double **readbackOffset, double **readbackScale,
                             int32_t **readbackDataType, long *readbacks,
-                            long *waveformLength, char *inputFile, long desiredDataType) {
+                            long *waveformLength, int32_t **waveformOffset, char *inputFile, long desiredDataType) {
   SDDS_DATASET inSet;
   long code, dataTypeColumnGiven, pvIndex;
 
   *readbacks = 0;
   *readbackPV = NULL;
   *readbackName = NULL;
+  if (waveformOffset)
+    *waveformOffset = NULL;
   if (readbackUnits)
     *readbackUnits = NULL;
   if (rmsPVPrefix)
@@ -1356,6 +1365,19 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
         free(readbackDataTypeStrings[pvIndex]);
       }
       free(readbackDataTypeStrings);
+    }
+  }
+
+  if (waveformOffset) {
+    if ((code = SDDS_CheckColumn(&inSet, "WaveformOffset", NULL, SDDS_ANY_NUMERIC_TYPE,
+                                 NULL)) == SDDS_CHECK_OKAY) {
+      if (!(*waveformOffset = SDDS_GetColumnInLong(&inSet, "WaveformOffset"))) {
+        SDDS_SetError("Unable to get WaveformOffset data");
+        return 0;
+      }
+    } else if (code != SDDS_CHECK_NONEXISTENT) {
+      SDDS_SetError("Problem with data type of WaveformOffset");
+      return 0;
     }
   }
 
