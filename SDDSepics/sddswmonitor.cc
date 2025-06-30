@@ -194,7 +194,10 @@ static char *USAGE2 = (char *)"Writes values of process variables to a binary SD
                    \"WaveformName\", plus a parameter \"WaveformLength\".  A \"DataType\"\n\
                    column is optional to specify the data type (short, long, float, double,\n\
                    character, or string) for each pv, but this will be overridden if the\n\
-                   -dataType option is specified on the command line.\n\
+                   -dataType option is specified on the command line. Optionally, a column\n\
+                   \"WaveformOffset\" may be supplied; if present, the waveform is expected to\n\
+                   be longer than \"WaveformLength\" and the data written starts at index\n\
+                   \"WaveformOffset\".\n\
 PVnames            specifies a list of PV names to read.  If the waveforms are\n\
                    of different lengths, the short ones are padded with zeros.\n\
 <outputfile>       SDDS output file, each page of which one instance of each waveform.\n\
@@ -270,9 +273,9 @@ void CopyWaveformData(void *data, void *previousData, long dataType, long length
 long CheckIfWaveformChanged(void *data, void *previousData, long dataType, long length);
 
 void AllocateWaveformMemory(void **waveformData, int32_t *readbackDataType,
-                            long readbacks, long waveformLength);
+                            long readbacks, long waveformLength, int32_t *waveformOffset);
 void FreeWaveformMemory(void **waveformData, int32_t *readbackDataType,
-                        long readbacks, long waveformLength);
+                        long readbacks, long waveformLength, int32_t *waveformOffset);
 void FreeReadMemory(long variables, char **pvs, char **names, char **units, char **typeStrings,
                     double *data1, double *data2, double *data3, double *data4, int32_t *dataType);
 
@@ -286,6 +289,7 @@ int main(int argc, char **argv) {
   SDDS_TABLE outTable, originalfile_page;
   char *inputfile, *outputfile, answer[ANSWER_LENGTH];
   long CAerrors, waveformLength, optPVnames, unitsFromFile, rmsPVPrefixFromFile;
+  int32_t *waveformOffset = NULL;
   long enforceTimeLimit, noWarnings = 0, noUnits = 0;
   char **optPVname;
   char **readbackPV, **readbackName, **readbackUnits, **readbackDataTypeStrings, **rmsPVPrefix;
@@ -718,7 +722,7 @@ int main(int argc, char **argv) {
     if (!getWaveformMonitorData(&readbackPV, &readbackName, &readbackUnits,
                                 &rmsPVPrefix,
                                 &readbackOffset, &readbackScale, &readbackDataType,
-                                &readbacks, &waveformLength, inputfile,
+                                &readbacks, &waveformLength, &waveformOffset, inputfile,
                                 DataType))
       SDDS_Bomb((char *)"problem getting waveform monitor input data");
     if (readbackUnits)
@@ -1136,7 +1140,7 @@ int main(int argc, char **argv) {
   if (!totalTimeSet && accumulateNumber != 0)
     NStep = NStep * accumulateNumber;
   /*allocate memory for waveformData*/
-  AllocateWaveformMemory(waveformData, readbackDataType, readbacks, waveformLength);
+  AllocateWaveformMemory(waveformData, readbackDataType, readbacks, waveformLength, waveformOffset);
 
   for (Step = 0; Step < NStep; Step++) {
     if (singleShot && (!accumulateNoQuery || accumulateClear)) {
@@ -1176,7 +1180,7 @@ int main(int argc, char **argv) {
         Step--;
       continue;
     }
-    if ((CAerrors = ReadWaveforms(readbackPV, waveformData, waveformLength, readbacks, readbackDataType, readbackCHID, pendIOtime)) != 0)
+    if ((CAerrors = ReadWaveforms(readbackPV, waveformData, waveformLength, waveformOffset, readbacks, readbackDataType, readbackCHID, pendIOtime)) != 0)
       switch (onCAerror) {
       case ONCAERROR_USEZERO:
         break;
@@ -1576,7 +1580,7 @@ int main(int argc, char **argv) {
     free(TimeStamp);
   if (index)
     free(index);
-  FreeWaveformMemory(waveformData, readbackDataType, readbacks, waveformLength);
+  FreeWaveformMemory(waveformData, readbackDataType, readbacks, waveformLength, waveformOffset);
 
   FreeReadMemory(scalars, scalarPV, scalarName, scalarUnits, readMessage, scalarData,
                  scalarFactor, scalarAccumData, previousScalarData, NULL);
@@ -1630,7 +1634,7 @@ int main(int argc, char **argv) {
 
 /*allocate memory for waveformdata */
 void AllocateWaveformMemory(void **waveformData, int32_t *readbackDataType,
-                            long readbacks, long waveformLength) {
+                            long readbacks, long waveformLength, int32_t *waveformOffset) {
   long i, j;
 
   for (i = 0; i < readbacks; i++) {
@@ -1639,19 +1643,19 @@ void AllocateWaveformMemory(void **waveformData, int32_t *readbackDataType,
       for (j = 0; j < waveformLength; j++)
         ((char **)waveformData[i])[j] = (char *)tmalloc(sizeof(char) * 40);
     } else {
-      waveformData[i] = tmalloc(SizeOfDataType(readbackDataType[i]) * waveformLength);
+      waveformData[i] = tmalloc(SizeOfDataType(readbackDataType[i]) * (waveformLength+(waveformOffset?waveformOffset[i]:0)));
     }
   }
 }
 
 void FreeWaveformMemory(void **waveformData, int32_t *readbackDataType,
-                        long readbacks, long waveformLength) {
+                        long readbacks, long waveformLength, int32_t *waveformOffset) {
   long i, j;
 
   if (waveformData) {
     for (i = 0; i < readbacks; i++) {
       if (readbackDataType[i] == SDDS_STRING) {
-        for (j = 0; j < waveformLength; j++)
+        for (j = 0; j < (waveformLength+(waveformOffset?waveformOffset[i]:0)); j++)
           free(((char **)waveformData[i])[j]);
         free((char **)waveformData[i]);
       } else
