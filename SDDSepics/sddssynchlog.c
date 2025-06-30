@@ -381,7 +381,7 @@ int main(int argc, char **argv) {
     if (!getWaveformMonitorData(&waveformControlName, &waveformReadbackName,
                                 &waveformReadbackUnits, NULL,
                                 NULL, NULL, &waveformDataType, &waveformControlNames,
-                                &waveformLength, waveformDataFile, SDDS_FLOAT)) {
+                                &waveformLength, NULL, waveformDataFile, SDDS_FLOAT)) {
       SDDS_Bomb("problem reading data from waveform input file");
     }
     if (waveformLength <= 0)
