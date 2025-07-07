@@ -241,7 +241,7 @@ long ComputeNewActuatorValues(FEEDFORWARD_DATA *feedforwardData, CONTROL_DATA *r
                               CONTROL_DATA *actuatorData, LOOP_PARAM *loopParam, long offsetMode,
                               double *offsetValue, long *settingOutOfRange);
 double ffInterpolate(double *f, double *x1, long n1, double *x2, long n2,
-                     double x1o, double x2o, long order, long *returnCode);
+                     double x1o, double x2o, short saturate, double outOfRangeValue, long order, long *returnCode);
 void operate_runcontrol(long prevValue, long currentValue, char *message, long caWriteError,
                         LOOP_PARAM *loopParam, BACKOFF *backoffParam);
 
@@ -2450,7 +2450,13 @@ long ComputeNewActuatorValues(FEEDFORWARD_DATA *feedforwardData, CONTROL_DATA *r
         ffGroup->ffValue[iActuator] = ffInterpolate(ffGroup->actuatorData[iActuator],
                                                     ffGroup->readback1Data[iActuator], ffGroup->n1Data[iActuator],
                                                     ffGroup->readback2Data[iActuator], ffGroup->n2Data[iActuator],
-                                                    readback1Value, readback2Value, 1, &code);
+                                                    readback1Value, readback2Value, 
+                                                    /* These values ensure that K1 calculations for the dioples
+                                                     * return zero when PS values are outside the table. Do not
+                                                     * change default values. */
+                                                    0,   /* do not change this default */
+                                                    0.0, /* do not change this default */
+                                                    1, &code);
         actuatorData->computeValue[actuatorIndex] += ffGroup->ffValue[iActuator];
         actuatorData->updated[actuatorIndex] = 1;
         codeAccum += code * actuatorData->flag[actuatorIndex];
@@ -2552,7 +2558,7 @@ long ComputeNewActuatorValues(FEEDFORWARD_DATA *feedforwardData, CONTROL_DATA *r
 }
 
 double ffInterpolate(double *f, double *x1, long n1, double *x2, long n2, double x1o, double x2o, 
-                     long order, long *returnCode) {
+                     short saturate, double outOfRangeValue, long order, long *returnCode) {
   long hi, lo, mid, offset, code, i2, i1, i;
   double result0;
   double *indep = NULL, *result = NULL;
@@ -2574,15 +2580,21 @@ double ffInterpolate(double *f, double *x1, long n1, double *x2, long n2, double
   hi = n2 - 1;
   if (x2o > x2[hi]) {
     *returnCode = 1;
-    return f[n2 - 1];
+    if (saturate)
+      return f[n2 - 1];
+    return outOfRangeValue;
   }
   if (x2o < x2[lo]) {
     *returnCode = 1;
-    return f[0];
+    if (saturate)
+      return f[0];
+    return outOfRangeValue;
   }
   if (lo == hi) {
     *returnCode = 1;
-    return f[0];
+    if (saturate)
+      return f[0];
+    return outOfRangeValue;
   }
   /* do binary search for closest point */
   while ((hi - lo) > 1) {
@@ -2608,15 +2620,21 @@ double ffInterpolate(double *f, double *x1, long n1, double *x2, long n2, double
   hi = n1 - 1;
   if (lo == hi) {
     *returnCode = 1;
-    return f[0];
+    if (saturate)
+      return f[0];
+    return outOfRangeValue;
   }
   if (x1o > x1[hi*n2]) {
     *returnCode = 1;
-    return f[hi*n2 - 1];
+    if (saturate)
+      return f[hi*n2 - 1];
+    return outOfRangeValue;
   }
   if (x1o < x1[lo*n2]) {
     *returnCode = 1;
-    return f[0];
+    if (saturate)
+      return f[0];
+    return outOfRangeValue;
   }
   /* do binary search for closest point */
   while ((hi - lo) > 1) {
