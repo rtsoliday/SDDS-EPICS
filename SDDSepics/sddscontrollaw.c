@@ -846,6 +846,7 @@ typedef struct
   long usrValue;
   long trigStep; /* trigStep: the Step where trigger occurs */
   long datastrobeMissed;
+  long triggerCount, modulus;
 } DATASTROBE_TRIGGER;
 void datastrobeTriggerEventHandler(struct event_handler_args event);
 long setupDatastrobeTriggerCallbacks(DATASTROBE_TRIGGER *datastrobeTrigger);
@@ -1238,7 +1239,7 @@ int main(int argc, char **argv)
        [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | \n\
        -dailyFiles] [-controlQuantityDefinition=<file>]\n\
        [-gain={<real-value>|PVname=<name>}]\n\
-       {[-interval={<real-value>|PVname=<name>}] | -triggerPV=<PVname>} [-steps=<integer=value>]\n\
+       {[-interval={<real-value>|PVname=<name>}] | -triggerPV=<PVname>[,modulus=<integer>]} [-steps=<integer=value>]\n\
        [-updateInterval=<integer=value>]\n\
        [{-integration | -proportional}]\n\
        [-holdPresentValues] [-offsets=<offsetFile>] [-PVOffsets=<filename>] \n\
@@ -1287,7 +1288,8 @@ gain           quantity multiplying the inputfile matrix.\n\
                then this should be less than one.\n\
 interval       time interval between each correction.\n\
 triggerPV      Names a process variable that must change to start each\n\
-               cycle.\n\
+               cycle. If modulus=n is given, only every nth trigger is\n\
+               recognized.\n\
 steps          total number of corrections.\n\
 postChangeExecution run given execution after changing the setpoints.\n";
 char *USAGE4 = "\
@@ -1788,9 +1790,16 @@ Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VER
         oag_ca_pend_event(0.001, &(sddscontrollawGlobal->sigint));
 #endif
       }
+      sddscontrollawGlobal->loopParam.trigger.triggered = 0;
       if (verbose)
         fprintf(stderr, "Trigger event received\n");
-      sddscontrollawGlobal->loopParam.trigger.triggered = 0;
+      if (sddscontrollawGlobal->loopParam.trigger.modulus>1 &&
+          sddscontrollawGlobal->loopParam.trigger.triggerCount%sddscontrollawGlobal->loopParam.trigger.modulus!=0) {
+        if (verbose)
+          fprintf(stderr, "Trigger event skipped due to modulus setting of %ld\n",
+                  sddscontrollawGlobal->loopParam.trigger.modulus);
+        continue;
+      }
     }
     
     if (sddscontrollawGlobal->sigint) {
@@ -6516,7 +6525,7 @@ long parseArguments(char ***argv,
         strcpy(correction->coefFile, s_arg[i_arg].list[1]);
         break;
       case CLO_TRIGGERPV:
-        if (s_arg[i_arg].n_items != 2) {
+        if (s_arg[i_arg].n_items < 2 || s_arg[i_arg].n_items>3) {
           fprintf(stderr, "bad -triggerPV syntax\n");
           free_scanargs(&s_arg, *argc);
           return (1);
@@ -6528,6 +6537,17 @@ long parseArguments(char ***argv,
         }
         strcpy(loopParam->trigger.PV, s_arg[i_arg].list[1]);
         loopParam->triggerProvided = 1;
+        loopParam->trigger.modulus = 1;
+        s_arg[i_arg].n_items -= 2;
+        if (s_arg[i_arg].n_items>0 &&
+            (!scanItemList(&dummyFlags, s_arg[i_arg].list+2, &s_arg[i_arg].n_items, 0,
+                           "modulus", SDDS_LONG, &loopParam->trigger.modulus, 1, 0,
+                           NULL) ||
+             loopParam->trigger.modulus<1)) {
+          fprintf(stderr, "bad -triggerPV syntax\n");
+          free_scanargs(&s_arg, *argc);
+          return (1);
+        }
         setupDatastrobeTriggerCallbacks(&(loopParam->trigger));
         break;
       case CLO_ENDOFLOOPPV:
@@ -9130,6 +9150,7 @@ void datastrobeTriggerEventHandler(struct event_handler_args event) {
   fprintf(stderr, "chid=%d, current=%f\n", (int)sddscontrollawGlobal->loopParam.trigger.channelID, sddscontrollawGlobal->loopParam.trigger.currentValue);
 #endif
   sddscontrollawGlobal->loopParam.trigger.triggered = 1;
+  sddscontrollawGlobal->loopParam.trigger.triggerCount++;
   if (!sddscontrollawGlobal->loopParam.trigger.datalogged)
     sddscontrollawGlobal->loopParam.trigger.datastrobeMissed++;
   sddscontrollawGlobal->loopParam.trigger.datalogged = 0;
@@ -9144,6 +9165,7 @@ long setupDatastrobeTriggerCallbacks(DATASTROBE_TRIGGER *datastrobeTrigger) {
   datastrobeTrigger->usrValue = 1;
   datastrobeTrigger->datalogged = 0;
   datastrobeTrigger->initialized = 0;
+  datastrobeTrigger->triggerCount = 0;
   if (ca_search(datastrobeTrigger->PV, &datastrobeTrigger->channelID) != ECA_NORMAL) {
     fprintf(stderr, "error: search failed for trigger control name %s\n", datastrobeTrigger->PV);
     return 0;
