@@ -302,7 +302,8 @@ static char *USAGE2 = "       [-runControlDescription={string=<string>|parameter
             for the measurement. \n\
 -restartFile user given filename for writing the optimized values into this file, which \n\
             could be used for the input of next optimization. \n\
--varScript  user given script for setting setpoint PVs. \n\
+-varScript  user given script for setting setpoint PVs. Must take arguments -tagList and\n\
+            -valueList. \n\
 -simplex    Give parameters of the simplex optimization. Each start or restart allows \n\
             <nCycles> cycles with up to <nEvals> evaluations of the function.  Defaults \n\
             are 1 restarts, 1 cycles, and 100 evaluations (iterations). \n\
