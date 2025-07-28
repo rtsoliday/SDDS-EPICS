@@ -2345,7 +2345,7 @@ bool IsEnumFieldType(PVA_OVERALL *pva, long index) {
 }
 uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
   std::string id;
-  epics::pvData::PVStructurePtr pvStructurePtr;
+  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA;
   size_t fieldCount;
   if (pva->isConnected[index] == false)
     return 0;
@@ -2372,6 +2372,21 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
     case epics::pvData::scalarArray: {
       return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[0])->getLength();
     }
+    case epics::pvData::structure: {
+      pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[0]);
+      switch (pvStructurePtrA->getPVFields()[0]->getField()->getType()) {
+      case epics::pvData::scalar: {
+	return 1;
+      }
+      case epics::pvData::scalarArray: {
+	return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrA->getPVFields()[0])->getLength();
+      }
+      default: {
+	std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[0]->getField()->getType() << std::endl;
+	return 0;
+      }
+      }
+    }
     default: {
       std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[0]->getField()->getType() << std::endl;
       return 0;
@@ -2384,7 +2399,7 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
 }
 std::string GetNativeDataType(PVA_OVERALL *pva, long index) {
   std::string id;
-  epics::pvData::PVStructurePtr pvStructurePtr;
+  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA;
   size_t fieldCount;
   if (pva->isConnected[index] == false)
     return "unknown";
@@ -2410,6 +2425,21 @@ std::string GetNativeDataType(PVA_OVERALL *pva, long index) {
     }
     case epics::pvData::scalarArray: {
       return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtr->getPVFields()[0]->getField())->getElementType());
+    }
+    case epics::pvData::structure: {
+      pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[0]);
+      switch (pvStructurePtrA->getPVFields()[0]->getField()->getType()) {
+      case epics::pvData::scalar: {
+	return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtrA->getPVFields()[0]->getField())->getScalarType());
+      }
+      case epics::pvData::scalarArray: {
+	return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtrA->getPVFields()[0]->getField())->getElementType());
+      }
+      default: {
+	std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[0]->getField()->getType() << std::endl;
+	return 0;
+      }
+      }
     }
     default: {
       std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[0]->getField()->getType() << std::endl;
