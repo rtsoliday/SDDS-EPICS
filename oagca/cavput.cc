@@ -88,7 +88,8 @@
 #define CLO_BLUNDERAHEAD 8
 #define CLO_RAMP 9
 #define CLO_PROVIDER 10
-#define COMMANDLINE_OPTIONS 11
+#define CLO_CHARARRAY 11
+#define COMMANDLINE_OPTIONS 12
 char *commandline_option[COMMANDLINE_OPTIONS] = {
   (char *)"list",
   (char *)"range",
@@ -101,6 +102,7 @@ char *commandline_option[COMMANDLINE_OPTIONS] = {
   (char *)"blunderahead",
   (char *)"ramp",
   (char *)"provider",
+  (char *)"chararray",
 };
 
 #define PROVIDER_CA 0
@@ -114,7 +116,7 @@ char *providerOption[PROVIDER_COUNT] = {
 static char *USAGE = (char *)"cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\n\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\n\
 [-pendIoTime=<seconds>] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>] \n\
-[-numerical] [-blunderAhead[=silently]]\n\
+[-numerical] [-charArray] [-blunderAhead[=silently]]\n\
 [-provider={ca|pva}]\n\n\
 -list           specifies PV name string components\n\
 -range          specifies range of integers and format string\n\
@@ -126,6 +128,7 @@ static char *USAGE = (char *)"cavput [-list=<string>[=<value>][,<string>[=<value
                 PVs.\n\
 -numerical      forces conversion of the value to a number and sending as\n\
                 a number.  Default for -deltaMode.\n\
+-charArray      Use when passing a string to a char array PV.\n\
 -ramp           ramp to the value by given steps (default is 1) with given pause \n\
 		(default is 0.1 seconds) between steps. \n\
 -blunderAhead   specifies that the program should blunder ahead with all the\n\
@@ -147,13 +150,13 @@ Program by Michael Borland and Robert Soliday, ANL/APS (" EPICS_VERSION_STRING "
 void oag_ca_exception_handler(struct exception_handler_args args);
 
 #if (EPICS_VERSION > 3)
-long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue);
+long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue, short charArray);
 #endif
 
 int main(int argc, char **argv) {
   int32_t beginRange, endRange, rangeInterval, rampSteps;
   long dryRun;
-  long PVs, j, i_arg, status, numerical, iramp;
+  long PVs, j, i_arg, numerical, iramp;
   unsigned long blunderAhead;
   PV_VALUE *PVvalue;
   TERM_LIST *List;
@@ -162,8 +165,8 @@ int main(int argc, char **argv) {
   char *ptr, *rangeFormat;
   double pendIOTime;
   chid *channelID = NULL;
-  short deltaMode, doRamp;
-  double *presentValue, deltaFactor, rampPause, rampValue, rampDelta;
+  short deltaMode, doRamp, charArray=0;
+  double *presentValue, deltaFactor, rampPause;
   long providerMode = 0;
 #if (EPICS_VERSION > 3)
   PVA_OVERALL pva;
@@ -252,6 +255,9 @@ int main(int argc, char **argv) {
       case CLO_NUMERICAL:
         numerical = 1;
         break;
+      case CLO_CHARARRAY:
+        charArray = 1;
+        break;
       case CLO_BLUNDERAHEAD:
         s_arg[i_arg].n_items--;
         if (!scanItemList(&blunderAhead, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
@@ -291,7 +297,7 @@ int main(int argc, char **argv) {
   for (j = 0; j < PVs; j++)
     if (!PVvalue[j].value) {
       fprintf(stderr, "Error: no value given for %s\n", PVvalue[j].name);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
   if (dryRun) {
@@ -309,7 +315,6 @@ int main(int argc, char **argv) {
       }
     }
   } else {
-    if (providerMode == PROVIDER_PVA) {
 #if (EPICS_VERSION > 3)
       //Allocate memory for pva structure
       allocPVA(&pva, PVs, 0);
@@ -329,7 +334,11 @@ int main(int argc, char **argv) {
           provider[j] = "ca";
         } else {
           names[j] = PVvalue[j].name;
-          provider[j] = "pva";
+          if (providerMode == PROVIDER_PVA) {
+            provider[j] = "pva";
+          } else {
+            provider[j] = "ca";
+          }
         }
       }
       pva.pvaChannelNames = freeze(names);
@@ -342,7 +351,7 @@ int main(int argc, char **argv) {
           if (!(blunderAhead & BLUNDER_SILENTLY))
             fprintf(stderr, "Channel not connected: %s\n", PVvalue[j].name);
           if (!blunderAhead && (doRamp || deltaMode))
-            exit(1);
+            exit(EXIT_FAILURE);
           continue;
         }
       }
@@ -350,7 +359,7 @@ int main(int argc, char **argv) {
 
       //Get the current values. This is mostly done to prepopulate the PVstructure which makes it easier to change the values later.
       if (GetPVAValues(&pva) == 1) {
-        return (1);
+        return (EXIT_FAILURE);
       }
 
       //Do not allow ramp or delta modes for non-scalar data
@@ -359,15 +368,14 @@ int main(int argc, char **argv) {
           if (pva.isConnected[j]) {
             if (pva.pvaData[j].fieldType != epics::pvData::scalar) {
               fprintf(stderr, "error (cavput): %s is not a scalar type PV, delta and ramp options are only available for scalar type PVs\n", PVvalue[j].name);
-              return (1);
+              return (EXIT_FAILURE);
             }
           }
         }
       }
-
       //Extract PV values given on the commandline and place them in the pva data structure
-      if (PrepPVAPutValues(&pva, PVvalue)) {
-        return (1);
+      if (PrepPVAPutValues(&pva, PVvalue, charArray)) {
+        return (EXIT_FAILURE);
       }
 
       //Modify the put value because if it was a delta value
@@ -380,10 +388,13 @@ int main(int argc, char **argv) {
       }
 
       if (doRamp) {
+        double *fValues;
         //Calculate ramp step sizes
         rampDeltas = (double *)malloc(sizeof(double) * PVs);
+        fValues = (double *)malloc(sizeof(double) * PVs);
         for (j = 0; j < PVs; j++) {
           if (pva.isConnected[j] && (pva.pvaData[j].fieldType == epics::pvData::scalar) && pva.pvaData[j].numeric) {
+            fValues[j] = pva.pvaData[j].putData[0].values[0];
             rampDeltas[j] = (pva.pvaData[j].putData[0].values[0] - pva.pvaData[j].getData[0].values[0]) / rampSteps;
             pva.pvaData[j].putData[0].values[0] = pva.pvaData[j].getData[0].values[0];
           }
@@ -392,11 +403,16 @@ int main(int argc, char **argv) {
         for (iramp = 1; iramp <= rampSteps; iramp++) {
           for (j = 0; j < PVs; j++) {
             if (pva.isConnected[j] && (pva.pvaData[j].fieldType == epics::pvData::scalar) && pva.pvaData[j].numeric) {
-              pva.pvaData[j].putData[0].values[0] = pva.pvaData[j].putData[0].values[0] + rampDeltas[j];
+              if (iramp == rampSteps) {
+                pva.pvaData[j].putData[0].values[0] = fValues[j];
+              } else {
+                pva.pvaData[j].putData[0].values[0] = pva.pvaData[j].putData[0].values[0] + rampDeltas[j];
+              }
+              pva.pvaData[j].numPutElements = 1;
             }
           }
           if (PutPVAValues(&pva) == 1) {
-            return (1);
+            return (EXIT_FAILURE);
           }
           if ((rampPause > 0) && (iramp < rampSteps)) {
             usleepSystemIndependent(rampPause * 1000000);
@@ -406,7 +422,7 @@ int main(int argc, char **argv) {
       } else {
         //Put values
         if (PutPVAValues(&pva) == 1) {
-          return (1);
+          return (EXIT_FAILURE);
         }
       }
       //Free memory and exit
@@ -423,12 +439,8 @@ int main(int argc, char **argv) {
       if (List)
         free(List);
       free_scanargs(&s_arg, argc);
-      return (0);
+      return (EXIT_SUCCESS);
 #else
-      fprintf(stderr, "-provider=pva is only available with newer versions of EPICS\n");
-      return (1);
-#endif
-    } else {
       ca_task_initialize();
       ca_add_exception_event(oag_ca_exception_handler, NULL);
       if (!(channelID = (chid *)malloc(sizeof(*channelID) * PVs)))
@@ -438,7 +450,7 @@ int main(int argc, char **argv) {
           fprintf(stderr, "error (cavput): problem doing search for %s\n",
                   PVvalue[j].name);
           ca_task_exit();
-          exit(1);
+          exit(EXIT_FAILURE);
         }
 #ifdef DEBUG
         fprintf(stderr, "ca_search initiated for %s\n", PVvalue[j].name);
@@ -456,14 +468,14 @@ int main(int argc, char **argv) {
                       PVvalue[j].name);
             if (!blunderAhead) {
               ca_task_exit();
-              exit(1);
+              exit(EXIT_FAILURE);
             }
           }
         }
         if (!(presentValue = (double *)malloc(sizeof(*presentValue) * PVs))) {
           fprintf(stderr, "error (cavput): memory allocation failure\n");
           ca_task_exit();
-          exit(1);
+          exit(EXIT_FAILURE);
         }
         for (j = 0; j < PVs; j++) {
           presentValue[j] = DBL_MAX;
@@ -473,7 +485,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "error (cavput): problem doing get for %s\n",
                     PVvalue[j].name);
             ca_task_exit();
-            exit(1);
+            exit(EXIT_FAILURE);
           }
         }
         ca_pend_io(pendIOTime);
@@ -484,13 +496,13 @@ int main(int argc, char **argv) {
             fprintf(stderr, "error (cavput): no value returned in time for %s\n",
                     PVvalue[j].name);
             ca_task_exit();
-            exit(1);
+            exit(EXIT_FAILURE);
           }
           if (sscanf(PVvalue[j].value, "%le", &PVvalue[j].numericalValue) != 1) {
             fprintf(stderr, "error (cavput): value (%s) for %s is not numerical--can't use -deltaMode or -ramp\n",
                     PVvalue[j].value, PVvalue[j].name);
             ca_task_exit();
-            exit(1);
+            exit(EXIT_FAILURE);
           }
         }
         numerical = 1;
@@ -523,7 +535,7 @@ int main(int argc, char **argv) {
                         PVvalue[j].name);
               if (!blunderAhead) {
                 ca_task_exit();
-                exit(1);
+                exit(EXIT_FAILURE);
               }
             }
 #ifdef DEBUG
@@ -536,7 +548,7 @@ int main(int argc, char **argv) {
                         "error (cavput): value (%s) for %s is not scannable as a number---can't use -numerical.\n",
                         PVvalue[j].value, PVvalue[j].name);
                 ca_task_exit();
-                exit(1);
+                exit(EXIT_FAILURE);
               }
             }
             if (ca_put(DBR_DOUBLE, channelID[j], &PVvalue[j].numericalValue) != ECA_NORMAL) {
@@ -545,7 +557,7 @@ int main(int argc, char **argv) {
                         PVvalue[j].name);
               if (!blunderAhead) {
                 ca_task_exit();
-                exit(1);
+                exit(EXIT_FAILURE);
               }
             }
 #ifdef DEBUG
@@ -565,7 +577,7 @@ int main(int argc, char **argv) {
                         PVvalue[j].name);
               if (!blunderAhead) {
                 ca_task_exit();
-                exit(1);
+                exit(EXIT_FAILURE);
               }
             }
           }
@@ -573,7 +585,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Problem processing one or more puts (cavput):\n%s\n",
                     ca_message(status));
             ca_task_exit();
-            exit(1);
+            exit(EXIT_FAILURE);
           }
           if (rampPause > 0) {
             ca_pend_event(rampPause);
@@ -587,7 +599,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Problem processing one or more puts (cavput):\n%s\n",
                 ca_message(status));
         ca_task_exit();
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       ca_pend_event(0.5);
 #ifdef DEBUG
@@ -598,7 +610,8 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
       fprintf(stderr, "ca_task_exit returned\n");
 #endif
-    }
+
+#endif
   }
 
 #ifdef DEBUG
@@ -640,7 +653,7 @@ int main(int argc, char **argv) {
   fprintf(stderr, "exiting main routine\n");
 #endif
 
-  return (0);
+  return (EXIT_SUCCESS);
 }
 
 void oag_ca_exception_handler(struct exception_handler_args args) {
@@ -674,7 +687,7 @@ void oag_ca_exception_handler(struct exception_handler_args args) {
       fprintf(stderr, "    Type: \"%s\"\n", dbr_type_to_text(args.type));
     }
     fprintf(stderr, "This sometimes indicates an IOC that is hung up.\n");
-    _exit(1);
+    _exit(EXIT_FAILURE);
   } else {
     fprintf(stdout, "CA.Client.Exception................\n");
     fprintf(stdout, "    %s: \"%s\"\n",
@@ -693,7 +706,7 @@ void oag_ca_exception_handler(struct exception_handler_args args) {
 }
 
 #if (EPICS_VERSION > 3)
-long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue) {
+long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue, short charArray) {
   long i, j;
   for (j = 0; j < pva->numPVs; j++) {
     if (pva->isConnected[j]) {
@@ -722,20 +735,29 @@ long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue) {
           if (length == 0) {
             pva->pvaData[j].numPutElements = 0;
           }
-          if (pva->pvaData[j].numPutElements > 0) {
-            ptr = PVvalue[j].value;
+          if (charArray) {
+            pva->pvaData[j].numPutElements = strlen(PVvalue[j].value) + 1;
             pva->pvaData[j].putData[0].values = (double *)malloc(sizeof(double) * pva->pvaData[j].numPutElements);
-            for (i = 0; i < pva->pvaData[j].numPutElements; i++) {
-              if ((ptr2 = strchr(ptr, ',')) != NULL) {
-                *ptr2 = 0;
-                ss = ptr;
-                ptr = ptr2 + 1;
-              } else {
-                ss = ptr;
-              }
-              if (sscanf(ss.c_str(), "%le", &(pva->pvaData[j].putData[0].values[i])) != 1) {
-                fprintf(stderr, "error (cavput): value (%s) for %s is not numerical\n", ss.c_str(), PVvalue[j].name);
-                return (1);
+            for (i = 0; i < pva->pvaData[j].numPutElements - 1; i++) {
+              pva->pvaData[j].putData[0].values[i] = (int)(PVvalue[j].value[i]);
+            }
+            pva->pvaData[j].putData[0].values[pva->pvaData[j].numPutElements - 1] = 0;
+          } else {
+            if (pva->pvaData[j].numPutElements > 0) {
+              ptr = PVvalue[j].value;
+              pva->pvaData[j].putData[0].values = (double *)malloc(sizeof(double) * pva->pvaData[j].numPutElements);
+              for (i = 0; i < pva->pvaData[j].numPutElements; i++) {
+                if ((ptr2 = strchr(ptr, ',')) != NULL) {
+                  *ptr2 = 0;
+                  ss = ptr;
+                  ptr = ptr2 + 1;
+                } else {
+                  ss = ptr;
+                }
+                if (sscanf(ss.c_str(), "%le", &(pva->pvaData[j].putData[0].values[i])) != 1) {
+                  fprintf(stderr, "error (cavput): value (%s) for %s is not numerical\n", ss.c_str(), PVvalue[j].name);
+                  return (1);
+                }
               }
             }
           }

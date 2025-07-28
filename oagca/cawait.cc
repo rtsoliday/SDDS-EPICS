@@ -11,7 +11,7 @@
  * cawait [-interval=<seconds>] 
  *        [-timelimit=<seconds>] 
  *        [-totaltimelimit=<seconds>]
- *         -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed]
+ *         -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]
  *        [-and | -or | -not] 
  *        [-repeat[=<number>]] 
  *        [-emit=event=<string>[,timeout=<string>][,end=<string>]]
@@ -127,7 +127,7 @@ char *providerOption[PROVIDER_COUNT] = {
 
 static char *USAGE =
   (char *)"cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\n\
--waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed] \n\
+-waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor] \n\
  [{-and | -or | -not}]\n\
  [-repeat[=<number>]]\n\
  [-emit=event=<string>[,timeout=<string>][,end=<string>]]\n\
@@ -172,6 +172,7 @@ Program by Michael Borland, ANL/APS (" EPICS_VERSION_STRING ", " __DATE__ ")\n";
 #define BELOW_GIVEN 0x00010U
 #define SAME_AS_GIVEN 0x00020U
 #define CHANGED_GIVEN 0x00040U
+#define MONITOR_GIVEN 0x00080U
 
 #define OP_NOT CLO_NOT
 #define OP_OR CLO_OR
@@ -189,6 +190,7 @@ typedef struct
   char *sameAs;
   unsigned long flags;
   double value;
+  short eventSeen;
   char stringValue[256];
   long usrValue;
   short changeReferenceLoaded;
@@ -294,6 +296,7 @@ int main(int argc, char **argv) {
                           "equal", SDDS_DOUBLE, &waitFor[waitFors].equalTo, 1, EQUALTO_GIVEN,
                           "sameas", SDDS_STRING, &waitFor[waitFors].sameAs, 1, SAME_AS_GIVEN,
                           "changed", -1, NULL, 0, CHANGED_GIVEN,
+                          "monitor", -1, NULL, 0, MONITOR_GIVEN,
                           NULL) ||
             !waitFor[waitFors].flags ||
             (waitFor[waitFors].flags & LOWERLIMIT_GIVEN && !(waitFor[waitFors].flags & UPPERLIMIT_GIVEN)) ||
@@ -458,15 +461,15 @@ int main(int argc, char **argv) {
     for (j = 0; j < pva.numPVs; j++) {
       if (!pva.isConnected[j]) {
         fprintf(stderr, "Error (cawait): problem doing search for %s\n", waitFor[j].PVname);
-        return (1);
+        return (EXIT_FAILURE);
       }
     }
     //Get initial values
     if (GetPVAValues(&pva) == 1) {
-      return (1);
+      return (EXIT_FAILURE);
     }
     if (MonitorPVAValues(&pva) == 1) {
-      return (1);
+      return (EXIT_FAILURE);
     }
     epicsThreadSleep(.1);
     if (PollMonitoredPVA(&pva)) {
@@ -474,12 +477,12 @@ int main(int argc, char **argv) {
     }
 #else
     fprintf(stderr, "-provider=pva is only available with newer versions of EPICS\n");
-    return (1);
+    return (EXIT_FAILURE);
 #endif
   } else {
     if (ca_task_initialize() != ECA_NORMAL) {
       fprintf(stderr, "Error (cawait): problem initializing channel access\n");
-      return (1);
+      return (EXIT_FAILURE);
     }
     ca_add_exception_event(oag_ca_exception_handler, NULL);
 
@@ -489,7 +492,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Error (cawait): problem doing search for %s\n",
                 waitFor[j].PVname);
         ca_task_exit();
-        return (1);
+        return (EXIT_FAILURE);
       }
       waitFor[j].usrValue = j;
     }
@@ -505,8 +508,9 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Error (cawait): no connection in time for %s\n",
                 waitFor[j].PVname);
         ca_task_exit();
-        return (1);
+        return (EXIT_FAILURE);
       }
+      waitFor[j].eventSeen = -1;
       if (!(waitFor[j].flags & SAME_AS_GIVEN)) {
         waitFor[j].channelType = DBF_DOUBLE;
         if (ca_add_masked_array_event(DBR_TIME_DOUBLE, 1, waitFor[j].channelID,
@@ -515,7 +519,7 @@ int main(int argc, char **argv) {
                                       NULL, DBE_VALUE) != ECA_NORMAL) {
           fprintf(stderr, "error: unable to setup callback for PV %s\n", waitFor[j].PVname);
           ca_task_exit();
-          return (1);
+          return (EXIT_FAILURE);
         }
       } else {
         waitFor[j].channelType = DBF_STRING;
@@ -525,14 +529,14 @@ int main(int argc, char **argv) {
                                       NULL, DBE_VALUE) != ECA_NORMAL) {
           fprintf(stderr, "error: unable to setup callback for PV %s\n", waitFor[j].PVname);
           ca_task_exit();
-          return (1);
+          return (EXIT_FAILURE);
         }
       }
     }
     if (ca_pend_io(pendIOTime) != ECA_NORMAL) {
       fprintf(stderr, "Error (cawait): unable to setup callbacks for PVs\n");
       ca_task_exit();
-      return (1);
+      return (EXIT_FAILURE);
     }
 #ifdef DEBUG
     fprintf(stderr, "ca_pend_io called after ca_add_masked_array_event calls\n");
@@ -545,7 +549,7 @@ int main(int argc, char **argv) {
       fprintf(stderr, "Error (cawait): problem starting subprocess with command %s\n", subprocess[j].command);
       if (providerMode != PROVIDER_PVA)
         ca_task_exit();
-      return (1);
+      return (EXIT_FAILURE);
     }
   }
 
@@ -583,7 +587,7 @@ int main(int argc, char **argv) {
           fputs("logic error---probably too few operators (cawait)\n", stderr);
           if (providerMode != PROVIDER_PVA)
             ca_task_exit();
-          return (1);
+          return (EXIT_FAILURE);
         }
 
         /* emit messages to standard output, as requested */
@@ -659,7 +663,7 @@ int main(int argc, char **argv) {
         if (terminateLoop || eventEndPending) {
           if (providerMode != PROVIDER_PVA)
             ca_task_exit();
-          return (0);
+          return (EXIT_SUCCESS);
         }
         /* exit with error if non-event end */
         return (code == EVENT ? 0 : 1);
@@ -698,7 +702,7 @@ int main(int argc, char **argv) {
     ca_task_exit();
 
   SDDS_Bomb((char *)"Abnormal exit from repeats loop--this shouldn't happen");
-  return (1);
+  return (EXIT_FAILURE);
 }
 
 void EventHandler(struct event_handler_args event) {
@@ -707,6 +711,10 @@ void EventHandler(struct event_handler_args event) {
   index = *((long *)event.usr);
   dbrValue = (struct dbr_time_double *)event.dbr;
   waitFor[index].value = (double)dbrValue->value;
+  if (waitFor[index].eventSeen == -1)
+    waitFor[index].eventSeen = 0;
+  else
+    waitFor[index].eventSeen = 1;
 }
 
 void StringEventHandler(struct event_handler_args event) {
@@ -715,7 +723,10 @@ void StringEventHandler(struct event_handler_args event) {
   index = *((long *)event.usr);
   dbrValue = (struct dbr_time_string *)event.dbr;
   snprintf(waitFor[index].stringValue, sizeof(waitFor[index].stringValue), "%s", (char *)dbrValue->value);
-  ;
+  if (waitFor[index].eventSeen == -1)
+    waitFor[index].eventSeen = 0;
+  else
+    waitFor[index].eventSeen = 1;
 }
 
 void sleep_us(unsigned int nusecs) {
@@ -753,13 +764,13 @@ long waitForEvent(double timeLimit, double interval,
           fprintf(stderr, "Error (cawait): problem doing ca_get for %s\n",
                   waitFor[j].PVname);
           ca_task_exit();
-          exit(1);
+          exit(EXIT_FAILURE);
         }
       }
       if (ca_pend_io(pendIOTime) != ECA_NORMAL) {
         fprintf(stderr, "Error (cawait): problem doing ca_get for PVs\n");
         ca_task_exit();
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       hasStarted = 1;
 #ifdef DEBUG
@@ -804,11 +815,17 @@ long waitForEvent(double timeLimit, double interval,
           term = 0;
         else
           waitFor[j].changeReference = waitFor[j].value;
+      } else if (waitFor[j].flags & MONITOR_GIVEN) {
+        if (waitFor[j].eventSeen == 1) {
+          waitFor[j].eventSeen = 0;
+        } else {
+          term = 0;
+        }
       } else {
         fprintf(stderr, "no flags set for PV %s--this shouldn't happen\n",
                 waitFor[j].PVname);
         ca_task_exit();
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       rpn_push_log(term);
       for (k = 0; k < waitFor[j].operations; k++) {
@@ -893,11 +910,11 @@ long waitForEventPVA(PVA_OVERALL *pva, double timeLimit, double interval, long i
               waitFor[j].changeReference = pva->pvaData[j].monitorData[0].values[0];
           } else {
             fprintf(stderr, "no flags set for PV %s--this shouldn't happen\n", waitFor[j].PVname);
-            exit(1);
+            exit(EXIT_FAILURE);
           }
         } else { //For scalarArray PVs, it may be useful to wait on the .timeStamp.secondsPast
           fprintf(stderr, "error: cawait only works with scalar values.\n");
-          exit(1);
+          exit(EXIT_FAILURE);
         }
         rpn_push_log(term);
         for (k = 0; k < waitFor[j].operations; k++) {
@@ -953,7 +970,7 @@ long rpn_pop_log(long *logical) {
   if (rpn_lstackptr < 1) {
     fputs("too few items on logical stack (rpn_pop_log)\n", stderr);
     ca_task_exit();
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   *logical = rpn_logicstack[--rpn_lstackptr];
   return (1);
@@ -963,7 +980,7 @@ long rpn_push_log(long logical) {
   if (rpn_lstackptr == RPN_LOGICSTACKSIZE) {
     fputs("stack overflow--logical stack size exceeded (rpn_push_log)\n", stderr);
     ca_task_exit();
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   rpn_logicstack[rpn_lstackptr++] = logical;
   return (1);
@@ -972,7 +989,7 @@ long rpn_push_log(long logical) {
 void rpn_log_and(void) {
   if (!rpn_stack_test(rpn_lstackptr, 2, (char *)"logical", (char *)"rpn_log_and")) {
     ca_task_exit();
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   rpn_logicstack[rpn_lstackptr - 2] = (rpn_logicstack[rpn_lstackptr - 1] && rpn_logicstack[rpn_lstackptr - 2]);
   rpn_lstackptr--;
@@ -981,7 +998,7 @@ void rpn_log_and(void) {
 void rpn_log_or(void) {
   if (!rpn_stack_test(rpn_lstackptr, 2, (char *)"logical", (char *)"rpn_log_or")) {
     ca_task_exit();
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   rpn_logicstack[rpn_lstackptr - 2] = (rpn_logicstack[rpn_lstackptr - 1] || rpn_logicstack[rpn_lstackptr - 2]);
   rpn_lstackptr--;
@@ -990,7 +1007,7 @@ void rpn_log_or(void) {
 void rpn_log_not(void) {
   if (!rpn_stack_test(rpn_lstackptr, 1, (char *)"logical", (char *)"rpn_log_not")) {
     ca_task_exit();
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   rpn_logicstack[rpn_lstackptr - 1] = !rpn_logicstack[rpn_lstackptr - 1];
 }
@@ -1026,7 +1043,7 @@ void oag_ca_exception_handler(struct exception_handler_args args) {
       fprintf(stderr, "    Type: \"%s\"\n", dbr_type_to_text(args.type));
     }
     fprintf(stderr, "This sometimes indicates an IOC that is hung up.\n");
-    _exit(1);
+    _exit(EXIT_FAILURE);
   } else {
     fprintf(stdout, "CA.Client.Exception................\n");
     fprintf(stdout, "    %s: \"%s\"\n",

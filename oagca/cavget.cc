@@ -111,18 +111,20 @@
 #define CLO_PRINTERRORS 16
 #define CLO_PROVIDER 17
 #define CLO_INFO 18
-#define COMMANDLINE_OPTIONS 19
+#define CLO_CHARARRAY 19
+#define COMMANDLINE_OPTIONS 20
 char *commandline_option[COMMANDLINE_OPTIONS] = {
   (char *)"list", (char *)"range", (char *)"pendiotime", (char *)"dryrun", (char *)"labeled",
   (char *)"floatformat", (char *)"delimiter", (char *)"noquotes", (char *)"embrace", (char *)"repeat",
   (char *)"errorvalue", (char *)"numerical", (char *)"cavputform", (char *)"excludeerrors", 
-  (char *)"statistics", (char *)"despike", (char *)"printErrors", (char *)"provider", (char *)"info"};
+  (char *)"statistics", (char *)"despike", (char *)"printErrors", (char *)"provider", (char *)"info",
+  (char *)"chararray"};
 
 #define CLO_STATS_TAGVALUE 0
 #define CLO_STATS_PRETTY 1
 #define CLO_STATS_SDDS 2
-#define STATISICS_FORMATS 3
-char *statisticsFormat[STATISICS_FORMATS] = {
+#define STATISTICS_FORMATS 3
+char *statisticsFormat[STATISTICS_FORMATS] = {
   (char *)"tagvalue",
   (char *)"pretty",
   (char *)"SDDS",
@@ -139,6 +141,7 @@ char *providerOption[PROVIDER_COUNT] = {
 static char *USAGE1 = (char *)"cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\n\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\n\
 [-floatformat=<printfString>] \n\
+[-charArray] \n\
 { [-delimiter=<string>] [-labeled] [-noQuotes] [-embrace=start=<string>,end=<string>] \n\
     | [-cavputForm]  }\n\
 [-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename]]] \n\
@@ -152,6 +155,7 @@ static char *USAGE1 = (char *)"cavget [-list=<string>[=<value>][,<string>[=<valu
 -range       specifies range of integers and format string\n\
 -floatFormat specifies printf-style format string for printing\n\
              single- and double-precision values.  %g is the default.\n\
+-charArray   Prints character array values as strings.\n\
 -delimiter   specifies string to print between values.  The \n\
              default is a newline.\n\
 -labeled     specifies that the PV name be echoed with the value.\n\
@@ -217,7 +221,7 @@ void sleep_us(unsigned int nusecs) {
 
 long printResult(FILE *fp, char *startBrace, long labeled, long connectedInTime,
                  long channelType, PV_VALUE PVvalue, char *endBrace,
-                 char *floatFormat, char *errorValue, long quotes,
+                 char *floatFormat, short charArray, char *errorValue, long quotes,
                  long cavputForm, long excludeErrors,
                  long delimNeeded, char *delimiter, long secondValue, long doRepeats,
                  long doStats, long repeats, double *value, long average, short printErrors);
@@ -230,7 +234,7 @@ void oag_ca_exception_handler(struct exception_handler_args args);
 #if (EPICS_VERSION > 3)
 
 void printResultPVA(char *startBrace, long labeled, PVA_OVERALL *pva, PV_VALUE *PVvalue, char *endBrace,
-                    char *floatFormat, char *errorValue, long quotes, long cavputForm,
+                    char *floatFormat, short charArray, char *errorValue, long quotes, long cavputForm,
                     long excludeErrors, char *delimiter, long secondValue,
                     long doRepeat, long doStats, long repeats, long average, short printErrors);
 void printResultPrettyPVA(PVA_OVERALL *pva, long quotes, char *errorValue, short printErrors);
@@ -247,6 +251,7 @@ int main(int argc, char **argv) {
   unsigned long flags;
   SCANNED_ARG *s_arg;
   char *rangeFormat, *floatFormat, *delimiter;
+  short charArray=0;
   double pendIOTime, repeatPause, despikeThreshold;
   chid *channelID;
   short *connectedInTime = NULL;
@@ -269,7 +274,7 @@ int main(int argc, char **argv) {
   argc = scanargs(&s_arg, argc, argv);
   if (argc < 2) {
     fprintf(stderr, "%s%s%s\n", USAGE1, USAGE2, USAGE3);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   statsFormat = statsOutput = NULL;
   PVvalue = NULL;
@@ -342,6 +347,9 @@ int main(int argc, char **argv) {
       case CLO_INFO:
         infoMode = 1;
         break;
+      case CLO_CHARARRAY:
+        charArray = 1;
+        break;
       case CLO_FLOATFORMAT:
         if (s_arg[i_arg].n_items != 2)
           SDDS_Bomb((char *)"wrong number of items for -floatFormat");
@@ -412,7 +420,7 @@ int main(int argc, char **argv) {
           SDDS_Bomb((char *)"invalid -statistics syntax");
         if (!statsFormat)
           SDDS_Bomb((char *)"invalid -statistics syntax, the format is not given.");
-        switch (match_string(statsFormat, statisticsFormat, STATISICS_FORMATS, 0)) {
+        switch (match_string(statsFormat, statisticsFormat, STATISTICS_FORMATS, 0)) {
         case CLO_STATS_TAGVALUE:
         case CLO_STATS_PRETTY:
           if (statsOutput)
@@ -527,12 +535,15 @@ int main(int argc, char **argv) {
 
     do {
       //Get data from PVs and return a PVStructure
+      if (infoMode) {
+        pva.includeAlarmSeverity = true;
+      }
       if (GetPVAValues(&pva) == 1) {
-        return (1);
+        return (EXIT_FAILURE);
       }
       if (infoMode) {
         GetInfoData(&pva, PVvalue);
-        exit(0);
+        exit(EXIT_SUCCESS);
       }
       //Change enumerated PV values to int from string if the numerical option is given
       if ((repeats0 == 0) && (numerical)) {
@@ -579,14 +590,14 @@ int main(int argc, char **argv) {
     }
 
     if (!statsFormat ||
-        match_string(statsFormat, statisticsFormat, STATISICS_FORMATS, 0) == CLO_STATS_TAGVALUE) {
+        match_string(statsFormat, statisticsFormat, STATISTICS_FORMATS, 0) == CLO_STATS_TAGVALUE) {
       printResultPVA(startBrace, labeled, &pva, PVvalue, endBrace,
-                     floatFormat, errorValue, quotes, cavputForm,
+                     floatFormat, charArray, errorValue, quotes, cavputForm,
                      excludeErrors, delimiter, sigma,
                      doRepeat, doStats, repeats, average, printErrors);
     }
     if (statsFormat) {
-      switch (match_string(statsFormat, statisticsFormat, STATISICS_FORMATS, 0)) {
+      switch (match_string(statsFormat, statisticsFormat, STATISTICS_FORMATS, 0)) {
       case CLO_STATS_PRETTY:
         printResultPrettyPVA(&pva, quotes, errorValue, printErrors);
         break;
@@ -612,7 +623,7 @@ int main(int argc, char **argv) {
     if (List)
       free(List);
     free_scanargs(&s_arg, argc);
-    return (0);
+    return (EXIT_SUCCESS);
 #else
     if (!(value = (double **)malloc(sizeof(double *) * PVs)))
       SDDS_Bomb((char *)"memory allocation failure (cavget)");
@@ -638,7 +649,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "error (cavget): problem doing search for %s\n",
                 PVvalue[j].name);
         ca_task_exit();
-        exit(1);
+        exit(EXIT_FAILURE);
       }
     ca_pend_io(pendIOTime);
     if (numerical)
@@ -662,13 +673,13 @@ int main(int argc, char **argv) {
             fprintf(stderr, "problem doing get for %s\n",
                     PVvalue[j].name);
             ca_task_exit();
-            exit(1);
+            exit(EXIT_FAILURE);
           }
           break;
         case DBF_NO_ACCESS:
           fprintf(stderr, "Error: No access to PV %s\n", PVvalue[j].name);
           ca_task_exit();
-          exit(1);
+          exit(EXIT_FAILURE);
           break;
         default:
           if (ca_get(DBR_DOUBLE, channelID[j],
@@ -676,7 +687,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "problem doing get for %s\n",
                     PVvalue[j].name);
             ca_task_exit();
-            exit(1);
+            exit(EXIT_FAILURE);
           }
           break;
         }
@@ -709,11 +720,11 @@ int main(int argc, char **argv) {
 
     delimNeeded = 0;
     if (!statsFormat ||
-        match_string(statsFormat, statisticsFormat, STATISICS_FORMATS, 0) == CLO_STATS_TAGVALUE) {
+        match_string(statsFormat, statisticsFormat, STATISTICS_FORMATS, 0) == CLO_STATS_TAGVALUE) {
       for (j = 0; j < PVs; j++) {
         if (printResult(stdout, startBrace, labeled, connectedInTime[j],
                         channelType[j], PVvalue[j], endBrace,
-                        floatFormat, errorValue, quotes, cavputForm,
+                        floatFormat, charArray, errorValue, quotes, cavputForm,
                         excludeErrors, delimNeeded, delimiter, sigma, doRepeat, doStats, repeats, value[j], average,
                         printErrors))
           delimNeeded = 1;
@@ -722,7 +733,7 @@ int main(int argc, char **argv) {
         fputc('\n', stdout);
     }
     if (statsFormat) {
-      switch (match_string(statsFormat, statisticsFormat, STATISICS_FORMATS, 0)) {
+      switch (match_string(statsFormat, statisticsFormat, STATISTICS_FORMATS, 0)) {
       case CLO_STATS_PRETTY:
         printResultPretty(stdout, channelType, PVvalue, PVs, quotes, connectedInTime, errorValue, printErrors);
         break;
@@ -760,12 +771,12 @@ int main(int argc, char **argv) {
   if (List)
     free(List);
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 long printResult(FILE *fp, char *startBrace, long labeled, long connectedInTime,
                  long channelType, PV_VALUE PVvalue, char *endBrace,
-                 char *floatFormat, char *errorValue, long quotes,
+                 char *floatFormat, short charArray, char *errorValue, long quotes,
                  long cavputForm, long excludeErrors,
                  long delimNeeded, char *delimiter, long secondValue,
                  long doRepeat, long doStats, long repeats, double *value, long average, short printErrors) {
@@ -1031,13 +1042,13 @@ void oag_ca_exception_handler(struct exception_handler_args args) {
     fprintf(stderr, "    Type: \"%s\"\n", dbr_type_to_text(args.type));
   }
   fprintf(stderr, "This sometimes indicates an IOC that is hung up.\n");
-  _exit(1);
+  _exit(EXIT_FAILURE);
 }
 
 #if (EPICS_VERSION > 3)
 
 void printResultPVA(char *startBrace, long labeled, PVA_OVERALL *pva, PV_VALUE *PVvalue, char *endBrace,
-                    char *floatFormat, char *errorValue, long quotes, long cavputForm,
+                    char *floatFormat, short charArray, char *errorValue, long quotes, long cavputForm,
                     long excludeErrors, char *delimiter, long secondValue,
                     long doRepeat, long doStats, long repeats, long average, short printErrors) {
   long i, j, n, delimNeeded = 0;
@@ -1050,13 +1061,13 @@ void printResultPVA(char *startBrace, long labeled, PVA_OVERALL *pva, PV_VALUE *
         case epics::pvData::pvString:
         case epics::pvData::pvBoolean:
           fprintf(stderr, "Error, doing statistical analysis for PVs of non-numeric type is meaningless.\n");
-          exit(1);
+          exit(EXIT_FAILURE);
         default:
           break;
         }
         if (pva->pvaData[i].numGetElements != 1) {
           fprintf(stderr, "Error, doing statistical analysis for PVs of array types is not available.\n");
-          exit(1);
+          exit(EXIT_FAILURE);
         }
       }
     }
@@ -1228,7 +1239,34 @@ void printResultPVA(char *startBrace, long labeled, PVA_OVERALL *pva, PV_VALUE *
         break;
       }
       case epics::pvData::pvByte:
-      case epics::pvData::pvUByte:
+      case epics::pvData::pvUByte: {
+        while (n < pva->pvaData[j].numGetReadings) {
+          if (charArray) {
+            if (quotes) {
+              fprintf(stdout, "\"");
+            }
+            for (i = 0; i < pva->pvaData[j].numGetElements; i++) {
+              fprintf(stdout, "%c", (char)pva->pvaData[j].getData[n].values[i]);
+            }
+            if (quotes) {
+              fprintf(stdout, "\"");
+            }
+          } else {
+            fprintf(stdout, "%ld", pva->pvaData[j].numGetElements);
+            for (i = 0; i < pva->pvaData[j].numGetElements; i++) {
+              fprintf(stdout, ",%.0f", pva->pvaData[j].getData[n].values[i]);
+            }
+            if ((doRepeat) && (secondValue)) {
+              fprintf(stdout, " 0");
+            }
+          }
+          if (n != pva->pvaData[j].numGetReadings - 1) {
+            fprintf(stdout, " ");
+          }
+          n++;
+        }
+        break;
+      }
       case epics::pvData::pvShort:
       case epics::pvData::pvUShort:
       case epics::pvData::pvInt:
@@ -1337,13 +1375,13 @@ void writeStatisticsToSDDSFilePVA(char *outputFile, PVA_OVERALL *pva, long quote
       case epics::pvData::pvString:
       case epics::pvData::pvBoolean:
         fprintf(stderr, "Error, doing statistical analysis for PVs of non-numeric type is meaningless.\n");
-        exit(1);
+        exit(EXIT_FAILURE);
       default:
         break;
       }
       if (pva->pvaData[i].numGetElements != 1) {
         fprintf(stderr, "Error, doing statistical analysis for PVs of array types is not available.\n");
-        exit(1);
+        exit(EXIT_FAILURE);
       }
     }
   }
@@ -1413,6 +1451,7 @@ void GetInfoData(PVA_OVERALL *pva, PV_VALUE *PVvalue) {
       fprintf(stdout, "      Write Access:   y\n");
     else
       fprintf(stdout, "      Write Access:   n\n");
+    fprintf(stdout, "    Alarm Severity:   %s\n", GetAlarmSeverity(pva, n).c_str());
     fprintf(stdout, "      Structure ID:   %s\n", GetStructureID(pva, n).c_str());
     fprintf(stdout, "        Field Type:   %s\n", GetFieldType(pva,n).c_str());
     fprintf(stdout, "     Element Count:   %" PRIu32 "\n", GetElementCount(pva,n));
