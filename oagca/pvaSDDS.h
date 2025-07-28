@@ -1,3 +1,25 @@
+/**
+ * @file pvaSDDS.h
+ * @brief Functions for managing and interacting with Process Variable Array (PVA) structures.
+ *
+ * @details
+ * This file includes a set of functions to allocate, reallocate, free, connect, monitor, and 
+ * extract values for Process Variable Arrays (PVA) using EPICS PVAccess and PVData libraries. 
+ * It provides utilities for managing PVAs in scenarios where EPICS Channel Access (CA) and 
+ * PVAccess (PVA) protocols are used to interact with control system process variables.
+ * 
+ * @copyright
+ *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
+ *   - (c) 2002 The Regents of the University of California, as Operator of Los Alamos National Laboratory.
+ *
+ * @license
+ * This file is distributed under the terms of the Software License Agreement
+ * found in the file LICENSE included with this distribution.
+ *
+ * @authors
+ * R. Soliday,
+ */
+
 #include "pv/pvaClient.h"
 #include "pv/pvaClientMultiChannel.h"
 #include "pv/pvEnumerated.h"
@@ -218,6 +240,7 @@ std::string GetProviderName(PVA_OVERALL *pva, long index);
 std::string GetRemoteAddress(PVA_OVERALL *pva, long index);
 bool HaveReadAccess(PVA_OVERALL *pva, long index);
 bool HaveWriteAccess(PVA_OVERALL *pva, long index);
+std::string GetAlarmSeverity(PVA_OVERALL *pva, long index);
 std::string GetStructureID(PVA_OVERALL *pva, long index);
 std::string GetFieldType(PVA_OVERALL *pva, long index);
 bool IsEnumFieldType(PVA_OVERALL *pva, long index);
