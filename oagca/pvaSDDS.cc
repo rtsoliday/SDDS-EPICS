@@ -2321,19 +2321,19 @@ std::string GetFieldType(PVA_OVERALL *pva, long index) {
   } else if (id == "structure") {
     if (fieldCount > 1) {
       if (pvStructurePtr->getPVFields()[0]->getFieldName() != "value") {
-        const char *dot = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
-        char *copy = strdup(dot);
+        const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
+        char *copy = strdup(dot1);
         char *first = strtok(copy, ".");
         for (i=0; i<fieldCount; i++) {
-          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot) == 0) {
+          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
             break;
           } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
             if (pvStructurePtr->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
               pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
               fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
               for (i=0; i<fieldCount; i++) {
-                dot = strchr(dot, '.') + 1;
-                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot) == 0) {
+                const char *dot2 = strchr(dot1, '.') + 1;
+                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
                   free(copy);
                   return epics::pvData::TypeFunc::name(pvStructurePtrA->getPVFields()[i]->getField()->getType());
                 }
@@ -2382,11 +2382,11 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
   } else if (id == "structure") {
     if (fieldCount > 1) {
       if (pvStructurePtr->getPVFields()[0]->getFieldName() != "value") {
-        const char *dot = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
-        char *copy = strdup(dot);
+        const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
+        char *copy = strdup(dot1);
         char *first = strtok(copy, ".");
         for (i=0; i<fieldCount; i++) {
-          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot) == 0) {
+          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
             break;
           } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
 	    
@@ -2394,8 +2394,8 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
               pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
               fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
               for (i=0; i<fieldCount; i++) {
-                dot = strchr(dot, '.') + 1;
-                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot) == 0) {
+                const char *dot2 = strchr(dot1, '.') + 1;
+                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
                   free(copy);
                   switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
                   case epics::pvData::scalar: {
@@ -2474,11 +2474,11 @@ std::string GetNativeDataType(PVA_OVERALL *pva, long index) {
   } else if (id == "structure") {
     if (fieldCount > 1) {
       if (pvStructurePtr->getPVFields()[0]->getFieldName() != "value") {
-        const char *dot = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
-        char *copy = strdup(dot);
+        const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
+        char *copy = strdup(dot1);
         char *first = strtok(copy, ".");
         for (i=0; i<fieldCount; i++) {
-          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot) == 0) {
+          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
             break;
           } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
 	    
@@ -2486,8 +2486,8 @@ std::string GetNativeDataType(PVA_OVERALL *pva, long index) {
               pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
               fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
               for (i=0; i<fieldCount; i++) {
-                dot = strchr(dot, '.') + 1;
-                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot) == 0) {
+                const char *dot2 = strchr(dot1, '.') + 1;
+                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
                   free(copy);
                   switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
                   case epics::pvData::scalar: {
