@@ -2309,7 +2309,7 @@ std::string GetStructureID(PVA_OVERALL *pva, long index) {
 }
 std::string GetFieldType(PVA_OVERALL *pva, long index) {
   std::string id;
-  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA;
+  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA, pvStructurePtrB;
   size_t fieldCount, i=0;
   if (pva->isConnected[index] == false)
     return "unknown";
@@ -2319,47 +2319,68 @@ std::string GetFieldType(PVA_OVERALL *pva, long index) {
   if (id == "epics:nt/NTEnum:1.0") {
     return "ENUM structure";
   } else if (id == "structure") {
-    if (fieldCount > 1) {
-      if (pvStructurePtr->getPVFields()[0]->getFieldName() != "value") {
-        const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
-        char *copy = strdup(dot1);
-        char *first = strtok(copy, ".");
-        for (i=0; i<fieldCount; i++) {
-          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
-            break;
-          } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
-            if (pvStructurePtr->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
-              pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
-              fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
-              for (i=0; i<fieldCount; i++) {
-                const char *dot2 = strchr(dot1, '.') + 1;
-                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
-                  free(copy);
-                  return epics::pvData::TypeFunc::name(pvStructurePtrA->getPVFields()[i]->getField()->getType());
-                }
-              }
-            }
-            fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
-            free(copy);
-            return "unknown";
-          }
-        }
-        free(copy);
-        if (i == fieldCount) {
-          fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
-          return "unknown";
-        }
-      }
-    } else if (fieldCount == 0) {
+    if (fieldCount == 0) {
       fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
       return "unknown";
     }
-    return epics::pvData::TypeFunc::name(pvStructurePtr->getPVFields()[i]->getField()->getType());
+    if (pvStructurePtr->getPVFields()[0]->getFieldName() == "value") {
+      return epics::pvData::TypeFunc::name(pvStructurePtr->getPVFields()[0]->getField()->getType());
+    }
+
+    const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
+    char *copy = strdup(dot1);
+    char *first = strtok(copy, ".");
+    for (i=0; i<fieldCount; i++) {
+      if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
+	free(copy);
+	return epics::pvData::TypeFunc::name(pvStructurePtr->getPVFields()[i]->getField()->getType());
+      } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
+	if (pvStructurePtr->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
+	  pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
+	  fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
+	  free(copy);
+	  const char *dot2 = strchr(dot1, '.') + 1;
+	  char *copy = strdup(dot2);
+	  char *first = strtok(copy, ".");
+	  for (i=0; i<fieldCount; i++) {
+	    if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
+	      free(copy);
+	      return epics::pvData::TypeFunc::name(pvStructurePtrA->getPVFields()[i]->getField()->getType());
+	    } else if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
+	      if (pvStructurePtrA->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
+		pvStructurePtrB = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtrA->getPVFields()[i]);
+		fieldCount = pvStructurePtrB->getStructure()->getNumberFields();
+		free(copy);
+		const char *dot3 = strchr(dot2, '.') + 1;
+		//char *copy = strdup(dot3);
+		//char *first = strtok(copy, ".");
+		for (i=0; i<fieldCount; i++) {
+		  if (strcmp(pvStructurePtrB->getPVFields()[i]->getFieldName().c_str(),dot3) == 0) {
+		    //free(copy);
+		    return epics::pvData::TypeFunc::name(pvStructurePtrB->getPVFields()[i]->getField()->getType());
+		  }
+		}
+		//free(copy);
+		fprintf(stderr, "Error: sub-fields go too deep %s\n", pva->pvaChannelNames[index].c_str());
+		return "unknown";
+	      }
+	    }
+	  }
+	  free(copy);
+	  fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
+	  return "unknown";
+	}
+      }
+    }
+    free(copy);
+    fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
+    return "unknown";
   } else {
-    std::cerr << "ERROR: Need code to handle " << id << std::endl;
+    std::cerr << "ERROR1: Need code to handle " << id << std::endl;
     return "unknown";
   }
 }
+
 bool IsEnumFieldType(PVA_OVERALL *pva, long index) {
   if (pva->isConnected[index] == false)
     return false;
@@ -2370,7 +2391,7 @@ bool IsEnumFieldType(PVA_OVERALL *pva, long index) {
 }
 uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
   std::string id;
-  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA;
+  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA, pvStructurePtrB;
   size_t fieldCount, i = 0;
   if (pva->isConnected[index] == false)
     return 0;
@@ -2380,89 +2401,112 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
   if (id == "epics:nt/NTEnum:1.0") {
     return 1;
   } else if (id == "structure") {
-    if (fieldCount > 1) {
-      if (pvStructurePtr->getPVFields()[0]->getFieldName() != "value") {
-        const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
-        char *copy = strdup(dot1);
-        char *first = strtok(copy, ".");
-        for (i=0; i<fieldCount; i++) {
-          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
-            break;
-          } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
-	    
-            if (pvStructurePtr->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
-              pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
-              fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
-              for (i=0; i<fieldCount; i++) {
-                const char *dot2 = strchr(dot1, '.') + 1;
-                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
-                  free(copy);
-                  switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
-                  case epics::pvData::scalar: {
-                    return 1;
-                  }
-                  case epics::pvData::scalarArray: {
-                    return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrA->getPVFields()[i])->getLength();
-                  }
-                  default: {
-                    std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[i]->getField()->getType() << std::endl;
-                    return 0;
-                  }
-                  }
-                }
-              }
-            }
-	    
-            fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
-            free(copy);
-            return 0;
-          }
-        }
-        free(copy);
-        if (i == fieldCount) {
-          fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
-          return 0;
-        }
-      }
-    } else if (fieldCount == 0) {
+    if (fieldCount == 0) {
       fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
       return 0;
     }
-    switch (pvStructurePtr->getPVFields()[i]->getField()->getType()) {
-    case epics::pvData::scalar: {
-      return 1;
-    }
-    case epics::pvData::scalarArray: {
-      return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[i])->getLength();
-    }
-    case epics::pvData::structure: {
-      pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
-      switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
+
+    if (pvStructurePtr->getPVFields()[0]->getFieldName() == "value") {
+      switch (pvStructurePtr->getPVFields()[0]->getField()->getType()) {
       case epics::pvData::scalar: {
 	return 1;
       }
       case epics::pvData::scalarArray: {
-	return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrA->getPVFields()[i])->getLength();
+	return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[0])->getLength();
       }
       default: {
-	std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[i]->getField()->getType() << std::endl;
+	std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[0]->getField()->getType() << std::endl;
 	return 0;
       }
       }
     }
-    default: {
-      std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[i]->getField()->getType() << std::endl;
-      return 0;
+
+    const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
+    char *copy = strdup(dot1);
+    char *first = strtok(copy, ".");
+    for (i=0; i<fieldCount; i++) {
+      if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
+	free(copy);
+	switch (pvStructurePtr->getPVFields()[i]->getField()->getType()) {
+	case epics::pvData::scalar: {
+	  return 1;
+	}
+	case epics::pvData::scalarArray: {
+	  return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[i])->getLength();
+	}
+	default: {
+	  std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[i]->getField()->getType() << std::endl;
+	  return 0;
+	}
+	}
+      } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
+	if (pvStructurePtr->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
+	  pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
+	  fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
+	  free(copy);
+	  const char *dot2 = strchr(dot1, '.') + 1;
+	  char *copy = strdup(dot2);
+	  char *first = strtok(copy, ".");
+	  for (i=0; i<fieldCount; i++) {
+	    if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
+	      free(copy);
+	      switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
+	      case epics::pvData::scalar: {
+		return 1;
+	      }
+	      case epics::pvData::scalarArray: {
+		return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrA->getPVFields()[i])->getLength();
+	      }
+	      default: {
+		std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[i]->getField()->getType() << std::endl;
+		return 0;
+	      }
+	      }
+	    } else if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
+	      if (pvStructurePtrA->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
+		pvStructurePtrB = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtrA->getPVFields()[i]);
+		fieldCount = pvStructurePtrB->getStructure()->getNumberFields();
+		free(copy);
+		const char *dot3 = strchr(dot2, '.') + 1;
+		for (i=0; i<fieldCount; i++) {
+		  if (strcmp(pvStructurePtrB->getPVFields()[i]->getFieldName().c_str(),dot3) == 0) {
+		    switch (pvStructurePtrB->getPVFields()[i]->getField()->getType()) {
+		    case epics::pvData::scalar: {
+		      return 1;
+		    }
+		    case epics::pvData::scalarArray: {
+		      return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrB->getPVFields()[i])->getLength();
+		    }
+		    default: {
+		      std::cerr << "ERROR: Need code to handle " << pvStructurePtrB->getPVFields()[i]->getField()->getType() << std::endl;
+		      return 0;
+		    }
+		    }
+		  }
+		}
+		fprintf(stderr, "Error: sub-fields go too deep %s\n", pva->pvaChannelNames[index].c_str());
+		return 0;
+	      }
+	    }
+	  }
+	  free(copy);
+	  fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
+	  return 0;
+	}
+      }
     }
-    }
+    free(copy);
+    fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
+    return 0;
   } else {
     std::cerr << "ERROR: Need code to handle " << id << std::endl;
     return 0;
   }
 }
+
 std::string GetNativeDataType(PVA_OVERALL *pva, long index) {
   std::string id;
-  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA;
+  epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA, pvStructurePtrB;
   size_t fieldCount, i=0;
   if (pva->isConnected[index] == false)
     return "unknown";
@@ -2472,86 +2516,109 @@ std::string GetNativeDataType(PVA_OVERALL *pva, long index) {
   if (id == "epics:nt/NTEnum:1.0") {
     return "string";
   } else if (id == "structure") {
-    if (fieldCount > 1) {
-      if (pvStructurePtr->getPVFields()[0]->getFieldName() != "value") {
-        const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
-        char *copy = strdup(dot1);
-        char *first = strtok(copy, ".");
-        for (i=0; i<fieldCount; i++) {
-          if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
-            break;
-          } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
-	    
-            if (pvStructurePtr->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
-              pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
-              fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
-              for (i=0; i<fieldCount; i++) {
-                const char *dot2 = strchr(dot1, '.') + 1;
-                if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
-                  free(copy);
-                  switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
-                  case epics::pvData::scalar: {
-                    return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtrA->getPVFields()[i]->getField())->getScalarType());
-                  }
-                  case epics::pvData::scalarArray: {
-                    return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtrA->getPVFields()[i]->getField())->getElementType());
-                  }
-                  default: {
-                    std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[i]->getField()->getType() << std::endl;
-                    return "unknown";
-                  }
-                  }
-                }
-              }
-            }
-	    
-            fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
-            free(copy);
-            return "unknown";
-          }
-        }
-        free(copy);
-        if (i == fieldCount) {
-          fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
-          return "unknown";
-        }
-      }
-    } else if (fieldCount == 0) {
+    if (fieldCount == 0) {
       fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
       return "unknown";
     }
-    switch (pvStructurePtr->getPVFields()[i]->getField()->getType()) {
-    case epics::pvData::scalar: {
-      return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtr->getPVFields()[i]->getField())->getScalarType());
-    }
-    case epics::pvData::scalarArray: {
-      return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtr->getPVFields()[i]->getField())->getElementType());
-    }
-    case epics::pvData::structure: {
-      pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
-      switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
+
+    if (pvStructurePtr->getPVFields()[0]->getFieldName() == "value") {
+      switch (pvStructurePtr->getPVFields()[0]->getField()->getType()) {
       case epics::pvData::scalar: {
-        return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtrA->getPVFields()[i]->getField())->getScalarType());
+	return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtr->getPVFields()[0]->getField())->getScalarType());
       }
       case epics::pvData::scalarArray: {
-	return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtrA->getPVFields()[i]->getField())->getElementType());
+	return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtr->getPVFields()[0]->getField())->getElementType());
       }
       default: {
-	std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[i]->getField()->getType() << std::endl;
+	std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[0]->getField()->getType() << std::endl;
 	return "unknown";
       }
       }
     }
-    default: {
-      std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[i]->getField()->getType() << std::endl;
-      return "unknown";
+
+    const char *dot1 = strchr(pva->pvaChannelNames[index].c_str(), '.') + 1;
+    char *copy = strdup(dot1);
+    char *first = strtok(copy, ".");
+    for (i=0; i<fieldCount; i++) {
+      if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),dot1) == 0) {
+	free(copy);
+	switch (pvStructurePtr->getPVFields()[i]->getField()->getType()) {
+	case epics::pvData::scalar: {
+	  return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtr->getPVFields()[0]->getField())->getScalarType());
+	}
+	case epics::pvData::scalarArray: {
+	  return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtr->getPVFields()[0]->getField())->getElementType());
+	}
+	default: {
+	  std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[i]->getField()->getType() << std::endl;
+	  return "unknown";
+	}
+	}
+      } else if (strcmp(pvStructurePtr->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
+	if (pvStructurePtr->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
+	  pvStructurePtrA = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtr->getPVFields()[i]);
+	  fieldCount = pvStructurePtrA->getStructure()->getNumberFields();
+	  free(copy);
+	  const char *dot2 = strchr(dot1, '.') + 1;
+	  char *copy = strdup(dot2);
+	  char *first = strtok(copy, ".");
+	  for (i=0; i<fieldCount; i++) {
+	    if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),dot2) == 0) {
+	      free(copy);
+	      switch (pvStructurePtrA->getPVFields()[i]->getField()->getType()) {
+	      case epics::pvData::scalar: {
+		return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtrA->getPVFields()[0]->getField())->getScalarType());
+	      }
+	      case epics::pvData::scalarArray: {
+		return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtrA->getPVFields()[0]->getField())->getElementType());
+	      }
+	      default: {
+		std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[i]->getField()->getType() << std::endl;
+		return "unknown";
+	      }
+	      }
+	    } else if (strcmp(pvStructurePtrA->getPVFields()[i]->getFieldName().c_str(),first) == 0) {
+	      if (pvStructurePtrA->getPVFields()[i]->getField()->getType() == epics::pvData::structure) {
+		pvStructurePtrB = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(pvStructurePtrA->getPVFields()[i]);
+		fieldCount = pvStructurePtrB->getStructure()->getNumberFields();
+		free(copy);
+		const char *dot3 = strchr(dot2, '.') + 1;
+		for (i=0; i<fieldCount; i++) {
+		  if (strcmp(pvStructurePtrB->getPVFields()[i]->getFieldName().c_str(),dot3) == 0) {
+		    switch (pvStructurePtrB->getPVFields()[i]->getField()->getType()) {
+		    case epics::pvData::scalar: {
+		      return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::Scalar>(pvStructurePtrB->getPVFields()[0]->getField())->getScalarType());
+		    }
+		    case epics::pvData::scalarArray: {
+		      return epics::pvData::ScalarTypeFunc::name(std::tr1::static_pointer_cast<const epics::pvData::ScalarArray>(pvStructurePtrB->getPVFields()[0]->getField())->getElementType());
+		    }
+		    default: {
+		      std::cerr << "ERROR: Need code to handle " << pvStructurePtrB->getPVFields()[i]->getField()->getType() << std::endl;
+		      return "unknown";
+		    }
+		    }
+		  }
+		}
+		fprintf(stderr, "Error: sub-fields go too deep %s\n", pva->pvaChannelNames[index].c_str());
+		return "unknown";
+	      }
+	    }
+	  }
+	  free(copy);
+	  fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
+	  return "unknown";
+	}
+      }
     }
-    }
+    free(copy);
+    fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
+    return "unknown";
   } else {
     std::cerr << "ERROR: Need code to handle " << id << std::endl;
     return "unknown";
   }
 }
+
 std::string GetUnits(PVA_OVERALL *pva, long index) {
   if (pva->pvaData[index].units)
     return pva->pvaData[index].units;
