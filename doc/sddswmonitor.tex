@@ -116,7 +116,8 @@ internally from the EPICS database. An additional long column \verb+Index+ is cr
 of each point in the waveform.
 
 The values of the scalar PVs are written to parameters with names given by the {\tt ReadbackName} column
-of the optional scalars input file. The units are obtained internally from the EPICS database.
+of the optional scalars input file. The units are obtained internally from the EPICS database. Scalar
+PVs that fail to connect when the program starts are omitted from the output file.
 
 By default, the data type is float (single precision). Each reading step produces a new page in the output file.
 
@@ -129,7 +130,7 @@ Time and other miscellaneous parameters are defined:
         \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step. 
 \end{itemize}
 
-For each scalar PV defined in the \verb+scalars+ command line option a parameter of type double is defined.
+For each connected scalar PV defined in the \verb+scalars+ command line option a parameter of type double is defined.
 
 Many additional parameters which don't change values throughout the file are defined:
 \begin{itemize}

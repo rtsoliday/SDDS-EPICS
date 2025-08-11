@@ -855,6 +855,43 @@ int main(int argc, char **argv) {
                                       &scalarUnits, &scalarSymbol, &scalarFactor, NULL, &scalarDataType,
                                       &scalars, scalarFile, GET_UNITS_IF_BLANK, &scalarCHID, pendIOtime))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    if (scalars) {
+      long connected = 0;
+      for (i = 0; i < scalars; i++) {
+        if (ca_state(scalarCHID[i]) == cs_conn) {
+          if (connected != i) {
+            scalarPV[connected] = scalarPV[i];
+            scalarName[connected] = scalarName[i];
+            if (scalarUnits)
+              scalarUnits[connected] = scalarUnits[i];
+            if (scalarSymbol)
+              scalarSymbol[connected] = scalarSymbol[i];
+            if (scalarFactor)
+              scalarFactor[connected] = scalarFactor[i];
+            if (readMessage)
+              readMessage[connected] = readMessage[i];
+            if (scalarDataType)
+              scalarDataType[connected] = scalarDataType[i];
+            scalarCHID[connected] = scalarCHID[i];
+          }
+          connected++;
+        } else {
+          if (!noWarnings)
+            fprintf(stderr, "%s not connected -- omitted from output\n", scalarPV[i]);
+          if (scalarPV[i])
+            free(scalarPV[i]);
+          if (scalarName[i])
+            free(scalarName[i]);
+          if (scalarUnits && scalarUnits[i])
+            free(scalarUnits[i]);
+          if (scalarSymbol && scalarSymbol[i])
+            free(scalarSymbol[i]);
+          if (readMessage && readMessage[i])
+            free(readMessage[i]);
+        }
+      }
+      scalars = connected;
+    }
   }
   CondDeviceName = CondReadMessage = NULL;
   CondScaleFactor = NULL;
