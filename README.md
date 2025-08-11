@@ -4,20 +4,26 @@
 SDDS-EPICS is a collection of EPICS Channel Access applications and utilities built on the Self-Describing Data Set (SDDS) protocol.  It provides tools for data acquisition, monitoring, logging, and analysis in accelerator and beamline control systems.
 
 ## Prerequisites
-This repository incorporates and extends the code from SDDS and EPICS :
+This repository relies on the following external projects:
 
-- https://github.com/rtsoliday/SDDS
-- https://github.com/epics-base
+- SDDS: https://github.com/rtsoliday/SDDS
+- EPICS Base: https://github.com/epics-base/epics-base
 
 ## Repository Structure:
 ```
 📦 SDDS-EPICS Repository
-├── logDaemon/       # distributed logging daemon and client library
+├── AGENTS.md        # Agent instructions and guidelines
+├── Makefile         # Top-level build configuration
+├── Makefile.build   # Build helpers
+├── Makefile.rules   # Common make rules
+├── doc/             # Documentation sources
+├── logDaemon/       # Distributed logging daemon and client library
+├── oagca/           # CA and PVA generic tools (cavget, cavput, cawait)
+├── rampload/        # Ramp-loading utilities
 ├── runcontrol/      # EPICS run control integration
 ├── SDDSepics/       # SDDS-based EPICS applications (snapshot, monitor, logger, etc.)
-├── doc/             # Documentation
 ├── LICENSE          # Licensing information
-└── README.md        # This file
+└── README.md        # Project overview
 ```
 
 ## Compilation
