@@ -14,9 +14,9 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
-\verb+sddsglitchlogger+ reads values of process variables and writes them to a file at a specified time interval when a trigger occurrs.
+\verb+sddsglitchlogger+ reads values of process variables and writes them to a file at a specified time interval when a trigger occurs.
 An input file defines the process variables to be monitored and/or the trigger parameters.
 An trigger file defines the the process variables that act as triggers.
 \item {\bf example:} 
@@ -148,7 +148,7 @@ conditions that must be satisfied at each time step before the data can be logge
 
 The file is like the main input file, but has numerical columns \verb+LowerLimit+ and \verb+UpperLimit+.
 The minimal column set is \verb+ControlName+, which contain the PV names, and the two limits columns above.
-Depending on comand line options, when any or all PV readback from this file
+Depending on command line options, when any or all PV readback from this file
 is outstide the range defined by the corresponding data from \verb+LowerLimit+ and \verb+UpperLimit+,
 none of the data of the input file PVs are recorded. 
 When this situation occurs for a long period of time, the size of the output file doesn't
@@ -170,7 +170,7 @@ The output file contains one data column for each process variables named in the
 Time columns and other miscellaneous columns are defined: 
 \begin{itemize}
         \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
-        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
         \item {\tt TimeOfDay} --- Float column of system time in units of hours. 
         The time does not wrap around at 24 hours.
@@ -216,7 +216,7 @@ Many time-related parameters are defined in the output file:
                 effective time interval may be longer than specified.
         \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
                 seconds, minutes, hours, and days. The completion time may be longer, because the time 
-                interval in not garanteed.
+                interval in not guaranteed.
         \item {\tt -enforceTimeLimit} --- Enforces the time limit given with the -time option.
         \item {\tt -circularBuffer} --- Set how many samples to keep before and after the triggering event.
         \item {\tt -holdoffTime} --- Set the number of seconds to wait after a trigger or alarm before 
@@ -228,7 +228,7 @@ Many time-related parameters are defined in the output file:
         \item {\tt -inhibitPV} --- Checks this PV prior to each sample.  If the value is nonzero, 
                 then data collection is inhibited.  None of the conditions-related or other PVs are polled.
         \item {\tt -watchInput} -- If it is given, then the programs checks the input file to see if
-                it is modifed. If the inputfile is modified, then read the input files again and start
+                it is modified. If the inputfile is modified, then read the input files again and start
                 the logging.
         \item {\verb+-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]+} --- 
                    Names an SDDS file containing PVs to read and limits on each PV that must

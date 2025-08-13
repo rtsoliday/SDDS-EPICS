@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddsvexperiment+ varies process variables and measures process variables, with optional averaging.
 An input file of namelist commands gives the specific instructions.
@@ -346,7 +346,7 @@ have default values in general are string variables.
 
    \item {\verb+readback_attempts+} --- Optional. Number of allowed
        readings of the {\verb+readback_name+} process variable and
-       readback pauses after a variable change has occured.  After
+       readback pauses after a variable change has occurred.  After
        this number of readings, the program exits.  The first readback
        is attempted immediately (i.e. no pause) after sending a
        setpoint command to the {\verb+PV_name+}.  A positive value is
@@ -441,14 +441,14 @@ have default values in general are string variables.
       {\verb+measurement+} command.
 
    \item {\verb+outlimit_pause+} --- Optional. Number of seconds to
-      pause after an invalid range measurement error occured. This is
+      pause after an invalid range measurement error occurred. This is
       to permit equipment time to recover from whatever glitch caused
       the out-of-limit reading.
 
    \item {\verb+repeat_reading+} --- Optional. The measurements and
       statistical analyses are repeated this number of times for each
       variable settings. A page of data is written to the output file
-      for each repitition.
+      for each repetition.
 
    \item {\verb+post_reading_pause+} --- Optional. Number of seconds
       to pause after taking a set of measurements and making a
@@ -564,7 +564,7 @@ have default values in general are string variables.
 
 \newpage
 \item {\bf Rootname file:} \par
-        SDDS file defining the rootnames of the process variables with colum:
+        SDDS file defining the rootnames of the process variables with column:
                 \begin{itemize}
            \item  {\verb+Rootname+} --- Required string column to generate measurement process variables.
                 \end{itemize}
@@ -572,16 +572,16 @@ have default values in general are string variables.
 \item {\bf Suffix file:} \par
         SDDS file defining the suffixes and measurement parameters with columns:
                 \begin{itemize}
-           \item {\verb+Suffix+} --- Required string columne of suffix names to be appended to the \verb+Rootname+
+           \item {\verb+Suffix+} --- Required string column of suffix names to be appended to the \verb+Rootname+
                          values in the rootname file to generate measurement process variables.
            \item {\verb+ColumnNameSuffix+} --- Optional string column of names of suffix column appearing in output data file.
            \item {\verb+NumberToAverage+} --- Optional long column of number of measurements to average.
            \item {\verb+IncludeStDev+} --- Optional character column. If value is 
                         ``y'' then the standard deviation (a measure of the distribution of 
-                        measurements) is calcualted and included
+                        measurements) is calculated and included
                         in the output file. If ``n'' then the standard deviation is not calculated.
            \item {\verb+IncludeSigma+} --- Optional character column. If value is ``y'' then the sigma (uncertainty on the mean value) 
-                        is calcualted and included
+                        is calculated and included
                         in the output file. If ``n'' then the sigma is not calculated.
            \item {\verb+LowerLimit+} and {\verb+UpperLimit+} --- Optional double columns.
                          Must have both or neither. Defines a range of validity for the
@@ -605,7 +605,7 @@ Some additional columns are defined:
    \item {\verb+Rootname+} --- String column for the rootname of the PVs.
    \item {\verb+Index+} --- Long columns for the index of the row.
    \item {\tt Time} --- Double parameter of time since start of epoch. This time data can be used by
-        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
    \item {\tt ElapsedTime} --- Double parameter of elapsed time of readback since the start of the experiment.
 \end{itemize}
@@ -616,7 +616,7 @@ Many time parameters are defined:
 \begin{itemize}
    \item {\verb+Step+} --- Long parameter for the step number.
    \item {\tt Time} --- Double parameter of time since start of epoch. This time data can be used by
-        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
    \item {\tt ElapsedTime} --- Double parameter of elapsed time of readback since the start of the experiment.
    \item {\tt TimeOfDay} --- Double parameter of system time in units of hours. 

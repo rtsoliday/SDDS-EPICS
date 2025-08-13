@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddsexperiment+ varies process variables and measures process variables, with optional statistical analysis.
 An input file of namelist commands gives the specific instructions. 
@@ -239,7 +239,7 @@ The only variables that don't have default values in general are string variable
                 This pause time is in addition to other pauses defined.
         \item {\verb+readback_attempts+} --- Optional. Number of allowed readings 
                 of the {\verb+readback_name+} process variable
-                and readback pauses after a variable change has occured. 
+                and readback pauses after a variable change has occurred. 
                 After this number of readings, the program exits.
                 The first readback is attempted immediately (i.e. no pause) after 
                 sending a setpoint command to the {\verb+control_name+}.
@@ -376,7 +376,7 @@ The only variables that don't have default values in general are string variable
 \end{verbatim}
         \item {\verb+outputfile+} --- Optional. SDDS output file of variable and measurement data. The string
                 may contain the string ``\%s'' which is substituted with the rootname value
-                of the command line. If rootname is not given, then the root of the intput file
+                of the command line. If rootname is not given, then the root of the input file
                 is substituted . If {\verb+outputfile+} is null, then the root of the input file
                 is used for the output file. See description of output file below.
         \item {\verb+post_change_pause+} ---  Optional. Number of seconds to pause after each change before
@@ -395,11 +395,11 @@ The only variables that don't have default values in general are string variable
                 allowed before aborting the
                 program. The valid range of a measurement is specified in the {\verb+measurement+} command.
         \item {\verb+outlimit_pause+} ---  Optional. Number of seconds to pause after an invalid range measurement error
-                occured. This is to permit equipment time to recover from whatever glitch caused the out-of-limit
+                occurred. This is to permit equipment time to recover from whatever glitch caused the out-of-limit
                 reading.
         \item {\verb+repeat_reading+} --- Optional. The measurements and statistical analyses are repeated this number of 
                 times for each variable settings. A row of data is written to the output file
-                for each repitition.
+                for each repetition.
         \item {\verb+post_reading_pause+} --- Optional. Number of seconds to pause after taking a 
                 set of measurements and making a statistical analysis.
                 If measurements are repeated then the pause is repeated after each set of measurements.
@@ -531,7 +531,7 @@ as double precision floating point numbers.
 In addition, some time columns and parameters are defined:
 \begin{itemize}
         \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
-        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
         \item {\tt ElapsedTime} --- Double column of elapsed time of readback since the start of the experiment.
         \item {\tt TimeOfDay} --- Double column of system time in units of hours. 
@@ -567,7 +567,7 @@ In addition, some time columns and parameters are defined:
     \item {\verb+-pendIOTime=<timeout>+} --- sets CA timeout in seconds.
     \item {\verb+-describeinput+} --- Printouts the list of namelist commands and fields of the input file.
     \item {\verb+-macro=<tag>=<value>[,...]+} --- replaces the macros (<tag>) in the input file by actual values (<value>).
-    \item {\verb+-comment=<string value>+} --- provides the comment, which will be written to the output file as paramater.
+    \item {\verb+-comment=<string value>+} --- provides the comment, which will be written to the output file as parameter.
     \end{itemize}
 
 \item {\bf see also:}

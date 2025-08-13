@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicaly a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddslogonchange+ records only the values of process variables that change. This reduces the output file size if process variables do not change often.
 \item {\bf example:} 
@@ -148,7 +148,7 @@ The output file contains parameters, arrays, and columns.
         \item {\tt -offsetTimeOfDay} --- Adjusts the starting TimeOfDay value so that it corresponds to the day for which the bulk of the data is taken.  Hence, a 26 hour job started at 11pm would have initial time of day of -1 hour and final time of day of 25 hours.
         \item {\tt -append[=recover]} --- Specifies appending to the file <output> if it exists already. If the recover qualifier is given, recovery of a corrupted file is attempted using sddsconvert, at the risk of loss of some of the data already in the file.
         \item {\tt -eraseFile} --- Specifies erasing the file <output> if it exists already.
-        \item {\tt -generations[=digits=<integer>][,delimiter=<string>]} --- Specifies use of file generations.  The output is sent to the file <output>-<N>, where <N> is the smallest positive integer such that the file does not already exist.   By default, four digits are used for formating <N>, so that the first generation number is 0001.
+        \item {\tt -generations[=digits=<integer>][,delimiter=<string>]} --- Specifies use of file generations.  The output is sent to the file <output>-<N>, where <N> is the smallest positive integer such that the file does not already exist.   By default, four digits are used for formatting <N>, so that the first generation number is 0001.
         \item {\tt -dailyFiles} --- The output is sent to the file <output>-YYYY-JJJ-MMDD.<N>, where YYYY=year, JJJ=Julian day, and MMDD=month+day.  A new file is started after midnight.
         \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time, in seconds.  The default is 10.
         \item {\tt -durations} --- Specifies including state duration and previous row reference data in output.

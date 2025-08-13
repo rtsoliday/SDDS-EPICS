@@ -48,7 +48,7 @@ EPICS.
 The EPICS tools presented here read and store data to SDDS-protocol
 files.  SDDS (Self-Describing Data Set)\cite{SDDS_AP1.4} refers to a
 particular implementation of a self-describing file protocol used at
-APS. Self-describing means that the data is refered to and accessed by
+APS. Self-describing means that the data is referred to and accessed by
 name. Thus, a user doesn't need to know, say, in which column a piece
 of tabular data is located. An ASCII header contains information about the
 file's data structure, i.e. definitions of structure elements
@@ -66,7 +66,7 @@ One can regard the EPICS tools as the layer between the EPICS
 control system and more functional analyzing tools and scripts, with
 SDDS protocol files as an intermediary.
 
-Following conventional usage, EPICS database records will be refered
+Following conventional usage, EPICS database records will be referred
 to as ``process variables'' or PVs in this manual.
 
 \section{Manual Pages Overview}
@@ -89,7 +89,7 @@ the present state and the states in one or more SDDS files.
 \subsubsection{Data Collecting}
 \begin{itemize}
 \item \progref{sddssnapshot} --- Reads values of process variables and writes them to a snapshot file. 
-        Example application: Taking succesive sets of data.
+        Example application: Taking successive sets of data.
 \item \progref{sddsmonitor} --- Reads values of process variables and writes them to a file at regular intervals.
         Example application: archiving of system performance, investigation of glitches.
 \item \progref{sddsglitchlogger} --- Reads values of process variables and writes them to a file or multifile at regular intervals when certain trigger occurs. 

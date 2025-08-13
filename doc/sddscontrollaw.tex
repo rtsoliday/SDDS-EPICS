@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddscontrollaw+ performs simple feedback on process variables.
 The input file defines a gain matrix in a simple control law equation. The set of process variables for
@@ -83,7 +83,7 @@ usage: sddscontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<str
        [-actionLimit={value=<value>|file=<filename>}]
        [-testValues=<SDDSfile>] [-statistics=<filename>[,mode=<full|brief>]] 
        [-auxiliaryOutput=matrixFile=<file>,controlQuantityDefinition=<file>,
-           filterFile=<file>],controlLogFile=<file>[,mode=<integral|propotional>] 
+           filterFile=<file>],controlLogFile=<file>[,mode=<integral|proportional>] 
        [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>
        [-runControlDescription={string=<string>|parameter=<string>}]
        [-launcherPV=<pvname>]
@@ -140,7 +140,7 @@ required:
 \item {\bf test values file:} \par
 To make \verb+sddscontrollaw+ more robust, one can implement tests on any process variable,
 not necessarily those involved in the feedback itself. If any of the tests fail, then the 
-feedback is suspended until the test suceeds. The test consist of checking whether a process 
+feedback is suspended until the test succeeds. The test consist of checking whether a process 
 variable is within a specified range or not. The \verb+testValues+ file has three required columns and
 one optional one:
 \begin{itemize}
@@ -188,7 +188,7 @@ There are two parameters defined:
                of the input file.
         \item {\tt -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]} --- The output is sent to the file <SDDSoutputfile>-<N>, where <N> is
                the smallest positive integer such that the file does not already 
-               exist. By default, four digits are used for formating <N>, so that
+               exist. By default, four digits are used for formatting <N>, so that
                the first generation number is 0001.  If a row limit or time limit
                is given, a new file is started when the given limit is reached.
         \item {\tt -dailyFiles} --- The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,
@@ -205,7 +205,7 @@ There are two parameters defined:
         \item {\tt -steps=<integer=value>} ---  total number of corrections.
         \item {\tt -updateInterval=<integer=value>} --- number of steps between each outputfile updates.
         \item {\tt -integral | -proportional} --- 
-               switch the control law to either integral or proportional
+               switch the control law to either integral orproportional
                control;  use integral control for orbit correction; 
                the default control law is integral control.
         \item {\tt -holdPresentValues} ---
@@ -227,17 +227,17 @@ where $x_0$ is the vector of initial values of measurement PVs (i.e. values befo
                Expected to contain at least two columns: ControlName (the names 
                of the primary readbacks), OffsetControlName (the name of 
                the offset PVs). 
-        \item {\tt -auxiliaryOutput=matrixFile=<file>,controlQuantityDefinition=<file>,filterFile=<file>,controlLogFile=<file>[,mode=<integral|propotional>]} ---
+        \item {\tt -auxiliaryOutput=matrixFile=<file>,controlQuantityDefinition=<file>,filterFile=<file>,controlLogFile=<file>[,mode=<integral|proportional>]} ---
                 reads in an additional matrix to calculate values for PVs  
                (not necessarily corrector PVs) based 
                on the correction that is being done. The formula 
                y = (gain) M (delta\_C) is used for integral mode and 
-               y = (gain) M (C) for proportional mode. Time filtering 
+               y = (gain) M (C) forproportional mode. Time filtering 
                is available through a filter file with 
                a0, b0, a1, etc, coefficients. 
                A control quantity definition file for the matrix 
                is available as option. The default mode is integral, if 
-               mode=propotional is given, proporptional control will be applied. 
+               mode=proportional is given, proporptional control will be applied. 
         \item {\tt -verbose} --- prints extra information.
         \item {\tt -dryRun} --- readback variables are read, but the control variables
                aren't changed.
@@ -255,7 +255,7 @@ where $x_0$ is the vector of initial values of measurement PVs (i.e. values befo
                DeltaName) from a file. The calculated change vector is scaled
                to enforce these limits, if necessary.
         \item {\tt -readbackLimit=value=<value>|minValue=<value>,maxValue=<value>|file=<filename>} --- Specifies the maximum negative and positive error to
-               recognize for each PV. The values can be speficied
+               recognize for each PV. The values can be specified
                as a single value, as two values, or as columns of
                values in a file (clumns should be minValue and maxValue).
         \item {\tt -actionLimit=value=<value>|file=<filename>} --- Specifies minimum values in readback before any action is
@@ -305,7 +305,7 @@ where $x_0$ is the vector of initial values of measurement PVs (i.e. values befo
                The waveform file contains "WaveformPV" parameter, 
                "DeviceName" and "Index" columns, which is the index of DeviceName in 
                the vector. Note that for actuators, if the reading and writing name are
-               different, two paramters "ReadWaveformPV" and "WriteWaveformPV" 
+               different, two parameters "ReadWaveformPV" and "WriteWaveformPV" 
                should be given. For testing waveforms, there are two additional required columns: 
                MaximumValue and MinimumValue, and one optional short column - Ignore: 
                which set the flags of whether ignore the pvs in the waveform. If Ignore column 

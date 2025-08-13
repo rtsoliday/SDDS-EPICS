@@ -85,7 +85,7 @@
 %   The first thing we need to do is to open the
 %   PostScript file, if possible.
 %
-\openin\epsffilein=#1
+\opening\epsffilein=#1
 \ifeof\epsffilein\errmessage{I couldn't open #1, will ignore it}\else
 %
 %   Okay, we got it. Now we'll scan lines until we find one that doesn't

@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddsoptimize+ optimizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.   
 
@@ -143,18 +143,18 @@ It has three parameters:
 
 \item {\bf knob file:} \par
 To make \verb+sddsoptimize+ more robust, one can implement optimizaion on knobs,
-that are composed of set point process varibles. The process variables that a knob contains are
+that are composed of set point process variables. The process variables that a knob contains are
 given in knob file, which contain following parameters and columns:
 \begin{itemize}
-        \item {\tt ControlName} --- Required string paramter. The name of knob, which
+        \item {\tt ControlName} --- Required string parameter. The name of knob, which
                 acts as a corrector as other PVs do.
         \item {\tt ControlName} --- Required string column. The names of PVs the knob
                 specified above contains.
-        \item {\tt Wieght} --- Required double columns. Defines the weights of PVs that
+        \item {\tt Weight} --- Required double columns. Defines the weights of PVs that
                 compose the knob.
-        \item {\tt Gain} ---Optional double paramter. The value of each PV the knob contains
-                is value(PV)=value(knob)*Gain*Weigth(PV). When it is not given, set it to 1.
-        \item {\tt ControlType} --- Optional string paramter. Specifies the control type.
+        \item {\tt Gain} ---Optional double parameter. The value of each PV the knob contains
+                is value(PV)=value(knob)*Gain*Weight(PV). When it is not given, set it to 1.
+        \item {\tt ControlType} --- Optional string parameter. Specifies the control type.
         \item {\tt ControlUnits}  --- Optional string parameter.
                  Specifies the units of control PVs.
         \item {\tt KnobDescription} -- Optional string parameter.
@@ -210,7 +210,7 @@ Also two more columns and two parameters are defined:
                 better performance.
         \item {\tt -1dscan} --- Give parameters of one dimensional scan optimization. Cycles gives the max.
             number of cycles (i.e. loops) of 1dscan and with an maximum number of 
-            evaluations. Divisons is the max. number of division applied in 1dscan. 
+            evaluations. Divisions is the max. number of division applied in 1dscan. 
             Either 1dscan or simplex method is used for optimize. 
             repeat: read the measurement again if the variable PVs are set back
             to their previous values to keep track with noise.

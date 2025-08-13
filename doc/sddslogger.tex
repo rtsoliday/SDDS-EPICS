@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicaly a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddslogger+ reads values of process variables and writes them to a file at a specified time interval.
 One or more input files defines the process variables to be monitored.
@@ -99,7 +99,7 @@ conditions that must be satisfied at each time step before the data can be logge
 
 The file is like the main input file, but has numerical columns \verb+LowerLimit+ and \verb+UpperLimit+.
 The minimal column set is \verb+ControlName+, which contain the PV names, and the two limits columns above.
-Depending on comand line options, when any or all PV readback from this file
+Depending on command line options, when any or all PV readback from this file
 is outstide the range defined by the corresponding data from \verb+LowerLimit+ and \verb+UpperLimit+,
 none of the data of the PVs in the input files are recorded. 
 When this situation occurs for a long period of time, the size of the output files doesn't
@@ -113,7 +113,7 @@ the data type is float (single precision).
 Time columns and other miscellaneous columns are defined: 
 \begin{itemize}
         \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
-        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
         \item {\tt TimeOfDay} --- Float column of system time in units of hours. 
         The time does not wrap around at 24 hours.
@@ -153,7 +153,7 @@ Many time-related parameters are defined in the output file:
         \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
                 The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
                 the smallest positive integer such that the file does not already
-                exist.  By default, four digits are used for formating \verb+<N>+, so that
+                exist.  By default, four digits are used for formatting \verb+<N>+, so that
                 the first generation number is 0001.
         \item {\tt -sampleInterval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
                 interval is implemented with a call to usleep between calls to the control system.
@@ -164,7 +164,7 @@ Many time-related parameters are defined in the output file:
         \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
         \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
                 seconds, minutes, hours, and days. The program calculates the number of steps by dividing this time
-                by the interval. The completion time may be longer, because the time interval in not garanteed.
+                by the interval. The completion time may be longer, because the time interval in not guaranteed.
         \item {\tt -enforceTimeLimit} --- Enforces the time limit given even if the expected number of samples has
                 not been taken.
         \item {\tt -offsetTimeOfDay} --- Adjusts the starting TimeOfDay value so that it corresponds to the

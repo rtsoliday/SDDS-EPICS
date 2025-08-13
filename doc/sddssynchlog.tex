@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddssynchlog+ Reads values of process variables synchronously
 and writes them to an output file.  Synchronism is imposed by
@@ -28,13 +28,13 @@ seconds given by the -synchInterval argument.
 % 
 %
 
-The linac bpms and MV200 PVs are synchonously monitored using the
+The linac bpms and MV200 PVs are synchronously monitored using the
 command below.  One might wish to monitor these PVs determine if linac
 beam position and transverse size at a flag are correlated.  The
 output file will contain 100 aligned samples of the PV data and should
 therefore take 16.67 seconds assuming the linac is running at 6 Hz.
 Alignment of process variable data is accepted and written to the
-output file if and only if the PV time stamps are withing +/- 1/6 Hz =
+output file if and only if the PV time stamps are within +/- 1/6 Hz =
 0.08 seconds.  Data acquisition stops after 100 samples are acquired
 or a -timelimit of 20 seconds has elapsed.  Note, it is absolutely
 required that the scalar synchronous PV file listed below
@@ -76,7 +76,7 @@ LI:VD1:y:raw:cal:sigmaM pv Pixels LVid:yRawSigma
 % 
 %
 
-The scalar linac bpm and MV200 PVs are synchonously monitored along
+The scalar linac bpm and MV200 PVs are synchronously monitored along
 with LCLS bpm data waveforms using the command below.  The command is
 identical to that in example 1 except for the additional waveform file
 command which that specifies a file containing waveform PV data.
@@ -178,7 +178,7 @@ exceeded during acquisition).  Time columns and other miscellaneous
 columns are defined:
 \begin{itemize}
         \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
-        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
         \item {\tt Sample} --- Long column for sample number.
 \end{itemize}

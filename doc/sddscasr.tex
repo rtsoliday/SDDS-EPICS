@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddscasr+ is an alternative version of casave and carestore. sddscasr is
 more efficient and has more features than casave/carestore. It can also replace 
@@ -63,7 +63,7 @@ usage: sddscasr <inputfile> <outputRoot> [-verbose]
 \item {\bf input file:} \par
 The input file is an SDDS file with a string column. For saving snapshot, the input file
 contains at least one string column - ControlName. For restoring snapshot, the input file
-contains at least two strin columns - ControlName and ValueString, where ValueString is the
+contains at least two string columns - ControlName and ValueString, where ValueString is the
 value of the PVs to be restored.
 \item {\bf output file:} \par
 The output file only exists for saving snapshot. The output file contains everything in the input
@@ -73,7 +73,7 @@ three more columns are created if they do not exist in the input file and their 
 \item {ValueString}: the values of the PVs given in the input file.
 \item {IndirectName}: its value  is - for scalar PV or PVname for waveform PV.
 \item {CAError}: its value is y if error occurred during channel access for
-corresponding PV or n if no error occurrs.
+corresponding PV or n if no error occurs.
 \end{itemize}
 \end{itemize}
 
@@ -102,7 +102,7 @@ corresponding PV or n if no error occurrs.
     \item {\tt pendIOTime} --- specifies maximum time to wait for connections and
                return values. Default is 30.0s. It is important to give enough pendIOTime,
                otherwise, the CA connection could not set up and errors would occur. For SR
-               request file, normally 100 seconds is approriate.
+               request file, normally 100 seconds is appropriate.
     \item {\tt casavePV} --- a monitor pv to turn on/off sddscasr. Whenever the casavePV is 
                set to 1, sddssave make a save or restore and change the pv back to 0.
     \item {\tt outputFilePV} --- a string pv to store the output file name (exclude the path).

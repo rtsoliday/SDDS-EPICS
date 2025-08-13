@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddsvmonitor+ reads values of process variables and writes them to a file at a specified time interval.
 This command differs from \verb+sddsmonitor+ in that the monitored
@@ -116,7 +116,7 @@ conditions that must be satisfied at each time steps before the data can be logg
 
 The file is like the main input file, but has numerical columns \verb+LowerLimit+ and \verb+UpperLimit+.
 The minimal column set is \verb+ControlName+, which contain the PV names, and the two limits columns above.
-Depending on comand line options, when any or all PV readback from this file
+Depending on command line options, when any or all PV readback from this file
 is outstide the range defined by the corresponding data from \verb+LowerLimit+ and \verb+UpperLimit+,
 none of the data of the input file PVs are recorded. 
 When this situations occurs for a long period of time, the size of the output file doesn't
@@ -135,7 +135,7 @@ Each reading step produces a new page in the output file.
 Time and other miscellaneous parameters are defined: 
 \begin{itemize}
         \item {\tt Time} --- Double column for time of readback since the start of epoch. This time data can be used by
-        the plotting program {\verb+sddsplot+} to make the best coice of time unit conversions
+        the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
         \item {\tt TimeOfDay} --- Float column for system time in units of hours. The time does not wrap around at 24 hours.
         \item {\tt DayOfMonth} --- Float column for system time in units of days. The day does not wrap around at the month boundary.
@@ -203,7 +203,7 @@ Many time-related parameters which don't change values throughout the file are d
         \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
                 The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
                    the smallest positive integer such that the file does not already
-                   exist.   By default, four digits are used for formating \verb+<N>+, so that
+                   exist.   By default, four digits are used for formatting \verb+<N>+, so that
                    the first generation number is 0001.
         \item {\tt -interval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
                 interval is implemented with a call to usleep between calls to the control system.
@@ -212,7 +212,7 @@ Many time-related parameters which don't change values throughout the file are d
         \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
         \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
                 seconds, minutes, hours, and days. The program calculates the number of steps by dividing this time
-                by the interval. The completion time may be longer, because the time interval in not garanteed.
+                by the interval. The completion time may be longer, because the time interval in not guaranteed.
         \item {\tt -verbose} --- prints out a message when data is taken.
         \item {\verb+-singleShot[=noprompt]+} --- a single read is prompted at the terminal
                 and initiated by a \verb+<cr>+ key press. The time interval is disabled. 

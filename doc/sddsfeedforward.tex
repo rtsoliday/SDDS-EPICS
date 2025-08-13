@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddsfeedforward+ performs feedforward on process variables.
 Feedforward essentially means that one or more process variables are
@@ -51,7 +51,7 @@ ReadbackName = ID1:Gap             ActuatorName = S1B:H1:CurrentAO
         15.000         74.000 
         11.000         99.000 
 \end{verbatim}
-At each iteration step, ID1:Gap is read and \verb+sddsfeedforward+ intepolates a new value for
+At each iteration step, ID1:Gap is read and \verb+sddsfeedforward+ interpolates a new value for
 \verb+S1B:H1:CurrentAO+ based on this table, which it writes to the PV.
 \item {\bf synopsis:} 
 %
@@ -109,7 +109,7 @@ The input file is an SDDS file with the following elements:
 \item {\bf test values file:} \par
 To make \verb+sddsfeedforward+ more robust, one can implement tests on any process variable,
 not necessarily those involved in the feedforward itself. If any of the tests fail, then the 
-feedforward is suspended until the test suceeds. The test consist of checking whether a process 
+feedforward is suspended until the test succeeds. The test consist of checking whether a process 
 variable is within a specified range or not. The \verb+testValues+ file has three required columns and
 one optional one:
 \begin{itemize}

@@ -145,7 +145,7 @@ Grab control of the specified EPICS runcontrol record, and load it with various 
 \item {\bf timeout} - timeout interval for ping in milliseconds. Your application must call runControlPing periodically within this interval, or the runcontrol record will timeout, and your application will have to exit.
 \item {\bf handle} - ptr to zero length, preallocated string of 255 bytes. Function will copy in an identifier which is to be used in the other library calls.
 \item {\bf rcInfo} - ptr to RUNCONTROL\_INFO which is used internally by runcontrol.
-\item {\bf pendIOtime} - timeout interval used by client incase IOC is unresponsive.
+\item {\bf pendIOtime} - timeout interval used by client in case IOC is unresponsive.
 \end{itemize}
 Returns:
 

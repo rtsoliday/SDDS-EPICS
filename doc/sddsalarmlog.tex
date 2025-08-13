@@ -14,7 +14,7 @@
 \begin{itemize}
 \item {\bf description:}
 %
-% Insert text of description (typicall a paragraph) here.
+% Insert text of description (typically a paragraph) here.
 %
 \verb+sddsalarmlog+ logs changes of alarm status for process variables named in an input file.
 \item {\bf example:} 
@@ -27,10 +27,10 @@
 The status of the positron accumulator ring process variables are logged
 for a one day duration.
 \begin{verbatim}
-sddsalarmlog PAR.alog  PAR.alog.sdds -timeDuration=1,day 
+sddsalarmlog PAR.along  PAR.along.sdds -timeDuration=1,day 
 \end{verbatim}
-where the file \verb+PAR.alog+ is the input file containing the names of the
-process variables, and the file \verb+PAR.alog.out+ is the output file.
+where the file \verb+PAR.along+ is the input file containing the names of the
+process variables, and the file \verb+PAR.along.out+ is the output file.
 
 \item {\bf synopsis:} 
 %
@@ -54,7 +54,7 @@ which contains the names of the process variables whose status is to be monitore
 
 \item {\bf output file:}\par
 The output file contains information on the process variable alarm status
-change, such as the time of occurence, the alarm designation, the severity of the alarm, and the
+change, such as the time of occurrence, the alarm designation, the severity of the alarm, and the
 row location of the previous alarm status change.
 
 In order to save disk space {\tt sddsalarmlog} logs integer codes
@@ -150,7 +150,7 @@ These parameters are defined:
         \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
                 The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
                    the smallest positive integer such that the file does not already
-                   exist.   By default, four digits are used for formating \verb+<N>+, so that
+                   exist.   By default, four digits are used for formatting \verb+<N>+, so that
                    the first generation number is 0001.
         \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time, in seconds.
                 The default is 10 .
@@ -162,7 +162,7 @@ These parameters are defined:
                 codes.  If the "only" qualifier is given, the integer codes are
                 omitted from the output.
         \item {\tt -verbose} --- Prints out a message when data is taken.
-        \item {\tt -precision=\{single|double\}} --- Selects teh data type for the statistics columns.
+        \item {\tt -precision=\{single|double\}} --- Selects the data type for the statistics columns.
         \item {\tt -updateInterval=<integer>} --- Number of sample sets between each output file update. The default is 1.
         \item {\tt -ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters.
         \item {\tt -noezca} --- Obsolete.
