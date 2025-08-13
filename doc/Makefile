@@ -1,9 +1,8 @@
-all-untested:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
-	APSRunControl.ps APSRunControl.pdf APSRunControl \
-	APSlogDaemon.ps APSlogDaemon.pdf APSlogDaemon
+all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf
 
-all:: check-deps EPICStoolkit.ps
-
+#EPICStoolkit.pdf EPICStoolkit \
+#	APSRunControl.ps APSRunControl.pdf APSRunControl \
+#	APSlogDaemon.ps APSlogDaemon.pdf APSlogDaemon
 
 .PHONY: check-deps
 check-deps:
