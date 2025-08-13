@@ -7,7 +7,8 @@
 % latex2html perl script can't recognize this when this
 % definition is in the style file.
 %
-\newcommand{\progref}[1]{\hyperref{#1}{{\tt #1} (}{)}{#1}}
+% Hyperlink helper matching EPICStoolkit.tex definition.
+\newcommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
 
 \pagestyle{plain}
 \begin{latexonly}

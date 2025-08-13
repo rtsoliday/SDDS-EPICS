@@ -1,4 +1,4 @@
-all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf
+all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit
 
 #EPICStoolkit.pdf EPICStoolkit \
 #	APSRunControl.ps APSRunControl.pdf APSRunControl \
