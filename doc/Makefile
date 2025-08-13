@@ -1,4 +1,5 @@
-all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit
+all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
+    APSRunControl.ps
 
 #EPICStoolkit.pdf EPICStoolkit \
 #	APSRunControl.ps APSRunControl.pdf APSRunControl \
@@ -21,7 +22,9 @@ EPICStoolkit.pdf: EPICStoolkit.ps
 	ps2pdf13 EPICStoolkit.ps EPICStoolkit.pdf
 
 EPICStoolkit:
-	latex2html -local_icons EPICStoolkit
+	mkdir -p EPICStoolkit
+	htlatex EPICStoolkit "html,3" "" "-dEPICStoolkit/"
+	rm -f *.html *.png *.css *.4ct *.tmp *.dvi *.idv *.4tc *.lg *.xref *.log *.aux
 
 APSRunControl.ps:
 	rm -f APSRunControl.aux APSRunControl.dvi APSRunControl.log APSRunControl.toc APSRunControl.out
