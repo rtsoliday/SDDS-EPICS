@@ -1,9 +1,6 @@
 all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
-    APSRunControl.ps
-
-#EPICStoolkit.pdf EPICStoolkit \
-#	APSRunControl.ps APSRunControl.pdf APSRunControl \
-#	APSlogDaemon.ps APSlogDaemon.pdf APSlogDaemon
+    APSRunControl.ps APSRunControl.pdf APSRunControl \
+    APSlogDaemon.ps APSlogDaemon.pdf APSlogDaemon
 
 .PHONY: check-deps
 check-deps:
@@ -36,7 +33,9 @@ APSRunControl.pdf: APSRunControl.ps
 	ps2pdf13 APSRunControl.ps APSRunControl.pdf
 
 APSRunControl:
-	latex2html -local_icons APSRunControl
+	mkdir -p APSRunControl
+	htlatex APSRunControl "html,3" "" "-dAPSRunControl/"
+	rm -f *.html *.png *.css *.4ct *.tmp *.dvi *.idv *.4tc *.lg *.xref *.log *.aux
 
 APSlogDaemon.ps:
 	rm -f APSlogDaemon.aux APSlogDaemon.dvi APSlogDaemon.log APSlogDaemon.toc APSlogDaemon.out
@@ -48,7 +47,9 @@ APSlogDaemon.pdf: APSlogDaemon.ps
 	ps2pdf13 APSlogDaemon.ps APSlogDaemon.pdf
 
 APSlogDaemon:
-	latex2html -local_icons APSlogDaemon
+	mkdir -p APSlogDaemon
+	htlatex APSlogDaemon "html,3" "" "-dAPSlogDaemon/"
+	rm -f *.html *.png *.css *.4ct *.tmp *.dvi *.idv *.4tc *.lg *.xref *.log *.aux
 
 clean::
 	rm -f EPICStoolkit.aux EPICStoolkit.dvi EPICStoolkit.log EPICStoolkit.toc EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit.out
