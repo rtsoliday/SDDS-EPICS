@@ -1,6 +1,9 @@
-all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
+all-untested:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
 	APSRunControl.ps APSRunControl.pdf APSRunControl \
 	APSlogDaemon.ps APSlogDaemon.pdf APSlogDaemon
+
+all:: check-deps EPICStoolkit.ps
+
 
 .PHONY: check-deps
 check-deps:
@@ -10,7 +13,7 @@ check-deps:
 	@echo "All documentation build dependencies are available."
 
 EPICStoolkit.ps:
-	rm -f EPICStoolkit.aux EPICStoolkit.dvi EPICStoolkit.log EPICStoolkit.toc
+	rm -f EPICStoolkit.aux EPICStoolkit.dvi EPICStoolkit.log EPICStoolkit.toc EPICStoolkit.out
 	latex EPICStoolkit
 	latex EPICStoolkit
 	dvips EPICStoolkit -o EPICStoolkit.ps
@@ -22,7 +25,7 @@ EPICStoolkit:
 	latex2html -local_icons EPICStoolkit
 
 APSRunControl.ps:
-	rm -f APSRunControl.aux APSRunControl.dvi APSRunControl.log APSRunControl.toc
+	rm -f APSRunControl.aux APSRunControl.dvi APSRunControl.log APSRunControl.toc APSRunControl.out
 	latex APSRunControl
 	latex APSRunControl
 	dvips APSRunControl -o APSRunControl.ps
@@ -34,7 +37,7 @@ APSRunControl:
 	latex2html -local_icons APSRunControl
 
 APSlogDaemon.ps:
-	rm -f APSlogDaemon.aux APSlogDaemon.dvi APSlogDaemon.log APSlogDaemon.toc
+	rm -f APSlogDaemon.aux APSlogDaemon.dvi APSlogDaemon.log APSlogDaemon.toc APSlogDaemon.out
 	latex APSlogDaemon
 	latex APSlogDaemon
 	dvips APSlogDaemon -o APSlogDaemon.ps
@@ -46,9 +49,9 @@ APSlogDaemon:
 	latex2html -local_icons APSlogDaemon
 
 clean::
-	rm -f EPICStoolkit.aux EPICStoolkit.dvi EPICStoolkit.log EPICStoolkit.toc EPICStoolkit.ps EPICStoolkit.pdf
+	rm -f EPICStoolkit.aux EPICStoolkit.dvi EPICStoolkit.log EPICStoolkit.toc EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit.out
 	rm -rf EPICStoolkit
-	rm -f APSRunControl.aux APSRunControl.dvi APSRunControl.log APSRunControl.toc APSRunControl.ps APSRunControl.pdf
+	rm -f APSRunControl.aux APSRunControl.dvi APSRunControl.log APSRunControl.toc APSRunControl.ps APSRunControl.pdf APSRunControl.out
 	rm -rf APSRunControl
-	rm -f APSlogDaemon.aux APSlogDaemon.dvi APSlogDaemon.log APSlogDaemon.toc APSlogDaemon.ps APSlogDaemon.pdf
+	rm -f APSlogDaemon.aux APSlogDaemon.dvi APSlogDaemon.log APSlogDaemon.toc APSlogDaemon.ps APSlogDaemon.pdf APSlogDaemon.out
 	rm -rf APSlogDaemon
