@@ -45,7 +45,8 @@ apt-get update
 apt-get install -y --no-install-recommends \
   texlive-base texlive-latex-base texlive-latex-extra \
   texlive-fonts-recommended texlive-plain-generic \
-  texlive-extra-utils tex4ht ghostscript
+  texlive-extra-utils tex4ht ghostscript latex2html \
+  texlive-font-utils
 ```
 
 If an error related to `ca-certificates-java` appears, remove the OpenJDK packages:
