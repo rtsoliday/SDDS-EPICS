@@ -73,10 +73,6 @@ to as ``process variables'' or PVs in this manual.
 \subsection{EPICS Toolkit Programs by Category}
 \subsubsection{Configuration Save and Restore}
 \begin{itemize}
-\item \progref{burtrb} --- Reads values of process variables and writes them to a snapshot file.
-        Example application: saving the configuration of an accelerator for later use.
-\item \progref{burtwb} --- Reads values from a snapshot file and writes them to process variables.
-        Example application: restore an earlier configuration of an accelerator.
 \item \progref{sddscasr} --- a new configuration save and restore program with many unique features.
 \item \progref{sddscaramp} --- Performs ramping of process variables between
 the present state and the states in one or more SDDS files.
@@ -206,8 +202,6 @@ than one file on the same pipe.
 
 \section{Manual Pages}
 \label{ManualPages}
-\input{burtrb.tex}
-\input{burtwb.tex}
 \input{knobconfig.tex}
 \input{toggle.tex}
 \input{sddsalarmlog.tex}
