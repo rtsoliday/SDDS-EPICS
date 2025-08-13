@@ -1,7 +1,13 @@
-
-all:: EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
+all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
 	APSRunControl.ps APSRunControl.pdf APSRunControl \
 	APSlogDaemon.ps APSlogDaemon.pdf APSlogDaemon
+
+.PHONY: check-deps
+check-deps:
+	@command -v latex >/dev/null || (echo "Error: latex command not found. Install TeX Live packages." >&2; exit 1)
+	@command -v latex2html >/dev/null || (echo "Error: latex2html command not found. Install latex2html package." >&2; exit 1)
+	@command -v repstopdf >/dev/null || (echo "Error: repstopdf command not found. Install texlive-font-utils package." >&2; exit 1)
+	@echo "All documentation build dependencies are available."
 
 EPICStoolkit.ps:
 	rm -f EPICStoolkit.aux EPICStoolkit.dvi EPICStoolkit.log EPICStoolkit.toc

@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-\usepackage{latexsym,html}
+\usepackage{latexsym,hyperref}
 \usepackage[dvips]{graphicx}
 
 %%% PROGREF
@@ -9,6 +9,10 @@
 % definition is in the style file.
 %
 \newcommand{\progref}[1]{\hyperref{#1}{{\tt #1} (}{)}{#1}}
+
+\newenvironment{htmlonly}{}{}
+\newenvironment{latexonly}{}{}
+\providecommand{\htmladdnormallink}[2]{\href{#2}{#1}}
 
 \pagestyle{plain}
 \begin{latexonly}
@@ -228,16 +232,14 @@ than one file on the same pipe.
 
 \bibitem{SDDS_AP1.4}
     M. Borland, ``Application Programmer's Guide for SDDS Version 1.4'', APS LS Note.
-\begin{htmlonly} Available \htmladdnormallink{here.}{http://ops.aps.anl.gov/manuals/SDDStoolkit/SDDStoolkit.html}
-\end{htmlonly}
-
+    Available \href{http://ops.aps.anl.gov/manuals/SDDStoolkit/SDDStoolkit.html}{here.}
 
 \bibitem{SDDSEPICS_PAC95}
         L. Emery, ``Commissioning Software Tools at the Advanced Photon Source'', 
         to appear in {\em Proceedings of the 1995 Particle Accelerator Conference}, May 1995, Dallas.
 
 \bibitem{Norum2007}
-        E.~Norum, ``Monopulse Beam Position Monitor Field Programmable Gate Array Function  Description'', unpublished.	Available \htmladdnormallink{here.}{https://icmsdocs.aps.anl.gov/new_docs/idcplg?IdcService=DISPLAY_URL&dDocName=APS_1198423}
+        E.~Norum, ``Monopulse Beam Position Monitor Field Programmable Gate Array Function  Description'', unpublished. Available \href{https://icmsdocs.aps.anl.gov/new_docs/idcplg?IdcService=DISPLAY_URL&dDocName=APS_1198423}{here.}
 \end{thebibliography}
 \tableofcontents
 \end{document}
