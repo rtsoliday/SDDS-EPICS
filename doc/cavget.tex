@@ -14,9 +14,9 @@
 It supports formatting, repeated acquisition and statistical analysis for scripting and data collection.
 \item {\bf examples:}
 \begin{flushleft}{\tt
-cavget my:pv\\
-cavget -repeat=number=10,pause=1 -labeled quadrupole:current\\
-cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds cavit:readback
+cavget -list=my:pv\\
+cavget -repeat=number=10,pause=1 -labeled -list=quadrupole:current\\
+cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds -list=cavit:readback
 }\end{flushleft}
 \item {\bf synopsis:}
 \begin{flushleft}{\tt

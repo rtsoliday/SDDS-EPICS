@@ -17,10 +17,10 @@ To configure magnets without starting degaussing and later query their state:
   degauss -query booster.sdds
 }\end{flushleft}
 \item {\bf synopsis:}
-\begin{flushleft}
-\verb|degauss [-query|-configure|-stop]|\\
-\verb|        [-pendIoTime <seconds>] [--] spec-file|
-\end{flushleft}
+  \begin{flushleft}{\tt
+    degauss [-query|-configure|-stop]\\
+    \phantom{degauss }[-pendIoTime <seconds>] [--] <spec-file>
+  }\end{flushleft}
 \item {\bf switches:}
   \begin{itemize}
     \item {\tt -query} --- Print degaussing state of devices in {\tt spec-file}.
