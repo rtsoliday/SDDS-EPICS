@@ -24,18 +24,18 @@ cawait -waitFor=SR:state,equalTo=1 -and -waitFor=SR:mode,equalTo=2
 }\end{flushleft}
 \item {\bf synopsis:}
 \begin{flushleft}{\tt
-cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\\
- -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]\\
- [{-and | -or | -not}]\\
- [-repeat[=<number>]]\\
- [-emit=event=<string>[,timeout=<string>][,end=<string>]]\\
- [-preEvent=<command>]\\
- [-onEvent=<command>]\\
- [-postEvent=<command>]\\
- [-onEnd=<command>]\\
- [-subprocess=<command>[,event=<string>][,timeout=<string>][,end=<string>]]\\
- [-pendIOTime=<seconds>]\\
- [-noWarnings]\\
+cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
+ -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]\
+ [{-and | -or | -not}]\
+ [-repeat[=<number>]]\
+ [-emit=event=<string>[,timeout=<string>][,end=<string>]]\
+ [-preEvent=<command>]\
+ [-onEvent=<command>]\
+ [-postEvent=<command>]\
+ [-onEnd=<command>]\
+ [-subprocess=<command>[,event=<string>][,timeout=<string>][,end=<string>]]\
+ [-pendIOTime=<seconds>]\
+ [-noWarnings]\
  [-provider=\{ca|pva\}]
 }\end{flushleft}
 \item {\bf switches:}
