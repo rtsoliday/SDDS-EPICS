@@ -1,0 +1,58 @@
+% cawait.tex documentation for cawait utility
+% template similar to others
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+\subsection{cawait}
+\label{cawait}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+cawait+ monitors one or more EPICS process variables and waits until
+user-specified conditions are met. Logical operations allow combining
+conditions, and optional commands or subprocesses may be invoked when
+events occur.
+\item {\bf examples:}
+Wait for beam current to rise above 5~mA and echo a message:
+\begin{flushleft}{\tt
+cawait -waitFor=SR:current,above=5 -onEvent="echo beam reached 5"
+}\end{flushleft}
+Require two PVs to satisfy conditions simultaneously:
+\begin{flushleft}{\tt
+cawait -waitFor=SR:state,equalTo=1 -and -waitFor=SR:mode,equalTo=2
+}\end{flushleft}
+\item {\bf synopsis:}
+\begin{flushleft}{\tt
+cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\\
+ -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]\\
+ [{-and | -or | -not}]\\
+ [-repeat[=<number>]]\\
+ [-emit=event=<string>[,timeout=<string>][,end=<string>]]\\
+ [-preEvent=<command>]\\
+ [-onEvent=<command>]\\
+ [-postEvent=<command>]\\
+ [-onEnd=<command>]\\
+ [-subprocess=<command>[,event=<string>][,timeout=<string>][,end=<string>]]\\
+ [-pendIOTime=<seconds>]\\
+ [-noWarnings]\\
+ [-provider=\{ca|pva\}]
+}\end{flushleft}
+\item {\bf switches:}
+  \begin{itemize}
+  \item {\tt -interval} --- seconds between checks (default 0.1~s).
+  \item {\tt -timeLimit} --- maximum time to wait for the condition.
+  \item {\tt -totalTimeLimit} --- maximum total runtime.
+  \item {\tt -waitFor} --- PV name and criterion for ending wait.
+  \item {\tt -and}, {\tt -or}, {\tt -not} --- logical operations on previous results.
+  \item {\tt -repeat} --- number of events to wait for (default~1; infinite if omitted).
+  \item {\tt -emit} --- emit strings for events, timeouts, or end-of-run.
+  \item {\tt -preEvent}, {\tt -onEvent}, {\tt -postEvent}, {\tt -onEnd} --- commands to execute before, during, after events, or at end.
+  \item {\tt -subprocess} --- run a subprocess and send event/timeout/end messages.
+  \item {\tt -pendIOTime} --- time allowed for channel access operations (default 10~s).
+  \item {\tt -noWarnings} --- suppress timeout warnings.
+  \item {\tt -provider} --- choose channel access ({\tt ca}) or PVAccess ({\tt pva}) provider.
+  \end{itemize}
+\item {\bf author:} M. Borland, R. Soliday, ANL/APS.
+\end{itemize}
+

@@ -1,0 +1,61 @@
+%\begin{latexonly}
+\newpage
+%\end{latexonly}
+\subsection{sddspvasaverestore}
+\label{sddspvasaverestore}
+
+\begin{itemize}
+\item {\bf description:}
+  \verb+sddspvasaverestore+ saves or restores EPICS process variable values using the EPICS PVA
+  interface. It reads an SDDS input file listing process variables and either writes current
+  values to an output file or sets the PVs to values from the input file. Options allow daemon
+  operation, run control integration, trigger PVs, and waveform handling.
+\item {\bf examples:}
+\begin{flushleft}{\tt
+sddspvasaverestore pvlist.sdds snapshots/sr -save -dailyFiles -logFile=save.log\\
+}\end{flushleft}
+\item {\bf synopsis:}
+\begin{flushleft}{\tt
+sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]\\
+  [-save] [-restore[=verify]]\\
+  [-daemon]\\
+    [-inputFilePV=<pvname>,<provider>] [-outputFilePV=<pvname>,<provider>]\\
+    [-triggerPV=<string>,<provider>]\\
+    [-description=<string>|pv=<pvname>,provider=<provider>]\\
+  [-interval=<seconds>] [-pendIOTime=<seconds>]\\
+  [-dailyFiles] [-semaphore=<filename>] [-logFile=<filename>]\\
+  [-unique] [-pidFile=<pidFile>] [-verbose]\\
+  [-waveform=[rootname=<string>][,directory=<string>][,extension=<string>][,pingTimeout=<seconds>][,onefile][,saveWaveformFile][,fullname]]\\
+  [-numerical]\\
+  [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]\\
+  [-runControlDescription={string=<string>|parameter=<string>}]\\
+}\end{flushleft}
+\item {\bf switches:}
+  \begin{itemize}
+  \item {\tt -save} --- read PV values and write them to the output file.
+  \item {\tt -restore[=verify]} --- write values from the input file to PVs; optional {\tt verify} reads back each value.
+  \item {\tt -daemon} --- run in background, waiting for file changes or trigger PV activity.
+  \item {\tt -dailyFiles} --- append the current date to the output filename.
+  \item {\tt -interval=<seconds>} --- loop interval when in daemon mode or when checking a trigger PV.
+  \item {\tt -triggerPV=<pv>,<provider>} --- PV that causes a save when it changes from 0 to 1.
+  \item {\tt -inputFilePV=<pv>,<provider>} --- PV providing the input filename.
+  \item {\tt -outputFilePV=<pv>,<provider>} --- PV receiving the output filename.
+  \item {\tt -description=<string>|pv=<pv>,provider=<provider>} --- snapshot description or PV supplying it.
+  \item {\tt -waveform=[...]} --- configure saving or restoring waveform PV data.
+  \item {\tt -runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>} --- run control record and ping settings.
+  \item {\tt -runControlDescription={string=<string>|parameter=<string>}} --- description string for run control logging.
+  \item {\tt -numerical} --- output numeric strings for enumerated PV types.
+  \item {\tt -pendIOTime=<seconds>} --- maximum time to wait for connections and value returns.
+  \item {\tt -semaphore=<filename>} --- flag file written when connections are complete.
+  \item {\tt -pidFile=<file>} --- file to store process ID.
+  \item {\tt -logFile=<file>} --- log file for program messages.
+  \item {\tt -unique} --- remove duplicate PVs from the input file.
+  \item {\tt -verbose} --- print progress messages.
+  \item {\tt -pipe[=input][,output]} --- standard SDDS Toolkit pipe option.
+  \end{itemize}
+\item {\bf see also:}
+  \begin{itemize}
+  \item \progref{sddssnapshot}
+  \end{itemize}
+\item {\bf author:} H. Shang and R. Soliday, ANL
+\end{itemize}

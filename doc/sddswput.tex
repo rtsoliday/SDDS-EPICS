@@ -1,0 +1,41 @@
+% Template for making SDDS Toolkit manual entries.
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+% Substitute the program name for sddswput
+\subsection{sddswput}
+\label{sddswput}
+
+\begin{itemize}
+\item {\bf description:}
+  \verb+sddswput+ reads an SDDS file containing waveform data and writes the
+  values to the corresponding EPICS process variables.  The input file is
+  typically produced by \progref{sddswget} and must contain the parameter
+  \verb|WaveformPV| and the column \verb|Waveform|.
+
+\item {\bf example:}
+  To restore a waveform saved in \verb|kicker.wf|:
+  \begin{flushleft}{\tt
+  sddswput kicker.wf
+  }\end{flushleft}
+
+\item {\bf synopsis:}
+  \begin{flushleft}{\tt
+  sddswput <inputfile>\\
+      [-pendIOtime=<seconds>] [-pipe[=input]]
+  }\end{flushleft}
+
+\item {\bf switches:}
+  \begin{itemize}
+  \item {\tt -pendIOtime=<seconds>} --- time to wait for Channel Access searches and puts. The default is 10 seconds.
+  \item {\tt -pipe[=input]} --- read the input SDDS file from standard input.
+  \end{itemize}
+
+\item {\bf see also:}
+  \begin{itemize}
+  \item \progref{sddswmonitor}
+  \end{itemize}
+
+\item {\bf author:} M. Borland, ANL
+\end{itemize}

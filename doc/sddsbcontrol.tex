@@ -1,0 +1,30 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+% Substitute the program name for sddsmonitor
+\subsection{sddsbcontrol}
+\label{sddsbcontrol}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+sddsbcontrol+ monitors the ramp slope and zero offsets of booster magnet power supplies and applies corrections through control process variables. It runs continuously, loading new amplitudes as needed and optionally registers with the runControl system.
+
+\item {\bf examples:}
+Start the booster ramp control loop:
+\begin{flushleft}{\tt
+sddsbcontrol\\
+}\end{flushleft}
+
+\item {\bf synopsis:}
+\begin{flushleft}{\tt
+sddsbcontrol\\
+}\end{flushleft}
+
+\item {\bf see also:} \progref{sddscontrollaw}, \progref{sddsfeedforward}
+
+\item {\bf author: R. Soliday, ANL/APS}
+\end{itemize}

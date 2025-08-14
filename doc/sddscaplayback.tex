@@ -1,0 +1,66 @@
+%
+% Documentation for sddscaplayback
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+\subsection{sddscaplayback}
+\label{sddscaplayback}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+sddscaplayback+ reads waveform data from a multi-page SDDS file and writes the values to
+EPICS process variables at a fixed interval. Each page in the input file represents a set of
+numerical values for a single PV, which may be sent either as absolute values or as differences
+from the current value.
+
+\item {\bf examples:}
+The following command plays back the waveforms in \verb+orbit.sdds+ once with a half-second
+interval between pages.
+\begin{flushleft}{\tt
+sddscaplayback orbit.sdds -interval=0.5 -mode=absolute -repetitions=1
+}\end{flushleft}
+
+\item {\bf synopsis:}
+\begin{flushleft}{\tt
+sddscaplayback <inputFile> -interval=<seconds> [-repetitions=<number>]\\
+-mode=\{absolute|differential\} [-triggerPV=<string>] [-controlNameParameter=<string>]\\
+[-dataColumn=<columnName>] [-offset=<integer>] [-timeoffset=<seconds>]\\
+[-factor=<value>] [-restore] [-verbose] [-pendIOtime=<seconds>]\\
+[-runControlPV=string=<string>,pingTimeout=<value>]\\
+[-runControlDescription=string=<string>]
+}\end{flushleft}
+
+\item {\bf files:}
+The input file is an SDDS file containing a string parameter \verb+ControlName+ for the PV name
+and a numerical column \verb+Value+ (or the column specified by \verb+-dataColumn+) for the
+waveform data. Each page corresponds to a different PV.
+
+\item {\bf switches:}
+  \begin{itemize}
+  \item {\tt -interval=<seconds>} --- Interval between sending pages.
+  \item {\tt -repetitions=<number>} --- Number of times to loop through pages; default is infinite.
+  \item {\tt -mode=\{absolute|differential\}} --- Send values directly or as differences from starting values.
+  \item {\tt -triggerPV=<string>} --- PV that restarts playback when it changes.
+  \item {\tt -controlNameParameter=<string>} --- Name of parameter holding PV names; defaults to {\tt ControlName}.
+  \item {\tt -dataColumn=<columnName>} --- Column containing waveform data; defaults to {\tt Value}.
+  \item {\tt -offset=<integer>} --- Offset into pages used as circular buffer.
+  \item {\tt -timeoffset=<seconds>} --- Fine time offset less than the interval.
+  \item {\tt -factor=<value>} --- Scale factor applied to waveform data.
+  \item {\tt -restore} --- Restore PVs to starting values on exit.
+  \item {\tt -verbose} --- Print status information.
+  \item {\tt -pendIOtime=<seconds>} --- Channel access pend IO time.
+  \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Enable run control monitoring.
+  \item {\tt -runControlDescription=string=<string>} --- Description used with run control.
+  \end{itemize}
+
+\item {\bf see also:}
+  \begin{itemize}
+  \item \progref{sddslogger}
+  \item \progref{sddscaramp}
+  \item \progref{sddssnapshot}
+  \end{itemize}
+
+\item {\bf author: M. Borland, ANL}
+\end{itemize}

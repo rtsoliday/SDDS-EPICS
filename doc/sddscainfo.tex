@@ -1,0 +1,38 @@
+%
+% Documentation for sddscainfo
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+\subsection{sddscainfo}
+\label{sddscainfo}
+
+\begin{itemize}
+\item {\bf description:}
+  \verb+sddscainfo+ reads a list of process variable (PV) names from an SDDS file,
+  queries the control system for metadata, and writes the results to an SDDS output file.
+  The program can also create input files for \progref{sddspvalogger} or \progref{sddspvasaverestore}.
+
+\item {\bf examples:}
+  Gather connection information for the PVs listed in \verb+pvList.sdds+ and write the results to \verb+pvInfo.sdds+.
+  \begin{flushleft}{\tt
+sddscainfo pvList.sdds pvInfo.sdds
+  }\end{flushleft}
+  Create a metadata file and a corresponding input for \progref{sddspvalogger}.
+  \begin{flushleft}{\tt
+sddscainfo pvList.sdds pvInfo.sdds -makeLoggerInput
+  }\end{flushleft}
+
+\item {\bf synopsis:}
+  \begin{flushleft}{\tt
+sddscainfo [<inputfile>] [<outputfile>]\\
+[-pipe=[input][,output]]\\
+[-makeLoggerInput[=withStorageType]]\\
+[-makeSCRInput]\\
+[-verbose]\\
+[-pendIOTime=<seconds>]
+  }\end{flushleft}
+
+\item {\bf author: R. Soliday, ANL}
+\end{itemize}

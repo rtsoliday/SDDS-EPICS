@@ -1,0 +1,32 @@
+% Template for making SDDS Toolkit manual entries.
+\begin{latexonly}
+\newpage
+\end{latexonly}
+\subsection{degauss}
+\label{degauss}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+degauss+ reads an SDDS specification file listing magnets and degaussing parameters.
+It configures the corresponding subroutine records and, unless otherwise requested, initiates
+magnet degaussing cycles for each device.
+\item {\bf examples:}
+To configure magnets without starting degaussing and later query their state:
+\begin{flushleft}{\tt
+  degauss -configure booster.sdds\\
+  degauss -query booster.sdds
+}\end{flushleft}
+\item {\bf synopsis:}
+\begin{flushleft}
+\verb|degauss [-query|-configure|-stop]|\\
+\verb|        [-pendIoTime <seconds>] [--] spec-file|
+\end{flushleft}
+\item {\bf switches:}
+  \begin{itemize}
+    \item {\tt -query} --- Print degaussing state of devices in {\tt spec-file}.
+    \item {\tt -configure} --- Configure records for degaussing but do not start.
+    \item {\tt -stop} --- Halt degaussing of devices in {\tt spec-file}.
+    \item {\tt -pendIoTime=<seconds>} --- Maximum time to wait for Channel Access I/O.
+  \end{itemize}
+\item {\bf author:} C. Saunders, J. Anderson, R. Soliday, H. Shang, ANL
+\end{itemize}

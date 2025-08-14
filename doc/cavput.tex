@@ -1,0 +1,30 @@
+%\begin{latexonly}
+\newpage
+%\end{latexonly}
+\subsection{cavput}
+\label{cavput}
+
+\begin{itemize}
+  \item {\bf description:}
+    cavput sends values to EPICS process variables using Channel Access or PVAccess. It supports vector puts, delta mode, ramping, and numerical or char array data modes, making it useful for scripting accelerator operations.
+  \item {\bf examples:}
+    Set all storage ring quadrupoles to zero.
+    \begin{flushleft}\ttfamily
+    cavput -list=S -range=begin=1,end=40,format=\%ld\\
+      -list=AQ,BQ -range=begin=1,end=5 -list=:CurrentAI=0
+    \end{flushleft}
+    Configure slow beam history for S1A BPMs and 4080 samples.
+    \begin{flushleft}\ttfamily
+    cavput -list=S:bpm -range=begin=1,end=40,format=\%ld -list=:SlowBh:\\
+      -list=MI=0,sizeAO=4080,modeBO=1,enableBO=1
+    \end{flushleft}
+  \item {\bf synopsis:}
+    \begin{flushleft}\ttfamily
+    cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\\\relax
+      [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\\\relax
+      [-pendIoTime=<seconds>] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>]\\\relax
+      [-numerical] [-charArray] [-blunderAhead[=silently]]\\\relax
+      [-provider=\{ca|pva\}]
+    \end{flushleft}
+  \item {\bf author:} M. Borland and R. Soliday, ANL/APS.
+\end{itemize}

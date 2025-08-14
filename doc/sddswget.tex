@@ -1,0 +1,47 @@
+% Template for making SDDS Toolkit manual entries.
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+\subsection{sddswget}
+\label{sddswget}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+sddswget+ reads waveform process variables and writes the values to a binary SDDS file.  Waveform PV names may come from an SDDS input file or from the command line.  Each output page contains a single waveform with time stamps.
+
+\item {\bf example:}
+The following command fetches two waveform PVs and stores them in an SDDS file:
+\begin{verbatim}
+sddswget -PVnames=rf:wave1,rf:wave2 waveforms.sdds
+\end{verbatim}
+
+\item {\bf synopsis:}
+\begin{verbatim}
+sddswget
+    [<inputfile> [-inputStyle={wget|wmonitor|automatic}] | -PVnames=<name>[,<name>]]
+    <outputfile> [-pendIOtime=<seconds>] [-pipe[=input][,output]]
+    [-provider={ca|pva}]
+Writes values of process variables to a binary SDDS file.
+\end{verbatim}
+
+\item {\bf files:}
+The output file contains parameters \verb+Time+, \verb+TimeStamp+, and \verb+WaveformPV+ along with columns \verb+Index+ and the waveform data.
+
+\item {\bf switches:}
+    \begin{itemize}
+        \item {\tt -PVnames=<name>[,<name>]} --- list waveform PVs on the command line.
+        \item {\tt -inputStyle={wget|wmonitor|automatic}} --- choose how PV names are read from the input file.  Wmonitor style expects a \verb+WaveformPV+ column; wget style uses a \verb+WaveformPV+ parameter.
+        \item {\tt -pendIOtime=<seconds>} --- EPICS connection timeout.
+        \item {\tt -pipe[=input][,output]} --- standard SDDS Toolkit pipe option.
+        \item {\tt -provider={ca|pva}} --- select EPICS Channel Access (default) or PVAccess.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+        \item \progref{sddswmonitor}
+        \item \progref{sddswput}
+    \end{itemize}
+
+\item {\bf author: M. Borland, ANL/APS}
+\end{itemize}

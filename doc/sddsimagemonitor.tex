@@ -1,0 +1,56 @@
+%
+% Template for making SDDS Toolkit manual entries.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+%
+% Substitute the program name for sddsimagemonitor
+%
+\subsection{sddsimagemonitor}
+\label{sddsimagemonitor}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+sddsimagemonitor+ reads EPICS image process variables and writes the image
+  data to an SDDS file at regular intervals. Image PVs may be supplied from an
+  input file or directly on the command line. Optional scalar PVs can be logged as
+  parameters, and data may be conditioned on other PV values. Two-dimensional
+  images produce one page per acquisition, while multi-plane data result in one
+  page per plane.
+\item {\bf example:}
+The following command logs a set of camera images once per minute.
+\begin{verbatim}
+sddsimagemonitor cam.mon cam.sdds -interval=1,minute -steps=10
+\end{verbatim}
+where the contents of the file \verb+cam.mon+ are
+\begin{verbatim}
+SDDS1
+&column name=WaveformPV, type=string &end
+&data mode=ascii no_row_counts=1 &end
+AR:SLM1:image1
+\end{verbatim}
+\item {\bf synopsis:}
+\begin{verbatim}
+usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
+    [{-erase | -generations[=digits=<integer>][,delimiter=<string>]} [-pendIOtime=<seconds>]
+    [-steps=<integer> | -time=<value>[,<units>]] [-interval=<value>[,<units>]]
+    [-enforceTimeLimit] [-offsetTimeOfDay]
+    [-verbose] [-singleShot{=noprompt|stdout}] [-precision={single|double}]
+    [-dataType={short|long|float|double|character|string}]
+    [-onCAerror={useZero|skipPage|exit}]
+    [-scalars=<filename>] [-flushSteps=<integer>]
+    [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]
+    [-comment=<parameterName>,<text>] [-nowarnings]
+    [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]
+    [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]
+\end{verbatim}
+\item {\bf see also:}
+  \begin{itemize}
+  \item \progref{sddsmonitor}
+  \item \progref{sddsvmonitor}
+  \item \progref{sddswmonitor}
+  \end{itemize}
+\item {\bf author:} M. Borland, L. Emery, H. Shang, R. Soliday, ANL
+\end{itemize}

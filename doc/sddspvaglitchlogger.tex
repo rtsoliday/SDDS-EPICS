@@ -1,0 +1,81 @@
+% Template for SDDS Toolkit manual entry.
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+% Substitute the program name for sddspvaglitchlogger
+\subsection{sddspvaglitchlogger}
+\label{sddspvaglitchlogger}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+sddspvaglitchlogger+ monitors EPICS PV Access process variables and
+logs values whenever configured trigger or glitch conditions occur.  An input
+SDDS file lists the PVs to read and optional trigger parameters; a separate
+trigger file may be provided to define the triggers.  Data are written to
+files in the given directory or using a supplied rootname.
+
+\item {\bf example:}
+The following command monitors PVs listed in \verb+pvlist.sdds+ for one day
+with a one minute sample interval.
+\begin{verbatim}
+sddspvaglitchlogger pvlist.sdds logs -sampleInterval=60 -time=24,hours
+\end{verbatim}
+
+\item {\bf synopsis:}
+\begin{verbatim}
+usage: sddspvaglitchlogger <input> <outputDirectory>|<outputRootname>
+       [-triggerFile=<filename>] [-lockFile=<filename>[,verbose]]
+       [-sampleInterval=<secs>] [-time=<value>[,<units>]]
+       [-circularBuffer=[before=<number>,][after=<number>]]
+       [-delay=<steps>] [-holdoffTime=<seconds>] [-autoHoldoff]
+       [-pendIOtime=<value>]
+       [-inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]]
+       [-conditions=<filename>,{allMustPass|oneMustPass}]
+       [-verbose] [-watchInput]
+       [-runControlPV=string=<string>,pingTimeout=<value>]
+       [-runControlDescription=string=<string>]
+\end{verbatim}
+
+\item {\bf files:}
+  \begin{itemize}
+  \item {\bf input file:}\par
+    SDDS file defining the PVs to log. Required columns include
+    {\tt ControlName}, {\tt ReadbackName}, {\tt ReadbackUnits},
+    {\tt Provider}, {\tt ExpectNumeric}, {\tt ExpectFieldType} and
+    {\tt ExpectElements}. When no trigger file is supplied, parameters such as
+    {\tt OutputRootname}, {\tt TriggerControlName}, and optional threshold and
+    alarm values appear in the file.
+  \item {\bf trigger file:}\par
+    Optional SDDS file containing trigger definitions. Columns mirror the
+    trigger-related parameters and may include {\tt GlitchScript} to specify a
+    command executed when a trigger fires.
+  \end{itemize}
+
+\item {\bf switches:}
+    \begin{itemize}
+    \item {\tt -sampleInterval=<real>[,<units>]} --- interval between readings.
+    \item {\tt -time=<real>[,<units>]} --- total logging time.
+    \item {\tt -circularBuffer=[before=<n>,][after=<n>]} --- samples to keep around triggers.
+    \item {\tt -delay=<steps>} --- delay reading after a trigger.
+    \item {\tt -holdoffTime=<seconds>} --- wait time after a trigger before enabling new triggers.
+    \item {\tt -autoHoldoff} --- set holdoff time based on post-trigger samples.
+    \item {\tt -pendIOtime=<value>} --- maximum time to wait for PV replies.
+    \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- inhibit logging when this PV is nonzero.
+    \item {\tt -conditions=<file>,{allMustPass|oneMustPass}} --- require limits to be satisfied before logging.
+    \item {\tt -lockFile=<file>[,verbose]} --- prevent multiple instances.
+    \item {\tt -watchInput} --- reload input files if they change.
+    \item {\tt -runControlPV=string=<name>,pingTimeout=<value>} --- run-control PV.
+    \item {\tt -runControlDescription=string=<text>} --- run-control description record.
+    \item {\tt -verbose} --- print messages while running.
+    \end{itemize}
+
+\item {\bf see also:}
+    \begin{itemize}
+    \item \progref{sddsglitchlogger}
+    \item \progref{sddsmonitor}
+    \end{itemize}
+
+\item {\bf author:} H. Shang, ANL
+\end{itemize}
+

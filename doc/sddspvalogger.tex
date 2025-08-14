@@ -1,0 +1,57 @@
+% SDDS Toolkit manual entry for sddspvalogger
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+\subsection{sddspvalogger}
+\label{sddspvalogger}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+sddspvalogger+ connects to process variables over the EPICS7 PVA and CA protocols and logs the values to an SDDS file. The program supports conditional logging, data strobes, generation-based file rotation, and optional glitch capture.
+\item {\bf example:}
+\begin{flushleft}{\tt
+sddspvalogger pvlist.sdds data.sdds -sampleInterval=1,seconds -steps=10\\
+}\end{flushleft}
+where {\tt pvlist.sdds} defines the PVs to monitor and {\tt data.sdds} receives the logged values.
+\item {\bf synopsis:}
+\begin{verbatim}
+usage: sddspvalogger <inputfile> <outputfile>
+  [-pendIOtime=<value>]
+  [-watchInput]
+  [-monitorMode=[randomTimedTrigger]]
+  [-append | -overwrite]
+  [-sampleInterval=<real-value>[,<time-units>]]
+  [-dataStrobePV=<PVname>,<provider>[,notTimeValue][,holdoff=<seconds>]]
+  [-steps=<integer-value>]
+  [-time=<real-value>[,<time-units>]]
+  [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]
+  [-onerror={usezero|skip|exit}]
+  [-inhibitPV=name=<name>,provider=<provider>[,waitTime=<seconds>]]
+  [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]]
+  [-dailyFiles[=rowlimit=<number>][,timelimit=<secs>[,timetag][,verbose]]
+  [-monthlyFiles[=rowlimit=<number>][,timelimit=<secs>[,timetag][,verbose]]
+  [-strictPVverification]
+  [-truncateWaveforms]
+  [-runControlPV=string=<string>,pingTimeout=<value>]
+  [-runControlDescription=string=<string>]
+  [-verbose]
+Logger Options:
+  [-logInterval=<integer-value>]
+  [-flushInterval=<integer-value>]
+  [-onePvPerFile=<dirName>]
+Glitch Logger Options:
+  [-triggerFile=<filename>]
+  [-circularBuffer=[before=<number>,][after=<number>]]
+  [-delay=<steps>] [NOT YET IMPLEMENTED]
+  [-holdoffTime=<seconds>]
+  [-autoHoldoff]
+\end{verbatim}
+\item {\bf see also:}
+  \begin{itemize}
+  \item \progref{sddslogger}
+  \item \progref{sddsglitchlogger}
+  \item \progref{sddspvtest}
+  \end{itemize}
+\item {\bf author:} R. Soliday, H. Shang, ANL/APS.
+\end{itemize}

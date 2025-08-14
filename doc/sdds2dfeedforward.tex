@@ -1,0 +1,88 @@
+% Template for making SDDS Toolkit manual entries.
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+% Substitute the program name for sdds2dfeedforward
+\subsection{sdds2dfeedforward}
+\label{sdds2dfeedforward}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+sdds2dfeedforward+ performs two-dimensional feedforward on process variables.
+It sets one or more actuators according to a predetermined function of two readback
+values.  The user supplies tables giving the actuator value as a function of two
+readbacks.  Each table is provided as an SDDS page containing the columns
+\verb+Readback1Value+, \verb+Readback2Value+, and \verb+ActuatorValue+.  Parameters
+\verb+Readback1Name+, \verb+Readback2Name+, and \verb+ActuatorName+ specify the
+corresponding process variables.  Optional parameters include
+\verb+ReadbackChangeThreshold+ and \verb+ActuatorChangeLimit+.
+
+\item {\bf examples:}
+A basic invocation reads an SDDS table and applies it every ten seconds:
+\begin{flushleft}{\tt
+sdds2dfeedforward ID1Compensation.sdds -interval=10,s
+}\end{flushleft}
+where \verb+ID1Compensation.sdds+ might contain
+\begin{flushleft}{\tt
+Readback1Name = ID1:X \quad Readback2Name = ID1:Y \quad ActuatorName = S1B:H1:CurrentAO\\
+ Readback1Value  Readback2Value  ActuatorValue\\
+------------------------------\\
+       150.000       0.000          0.000\\
+       100.000      50.000          1.000\\
+        50.000     100.000         10.000\\
+}\end{flushleft}
+\item {\bf synopsis:}
+\begin{flushleft}{\tt
+sdds2dfeedforward <inputfile> \\
+       [-controlLog=<rootname>] \\
+       [-interval=<real-value>] [-steps=<integer=value>]\\
+       [-verbose] [-dryRun] [-offsetOnly]\\
+       [-averageOf=<number>[,interval=<seconds>]] \\
+       [-advance=<seconds>] \\
+       [-testValues=<SDDSfile>]\\
+       [-runControlPV=string=<string>[,pingTimeout=<value>]] \\
+       [-runControlDescription=<string>]\\
+       [-CASecurityTest] \\
+       [-pendIOtime=<seconds>] [-infiniteLoop]
+}\end{flushleft}
+\item {\bf files:}
+\begin{itemize}
+  \item {\bf input file:} An SDDS file with parameters \verb+Readback1Name+,
+  \verb+Readback2Name+, and \verb+ActuatorName+.  Optional parameters include
+  \verb+ReadbackChangeThreshold+ and \verb+ActuatorChangeLimit+.  Required
+  columns are \verb+Readback1Value+, \verb+Readback2Value+, and
+  \verb+ActuatorValue+.
+\end{itemize}
+\item {\bf switches:}
+    \begin{itemize}
+        \item {\tt interval=<real-value>} --- Interval in seconds between corrections.
+        \item {\tt steps=<integer-value>} --- Number of iterations before exiting.
+        \item {\tt verbose} --- Print additional information.
+        \item {\tt dryRun} --- Readbacks are read but actuators are not changed.
+        \item {\tt offsetOnly} --- Offset tables using initial readback values so
+               no change is made until a readback moves.
+        \item {\tt averageOf=<number>[,interval=<seconds>]} --- Average multiple
+               readings of each readback before computing corrections.
+        \item {\tt advance=<seconds>} --- Advance readback values based on their
+               ramp rate by the given number of seconds.
+        \item {\tt testValues=<file>} --- SDDS file giving limits for PV tests that
+               suspend feedforward when violated.
+        \item {\tt runControlPV=string=<string>[,pingTimeout=<value>]} --- Use a
+               run-control PV and optional ping timeout.
+        \item {\tt runControlDescription=<string>} --- Description for the
+               run-control record.
+        \item {\tt CASecurityTest} --- Check Channel Access security before
+               writing values.
+        \item {\tt pendIOtime=<seconds>} --- Time to wait for Channel Access
+               operations.
+        \item {\tt infiniteLoop} --- Run indefinitely.
+        \item {\tt controlLog=<rootname>} --- Log input and output data to an
+               SDDS file using the given root name.
+    \end{itemize}
+\item {\bf see also:}
+  \begin{itemize}
+    \item \progref{sddsfeedforward}
+  \end{itemize}
+\item {\bf author: M. Borland, ANL}
+\end{itemize}

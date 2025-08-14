@@ -122,12 +122,10 @@ the present state and the states in one or more SDDS files.
 \subsubsection{Control}
 \begin{itemize}
 \item \progref{sddscontrollaw} --- Reads a matrix for a control law-type equation and regulates the
-values of a list of readback process variables by applying corrections to another list of process variables. 
+values of a list of readback process variables by applying corrections to another list of process variables.
         Example application: removing slow drifts in accelerators (such as the energy of a linac beam), trajectory
         and orbit correction.
-\item \progref{knobconfig} --- Assigns knobs to devices according to the input file.
-        Example application: Manually tweak a trajectory, storage ring tunes and chromaticity.
-\item \progref{squishPVs} --- Minimizes the absolute values of a set of readback process variables 
+\item \progref{squishPVs} --- Minimizes the absolute values of a set of readback process variables
         by varying setpoint process variables which have a physical influence on the readback process variables.
         Example application: Reducing the size of the trajectory in a beamline without knowledge of the
         response matrix between bpms and correctors.
@@ -202,7 +200,6 @@ than one file on the same pipe.
 
 \section{Manual Pages}
 \label{ManualPages}
-\input{knobconfig.tex}
 \input{toggle.tex}
 \input{sddsalarmlog.tex}
 \input{sddscaramp.tex}

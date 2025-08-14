@@ -1,0 +1,60 @@
+%
+% cavget documentation.
+%
+\begin{latexonly}
+\newpage
+\end{latexonly}
+
+\subsection{cavget}
+\label{cavget}
+
+\begin{itemize}
+\item {\bf description:}
+\verb+cavget+ retrieves values of one or more EPICS process variables using Channel Access or PVAccess.
+It supports formatting, repeated acquisition and statistical analysis for scripting and data collection.
+\item {\bf examples:}
+\begin{flushleft}{\tt
+cavget my:pv\\
+cavget -repeat=number=10,pause=1 -labeled quadrupole:current\\
+cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds cavit:readback
+}\end{flushleft}
+\item {\bf synopsis:}
+\begin{flushleft}{\tt
+cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
+[-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\
+[-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]\
+[-noQuotes] [-embrace=start=<string>,end=<string>] [-cavputForm]\
+[-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename>]]]\
+[-pendIoTime=<seconds>] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]\
+[-numerical] [-errorValue=<string>] [-excludeErrors]\
+[-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]\
+[-provider={ca|pva}] [-info] [-printErrors] pvname [...]
+}\end{flushleft}
+\item {\bf switches:}
+  \begin{itemize}
+    \item {\tt -list} --- Build PV names from components or explicit names.
+    \item {\tt -range} --- Append integer ranges to PV prefixes.
+    \item {\tt -floatformat} --- Set printf-style format for floating point numbers.
+    \item {\tt -charArray} --- Print character arrays as strings.
+    \item {\tt -delimiter} --- String used to separate values.
+    \item {\tt -labeled} --- Prepend PV names to values.
+    \item {\tt -noQuotes} --- Suppress quotes around string values.
+    \item {\tt -embrace} --- Surround output with given start and end strings.
+    \item {\tt -cavputForm} --- Format output suitable for input to \verb+cavput+.
+    \item {\tt -statistics} --- Compute statistics over repeated readings.
+    \item {\tt -repeat} --- Take multiple readings with optional pause.
+    \item {\tt -numerical} --- Use numerical values for enumerations.
+    \item {\tt -errorValue} --- Substitute a value if a read fails.
+    \item {\tt -excludeErrors} --- Omit values if a read fails.
+    \item {\tt -despike} --- Remove outliers using neighbors/passes settings.
+    \item {\tt -provider} --- Select Channel Access (ca) or PVAccess (pva).
+    \item {\tt -info} --- Show connection and data type information.
+    \item {\tt -printErrors} --- Print errors without aborting.
+  \end{itemize}
+\item {\bf see also:}
+  \begin{itemize}
+    \item \progref{cavput}
+    \item \progref{cawait}
+  \end{itemize}
+\item {\bf author: M. Borland and R. Soliday, ANL/APS}
+\end{itemize}
