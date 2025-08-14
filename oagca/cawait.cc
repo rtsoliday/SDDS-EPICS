@@ -32,12 +32,10 @@
  * | Optional                | Description                                                             |
  * |-------------------------|-------------------------------------------------------------------------|
  * | `-interval`             | Interval between checks (default 0.1 s).                                |
- * | `-ezcatiming`           | Enable EZCA timing mode.                                                |
  * | `-timelimit`            | Maximum time to wait for the condition.                                  |
  * | `-totaltimelimit`       | Maximum total runtime for cawait.                                        |
  * | `-repeat`               | Number of events to wait for (default 1; infinite if no number given).   |
  * | `-emit`                 | Emit strings on event, timeout, or end.                                  |
- * | `-usemonitor`           | Use CA monitors instead of polling.                                      |
  * | `-not`, `-and`, `-or`   | Logical NOT, AND, OR on conditions.                                      |
  * | `-preevent`             | Command to execute before each event.                                    |
  * | `-onevent`              | Command to execute when an event occurs.                                 |
@@ -91,31 +89,29 @@
 
 #define CLO_INTERVAL 0
 #define CLO_WAITFOR 1
-#define CLO_EZCATIMING 2
-#define CLO_TIMELIMIT 3
-#define CLO_USEMONITOR 4
-#define CLO_NOT 5
-#define CLO_OR 6
-#define CLO_AND 7
-#define CLO_REPEAT 8
-#define CLO_EMIT 9
-#define CLO_PREEVENT 10
-#define CLO_POSTEVENT 11
-#define CLO_SUBPROCESS 12
-#define CLO_ONEVENT 13
-#define CLO_ONEND 14
-#define CLO_TOTALTIMELIMIT 15
-#define CLO_PENDIOTIME 16
-#define CLO_NOWARN 17
-#define CLO_PROVIDER 18
-#define COMMANDLINE_OPTIONS 19
+#define CLO_TIMELIMIT 2
+#define CLO_NOT 3
+#define CLO_OR 4
+#define CLO_AND 5
+#define CLO_REPEAT 6
+#define CLO_EMIT 7
+#define CLO_PREEVENT 8
+#define CLO_POSTEVENT 9
+#define CLO_SUBPROCESS 10
+#define CLO_ONEVENT 11
+#define CLO_ONEND 12
+#define CLO_TOTALTIMELIMIT 13
+#define CLO_PENDIOTIME 14
+#define CLO_NOWARN 15
+#define CLO_PROVIDER 16
+#define COMMANDLINE_OPTIONS 17
 char *commandline_option[COMMANDLINE_OPTIONS] = {
-  (char *)"interval", (char *)"waitfor", (char *)"ezcatiming",
-  (char *)"timelimit", (char *)"usemonitor", (char *)"not",
-  (char *)"or", (char *)"and", (char *)"repeat", (char *)"emit",
-  (char *)"preevent", (char *)"postevent", (char *)"subprocess",
-  (char *)"onevent", (char *)"onend", (char *)"totaltimelimit",
-  (char *)"pendiotime", (char *)"nowarnings", (char *)"provider"};
+  (char *)"interval", (char *)"waitfor", (char *)"timelimit",
+  (char *)"not", (char *)"or", (char *)"and", (char *)"repeat",
+  (char *)"emit", (char *)"preevent", (char *)"postevent",
+  (char *)"subprocess", (char *)"onevent", (char *)"onend",
+  (char *)"totaltimelimit", (char *)"pendiotime",
+  (char *)"nowarnings", (char *)"provider"};
 
 #define PROVIDER_CA 0
 #define PROVIDER_PVA 1
@@ -237,7 +233,6 @@ int main(int argc, char **argv) {
   unsigned long flags;
   SCANNED_ARG *s_arg;
   double interval, timeLimit, totalTimeLimit, startTime;
-  //long useMonitor;
   long code = 0, repeats, eventEndPending;
   char *emitOnEvent, *emitOnTimeout, *emitOnEnd;
   char **preEvent, **postEvent, **onEvent, **onEnd;
@@ -258,7 +253,6 @@ int main(int argc, char **argv) {
   waitFors = 0;
   interval = 0.1;
   timeLimit = totalTimeLimit = -1;
-  //useMonitor = 0;
   repeats = 1;
   emitOnEvent = emitOnTimeout = emitOnEnd = NULL;
   preEvent = postEvent = onEvent = onEnd = NULL;
@@ -310,11 +304,6 @@ int main(int argc, char **argv) {
         waitFor[waitFors].changeReferenceLoaded = 0;
         waitFors++;
         s_arg[i_arg].n_items += 2;
-        break;
-      case CLO_EZCATIMING:
-        break;
-      case CLO_USEMONITOR:
-        //useMonitor = 1;
         break;
       case CLO_NOWARN:
         noWarnings = 1;

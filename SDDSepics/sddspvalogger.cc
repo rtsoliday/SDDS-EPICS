@@ -321,16 +321,16 @@ Global Options:\n\
   [-sampleInterval=<real-value>[,<time-units>]]\n\
   [-dataStrobePV=<PVname>,<provider>[,notTimeValue][,holdoff=<seconds>]]\n\
   [-steps=<integer-value>]\n\
-  [-time=<real-value>[,<time-units>]\n\
+  [-time=<real-value>[,<time-units>]]\n\
   [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]\n\
   [-onerror={usezero|skip|exit}]\n\
   [-inhibitPV=name=<name>,provider=<provider>[,waitTime=<seconds>]]\n\
-  [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]\n\
-  [-dailyFiles[=rowlimit=<number>][,timelimit=<secs>[,timetag][,verbose]\n\
-  [-monthlyFiles[=rowlimit=<number>][,timelimit=<secs>[,timetag][,verbose]\n\
+  [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]]\n\
+  [-dailyFiles[=rowlimit=<number>][,timelimit=<secs>][,timetag][,verbose]]\n\
+  [-monthlyFiles[=rowlimit=<number>][,timelimit=<secs>][,timetag][,verbose]]\n\
   [-strictPVverification]\n\
   [-truncateWaveforms]\n\
-  [-runControlPV=string=<string>,pingTimeout=<value>\n\
+  [-runControlPV=string=<string>,pingTimeout=<value>]\n\
   [-runControlDescription=string=<string>]\n\
   [-verbose]\n\
 Logger Options:\n\

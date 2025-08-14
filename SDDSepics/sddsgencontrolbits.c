@@ -210,11 +210,11 @@ char *option[N_OPTIONS] = {
 };
 
 static char *USAGE1 = "sddsgencontrolbits <inputRAMFile> <outputFile> \n\
-          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-receiver=0|1|2|3] \n\
+          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>] [-receiver=0|1|2|3] \n\
 sddsgencontrolbits {-RAMWaveformPV=<string> [-scopeArrayLength=<int>] | \n\
           -scopeWaveformPV=<string> -turnsPerWrap=<int> [-RAMArrayLength=<string>] | \n\
           -RAMWaveformPV=<string> -scopeWaveformPV=<string> } <outputFile> \n\
-          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] \n\
+          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>] \n\
 sddsgencontrolbits  [-RAMArrayLength=<string>] [-scopeArrayLength=<int>] [-receiver=0|1|2|3] \n\
           {-presetRAMconfiguration=<string>,file=<filename> | \n\
            -planeMode=<string> -commutationMode=<string>] \n\
@@ -222,9 +222,9 @@ sddsgencontrolbits  [-RAMArrayLength=<string>] [-scopeArrayLength=<int>] [-recei
            -bunchPatternFile=<filename> -samplesPerBunch=<int> \n\
            -turnMarkerOffset=<int> -transitionDeadTime=<int> } \n\
            [-scopeTriggerIndexOffset=<int>] [-receiver=0|1|2|3] \n\
-           [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] \n\
+           [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>] \n\
            [-accumulatorMode=<string>] [-turnMarkerInterval=<integer>]\n\
-           [-secondsSampleBunch=delay=<int>,samplesPerBunch=<int>] \n\
+           [-secondSampleBunch=delay=<int>,samplesPerBunch=<int>] \n\
 Creates a file of RAM control bits from an array of 32-bit long integers.\n\
 Optionally writes to a RAM acquisition control waveform PV.\n\
 Each usage represent one of three ways to supply input data:\n\

@@ -18,7 +18,7 @@
  *        [-embrace=start=<string>,end=<string>] 
  *        [-cavputForm]
  *        [-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename]]] 
- *        [-pendIoTime=<seconds>] 
+ *        [-pendIoTime=<seconds>] [-dryRun]
  *        [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]
  *        [-numerical] 
  *        [-errorValue=<string>] 
@@ -43,6 +43,7 @@
  * | `-cavputForm`    | Format output suitable for input to cavput. |
  * | `-statistics`    | Compute statistics over multiple readings. |
  * | `-pendIoTime`    | Maximum time to wait for connections. |
+ * | `-dryRun`        | List PV names without fetching values. |
  * | `-repeat`        | Perform repeated readings. |
  * | `-numerical`     | Use numerical PV names instead of labels. |
  * | `-errorValue`    | Value to use when an error occurs. |
@@ -145,7 +146,7 @@ static char *USAGE1 = (char *)"cavget [-list=<string>[=<value>][,<string>[=<valu
 { [-delimiter=<string>] [-labeled] [-noQuotes] [-embrace=start=<string>,end=<string>] \n\
     | [-cavputForm]  }\n\
 [-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename]]] \n\
-[-pendIoTime=<seconds>] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]\n\
+[-pendIoTime=<seconds>] [-dryRun] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]\n\
 [-numerical] [-errorValue=<string>] [-excludeErrors]\n\
 [-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]] \n\
 [-provider={ca|pva}]\n\
@@ -167,9 +168,8 @@ static char *USAGE2 = (char *)"             Typically used only with -label.\n\
 -cavputForm  Specifies printout output in a format that can be given directly to\n\
              cavput for restoration of readback values.\n\
 -pendIoTime  specifies maximum time to wait for connections and\n\
-             return values.  Default is 1.0s \n\
--dryRun      specifies showing PV names and values but\n\
-             not sending to IOCs.\n\
+               return values.  Default is 1.0s \n\
+-dryRun      lists PV names without fetching values.\n\
 -errorValue  specifies a string to emit when there is a timeout or other\n\
              error for a PV.  The default is ?.\n\
 -excludeErrors\n\

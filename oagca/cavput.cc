@@ -10,11 +10,12 @@
  * ```
  * cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
  *        [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
- *        [-pendIoTime=<seconds>] 
- *        [-deltaMode[=factor=<value>]] 
- *        [-ramp=step=<n>,pause=<sec>] 
- *        [-numerical] 
- *        [-charArray] 
+ *        [-pendIoTime=<seconds>]
+ *        [-dryRun]
+ *        [-deltaMode[=factor=<value>]]
+ *        [-ramp=step=<n>,pause=<sec>]
+ *        [-numerical]
+ *        [-charArray]
  *        [-blunderAhead[=silently]]
  *        [-provider={ca|pva}]
  * ```
@@ -115,7 +116,7 @@ char *providerOption[PROVIDER_COUNT] = {
 
 static char *USAGE = (char *)"cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\n\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\n\
-[-pendIoTime=<seconds>] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>] \n\
+[-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>] \n\
 [-numerical] [-charArray] [-blunderAhead[=silently]]\n\
 [-provider={ca|pva}]\n\n\
 -list           specifies PV name string components\n\

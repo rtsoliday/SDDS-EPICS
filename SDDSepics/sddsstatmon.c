@@ -167,21 +167,20 @@ volatile int sigint = 0;
 
 
 static char *USAGE1 = "sddsstatmon <input> <output>\n\
-[-erase | -generations[=digits=<integer>][,delimiter=<string>]]\n\
-[-steps=<integer-value> | -time=<real-value>[,<time-units>]] \n\
-[-dataStrobeSamplePV=<PVname>] [-dataStrobeOutputPV=<PVname>] \n\
-[-interval=<real-value>[,<time-units>] | [-singleShot{=noprompt|stdout}]]\n\
+[-erase | -generations[=digits=<integer>][,delimiter=<string>] | -append[=recover][,toPage]]\n\
+[-steps=<integer-value> | -time=<real-value>[,<time-units>]]\n\
+[-dataStrobeSamplePV=<PVname>] [-dataStrobeOutputPV=<PVname>]\n\
+[-interval=<real-value>[,<time-units>] | -singleShot[={noprompt|stdout}]]\n\
 [-enforceTimeLimit] [-offsetTimeOfDay]\n\
 [-includeStatistics=[mean,][standardDeviation,][minimum,][maximum,][sigma][,first][,last][,sample][,sum][,all]]\n\
-[-samplesPerStatistic=<integer>] \n\
+[-samplesPerStatistic=<integer>]\n\
 [-verbose] [-precision={single|double}]\n\
 [-updateInterval=<integer>] [-watchInput]\n\
-[-oncaerror={skip|exit|repeat}\n\
+[-oncaerror={repeat|skip|exit}]\n\
 [-comment=<parameterName>,<text>]\n\
 [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]\n\
 [-getUnits={force|ifBlank|ifNoneGiven}]\n\
-[-append[=recover][,toPage]]] \n\
-[-pendIOtime=<seconds>\n\
+[-pendIOtime=<seconds>] [-ezcaTiming=<timeout>,<retries>]\n\
 [-inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]]\n\n";
 static char *USAGE2 = "Writes values of process variables or devices to a binary SDDS file.\n\
 <inputfile>          defines the process variables or device names to be read;\n\

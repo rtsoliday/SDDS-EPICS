@@ -89,7 +89,7 @@ long setupDatastrobeTriggerCallbacks(DATASTROBE_TRIGGER *datastrobeTrigger);
 
 static char *USAGE = "sddscaplayback <inputFile> -interval=<seconds> [-repetitions=<number>]\n\
 -mode={absolute|differential} [-triggerPV=<string>] [-controlNameParameter=<string>] [-dataColumn=<columnName>]\n\
-[-offset=<integer>] [-timeoffset=<seconds>] [-factor=<value>] [-restore] [-verbose] [-pendIOtime=<seconds>]\n\
+[-offset=<integer>] [-timeOffset=<seconds>] [-factor=<value>] [-restore] [-verbose] [-pendIOtime=<seconds>]\n\
 [-runControlPV=string=<string>,pingTimeout=<value>] [-runControlDescription=string=<string>]\n\n\
 Takes an SDDS file containing several pages of data and \"plays back\" the data, interpreting each page\n\
 as a waveform of numerical values for a different PV.\n\n\
@@ -101,7 +101,7 @@ as a waveform of numerical values for a different PV.\n\n\
 -triggerPV    PV to monitor for changes. When it changes, the playback starts from the first page.\n\
 -controlNameParameter\n\
               Name of column in input file giving the PV names. Defaults to \"ControlName\".\n\
--dataColumn   Name of column in input file giving the delta values. Defaults to \"DeltaValue\".\n\
+-dataColumn   Name of column in input file giving the delta values. Defaults to \"Value\".\n\
 -offset       Number of pages to offset by (circular buffer).\n\
 -timeOffset   Fine offset of the timing. Must be less than the interval.\n\
 -factor       Multiply waveforms by given factor prior to use.\n\

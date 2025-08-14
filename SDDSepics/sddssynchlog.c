@@ -67,7 +67,7 @@ static char *commandline_option[COMMANDLINE_OPTIONS] = {
 
 static char *USAGE1 = "sddssynchlog <input> <output> [-slowData=<input>]\n\
 [-waveformData=<filename>] -samples=<number> [-timeLimit=<value>[,<units>]]\n\
--eraseFile [-pendIOTime=<seconds>] [-connectTimeout=<seconds>]\n\
+-eraseFile [-pendEventTime=<seconds>] [-connectTimeout=<seconds>]\n\
 [-verbose] [-comment=<parameterName>,<text>]\n\
 [-synchInterval=<seconds>] [-precision={single|double}]\n\
 [-saveTimeStamps=<filename>] [-steps=<int>] [-interval=<value>[,<units>]] \n\n\
@@ -79,7 +79,7 @@ given by the -synchInterval argument.\n\n\
                 are encountered, fewer samples will appear in the output.\n\
 -timelimit      Specifies maximum time to wait for data collection.\n\
 -eraseFile      Specifies erasing the file <output> if it exists already.\n\
--pendIOTime     Specifies the CA pend event time, in seconds.  The default is 10 .\n\
+-pendEventTime  Specifies the CA pend event time in seconds.  The alias -pendIOTime is accepted.  The default is 10.\n\
 -connectTimeout Specifies maximum time in seconds to wait for a connection before\n\
                 issuing an error message. 60 is the default.\n";
 static char *USAGE2 =
@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
         if (s_arg[i_arg].n_items != 2 ||
             sscanf(s_arg[i_arg].list[1], "%lf", &pendEventTime) != 1 ||
             pendEventTime <= 0)
-          SDDS_Bomb("invalid -pendIOTime syntax/values");
+          SDDS_Bomb("invalid -pendEventTime syntax/values");
         break;
       case CLO_TIMEOUT:
         if (s_arg[i_arg].n_items != 2 ||
