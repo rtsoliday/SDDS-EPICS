@@ -35,7 +35,7 @@ monitors are recorded. The output file is S1A:H1.sdds.
 sddsvexperiment S1A:H1.vexp S1A:H1.sdds
 \end{verbatim}
 
-where the contents of the file \verb+S1A:H1.exp+ are
+where the contents of the file \verb+S1A:H1.vexp+ are
 \begin{verbatim}
 &rootname_list 
         filename=bpmRoot.sdds
@@ -95,10 +95,11 @@ SDDS1
 % Insert usage message here:
 %
 \begin{verbatim}
-usage: sddsvexperiment  <inputFile> <outputFile>
+usage: sddsvexperiment <inputFile> <outputFile>
 [-suffixFile=<filename>] [-rootnameFile=<filename>]
-[-echoinput] [-dryrun] [-summarize] [-verbose[=very]] 
-[-ezcaTiming=<timeout>,<retries>] [-describeInput]
+[-echoinput] [-dryrun] [-summarize] [-verbose[=very]]
+[-pendIOtime=<seconds>]
+[-describeInput]
 \end{verbatim}
 \item {\bf files:}
 \begin{itemize}
@@ -632,18 +633,18 @@ Many time parameters are defined:
 %
    \begin{itemize}
    \item {\verb+-suffixFile=<filename>+} --- SDDS file defining the suffixes and measurement parameters. If not specified
-                on the command line, then the namelist command {\verb+suffix_list+} is required in the input file.
+               on the command line, then the namelist command {\verb+suffix_list+} is required in the input file.
    \item {\verb+-rootnameFile=<filename>+} --- SDDS file defining the rootnames of the process variables. If not specified
-                on the command line, then the namelist command {\verb+rootname_list+} is required in the input file.
+               on the command line, then the namelist command {\verb+rootname_list+} is required in the input file.
     \item {\verb+-echoinput+} --- echos input file to stdout.
     \item {\verb+-dryrun+} --- the ``variable'' process variables are left untouched during the execution. The ``measurement''
                 process variables are still read. The pauses and system calls are still in effect.
     \item {\verb+-summarize+} --- gives a summary of the experiment before executing it.
-    \item {\verb+-verbose[=very]+} --- prints out information during the execution such as notification of 
+    \item {\verb+-verbose[=very]+} --- prints out information during the execution such as notification of
                 setting and reading process variables.  The option \verb+very+ prints out the average measurement values.
-    \item {\verb+-ezcaTiming=<timeout>,<retries>+} --- sets EZCA timeout and retry parameters
-    \item {\verb+-describeinput+} --- Printouts the list of namelist commands and fields of the input file.
-    \end{itemize}
+    \item {\verb+-pendIOtime=<seconds>+} --- sets the CA pend\_io timeout value.
+    \item {\verb+-describeInput+} --- Prints out the list of namelist commands and fields of the input file.
+   \end{itemize}
 
 \item {\bf see also:}
     \begin{itemize}

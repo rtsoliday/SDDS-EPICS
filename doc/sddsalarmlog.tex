@@ -27,22 +27,27 @@
 The status of the positron accumulator ring process variables are logged
 for a one day duration.
 \begin{verbatim}
-sddsalarmlog PAR.along  PAR.along.sdds -timeDuration=1,day 
+sddsalarmlog PAR.along PAR.along.sdds -timeDuration=1,day
 \end{verbatim}
 where the file \verb+PAR.along+ is the input file containing the names of the
-process variables, and the file \verb+PAR.along.out+ is the output file.
+process variables, and the file \verb+PAR.along.sdds+ is the output file.
 
 \item {\bf synopsis:} 
 %
 % Insert usage message here:
 %
 \begin{verbatim}
-usage: sddsalarmlog <input> <output> 
--timeDuration=<realValue>[,<time-units>]
-[{-append[=recover] | -eraseFile | -generations[=digits=<integer>][,delimiter=<string>} |
+usage: sddsalarmlog <input> <output>
+-timeDuration=<realValue>[,<time-units>] [-offsetTimeOfDay]
+[-append[=recover] | -eraseFile | -generations[=digits=<integer>][,delimiter=<string>] |
  -dailyFiles[=verbose]]
-[-pendEventTime=<seconds>] [-durations] [-explicit[=only]] [-verbose]
-[-comment=<parameterName>,<text>] 
+[-pendEventTime=<seconds>] [-durations] [-connectTimeout=<seconds>]
+[-explicit[=only]] [-verbose] [-comment=<parameterName>,<text>]
+[-requireChange[=severity][,status][,both]]
+[-inhibitPV=name=<name>,pendIOTime=<seconds>]
+[-watchInput]
+[-runControlPV=string=<string>,pingTimeout=<value>]
+[-runControlDescription=string=<string>]
 \end{verbatim}
 
 \item {\bf files:}
@@ -136,42 +141,30 @@ These parameters are defined:
 % Describe the switches that are available
 %
     \begin{itemize}
-%
-%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
-        \item {\tt -timeDuration=<realValue>[,<time-units>]} ---  Specifies time duration for logging.
-                The default time units are seconds; one may also specify days, hours, or minutes.
-        \item {\tt -append[=recover]} ---Specifies appending to the file <output> if it exists already.
-                If the recover qualifier is given, recovery of a corrupted file
-                is attempted using sddsconvert, at the risk of loss of some of the
-                data already in the file.
-        \item {\tt -eraseFile} --- If the output file already exists, then it will be overwritten
-                by \verb+sddsalarmlog+.
-        \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
-                The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
-                   the smallest positive integer such that the file does not already
-                   exist.   By default, four digits are used for formatting \verb+<N>+, so that
-                   the first generation number is 0001.
-        \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time, in seconds.
-                The default is 10 .
-        \item {\tt -durations} --- Specifies including state duration in output.
-        \item {\tt -connectTimeout} --- Specifies maximum time in seconds to wait for a connection before
-                issuing an error message. 60 is the default.
-        \item {\tt -explicit[=only]} ---  Specifies that explicit columns with control name, alarm status,
-                and alarm severity strings be output in addition to the integer
-                codes.  If the "only" qualifier is given, the integer codes are
-                omitted from the output.
-        \item {\tt -verbose} --- Prints out a message when data is taken.
-        \item {\tt -precision=\{single|double\}} --- Selects the data type for the statistics columns.
-        \item {\tt -updateInterval=<integer>} --- Number of sample sets between each output file update. The default is 1.
-        \item {\tt -ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters.
-        \item {\tt -noezca} --- Obsolete.
-        \item {\tt -dailyFiles} -- The output is sent to the file <SDDSoutputfile>-YYYY-JJJ-MMDD.<N>,
-                where YYYY=year, JJJ=Julian day, and MMDD=month+day. A new file is started after 
-                the midnight.
-        \item {\tt -oncaerror=\{usezero|skiprow|exit\}} --- Selects action taken when a channel access error occurs.
-                The default is using zero ({\tt usezero}) for the value of the process variable 
-                with the channel access error, and resuming execution. The second option ({\tt skiprow}) is to
+      \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.
+        The default time units are seconds; one may also specify days, hours, or minutes.
+      \item {\tt -offsetTimeOfDay} --- Adjusts the starting \verb+TimeOfDay+ value so it corresponds to the day for which most data is taken.
+      \item {\tt -append[=recover]} --- Specifies appending to the file \verb+<output>+ if it exists already.
+        If the \verb+recover+ qualifier is given, recovery of a corrupted file is attempted using \verb+sddsconvert+.
+      \item {\tt -eraseFile} --- If the output file already exists, then it will be overwritten.
+      \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
+        Sends output to \verb+<output>-<N>+, where \verb+<N>+ is the smallest positive integer such that the file does not already exist.
+        By default, four digits are used for formatting \verb+<N>+.
+      \item {\tt -dailyFiles[=verbose]} --- Uses daily generation filenames of the form \verb+<output>-YYYY-JJJ-MMDD.<N>+.
+        If \verb+verbose+ is given, a message is printed when a new file is started.
+      \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time in seconds. The default is 10.
+      \item {\tt -durations} --- Includes state duration and previous row reference data in the output.
+      \item {\tt -connectTimeout=<seconds>} --- Specifies maximum time in seconds to wait for a connection before issuing an error message.
+        The default is 60.
+      \item {\tt -explicit[=only]} --- Specifies that explicit columns with control name, alarm status, and alarm severity strings be output in addition to the integer codes.
+        If the \verb+only+ qualifier is given, the integer codes are omitted.
+      \item {\tt -verbose} --- Prints a message when data is taken.
+      \item {\tt -comment=<parameterName>,<text>} --- Adds a comment parameter with the given text to the output file.
+      \item {\tt -requireChange[=severity][,status][,both]} --- Requires the specified changes before an event is logged.
+      \item {\tt -inhibitPV=name=<name>,pendIOTime=<seconds>} --- Checks this process variable periodically and aborts data collection if it is nonzero.
+      \item {\tt -watchInput} --- Monitors the input file for modifications and exits if it changes.
+      \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Specifies a run control PV name and optional ping timeout in seconds.
+      \item {\tt -runControlDescription=string=<string>} --- Specifies a run control PV description record.
     \end{itemize}
 
 \item {\bf see also:}
