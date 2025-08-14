@@ -21,7 +21,7 @@ corresponding process variables.  Optional parameters include
 \item {\bf examples:}
 A basic invocation reads an SDDS table and applies it every ten seconds:
 \begin{flushleft}{\tt
-sdds2dfeedforward ID1Compensation.sdds -interval=10,s
+sdds2dfeedforward ID1Compensation.sdds -interval=10
 }\end{flushleft}
 where \verb+ID1Compensation.sdds+ might contain
 \begin{flushleft}{\tt
@@ -36,7 +36,7 @@ Readback1Name = ID1:X \quad Readback2Name = ID1:Y \quad ActuatorName = S1B:H1:Cu
 \begin{flushleft}{\tt
 sdds2dfeedforward <inputfile>\
        [-controlLog=<rootname>]\
-       [-interval=<real-value>] [-steps=<integer=value>]\
+       [-interval=<real-value>] [-steps=<integer-value>]\
        [-verbose] [-dryRun] [-offsetOnly]\
        [-averageOf=<number>[,interval=<seconds>]]\
        [-advance=<seconds>]\

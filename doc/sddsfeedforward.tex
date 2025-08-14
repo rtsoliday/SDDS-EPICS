@@ -34,7 +34,7 @@ drive any number of actuators.
 % 
 %
 \begin{verbatim}
-sddsfeedforward ID1GapCompensation.sdds -interval=10,s 
+sddsfeedforward ID1GapCompensation.sdds -interval=10
 \end{verbatim}
 where the file ID1GapCompensation.sdds contains the following
 data:
@@ -59,13 +59,16 @@ At each iteration step, ID1:Gap is read and \verb+sddsfeedforward+ interpolates 
 %
 \begin{verbatim}
 sddsfeedforward <inputfile>
-       [-interval=<real-value>] [-steps=<integer=value>]
-       [-verbose] [-dryRun]
-       [-averageOf=<number>[,interval=<seconds>]] 
+       [-controlLog=<rootname>]
+       [-interval=<real-value>] [-steps=<integer-value>]
+       [-verbose] [-dryRun] [-offsetOnly]
+       [-averageOf=<number>[,interval=<seconds>]]
+       [-advance=<seconds>]
        [-testValues=<SDDSfile>]
+       [-runControlPV=string=<string>[,pingTimeout=<value>]]
+       [-runControlDescription=<string>] [-CASecurityTest]
+       [-pendIOtime=<seconds>] [-infiniteLoop]
        [-ezcaTiming=<timeout>,<retries>]
-       [-runControlPV=string=<string>[,pingTimeout=<value>]] [-runControlDescription=<string>]
-       [-CASecurityTest] 
 \end{verbatim}
 \item {\bf files:}
 % Describe the files that are used and produced
@@ -128,29 +131,34 @@ one optional one:
 % Describe the switches that are available
 %
     \begin{itemize}
-        \item {\tt interval=<real-value>} --- Specifies the interval in seconds between readings. The time
-                interval is implemented with a call to usleep between calls to the control system.
-                Because the calls to the control system may take up a significant amount of time, the average
-                effective time interval may be longer than specified. 
-        \item {\tt steps=<integer-value>} --- Number of iterations for the feedforward before normal exiting.
-        \item {\tt verbose} --- prints out a message when data is taken.
-        \item {\tt dryRun} --- readback variables are read and computations are performed, 
+      \item {\tt controlLog=<rootname>} --- Log input and output data to an SDDS file using the given rootname.
+      \item {\tt interval=<real-value>} --- Specifies the interval in seconds between readings. The time
+        interval is implemented with a call to usleep between calls to the control system.
+        Because the calls to the control system may take up a significant amount of time, the average
+        effective time interval may be longer than specified.
+      \item {\tt steps=<integer-value>} --- Number of iterations for the feedforward before normal exiting.
+      \item {\tt verbose} --- Prints out a message when data is taken.
+      \item {\tt dryRun} --- Readback variables are read and computations are performed,
         but the control variables aren't changed.
-        \item {\tt averageOf=<number>[,interval=<seconds>]]} --- Specifies averaging of the
+      \item {\tt offsetOnly} --- Offset actuator tables using initial readback values so no changes are made until the readback changes.
+      \item {\tt averageOf=<number>[,interval=<seconds>]} --- Specifies averaging of the
         readback values, giving the number of readings to average and the interval in seconds
         between the readbacks.
-        \item {\tt testValues=<file>} --- An SDDS file containing minimum and maximum values
+      \item {\tt advance=<seconds>} --- Advance the readback value by the given number of seconds based on the observed ramp.
+      \item {\tt testValues=<file>} --- An SDDS file containing minimum and maximum values
         of PV's specifying a range outside of which the feedforward
         is temporarily suspended. The contents of the file are
         described above.
-        \item {\tt ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters.
-        \item {\tt runControlPV=string=<string>[,pingTimeout=<value>]} --- Gives the name of a process variable to use for
+      \item {\tt ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters (obsolete).
+      \item {\tt runControlPV=string=<string>[,pingTimeout=<value>]} --- Gives the name of a process variable to use for
         workstation-independent process control via the Run Control facility and the value of run control ping time out.
-        \item {\tt runControlDescription=<string>} --- Gives a text description to write to
+      \item {\tt runControlDescription=<string>} --- Gives a text description to write to
         the Run Control record for process identification.
-        \item {\tt CASecurityTest} --- Specifies that before writing values to EPICS, a
+      \item {\tt CASecurityTest} --- Specifies that before writing values to EPICS, a
         test should be done of the state of Channel Access security on the process variables,
         to see if the process is permitted to write values.
+      \item {\tt pendIOtime=<seconds>} --- Maximum time to wait for Channel Access I/O operations.
+      \item {\tt infiniteLoop} --- Run indefinitely instead of for a fixed number of steps.
     \end{itemize}
 
 \item {\bf see also:}

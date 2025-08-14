@@ -28,7 +28,7 @@ One or more input files defines the process variables to be monitored.
 The pressure readbacks of storage ring ion pumps and the stored current are monitored
 with the command below.
 \begin{verbatim}
-sddslogger SRvac.mon SRvac.sdds -time=24,hours -sampleInterval=1,minute
+sddslogger SRvac.mon SRvac.sdds -time=24,hours -sampleInterval=1,minutes
 \end{verbatim}
 where the contents of the file \verb+SRvac.mon+ are
 \begin{verbatim}
@@ -57,9 +57,9 @@ VM:01:2IP3.VAL pv Torr VM:01:2IP3
 %
 \begin{verbatim}
 usage: sddslogger <SDDSinputfile1> <SDDSoutputfile1> <SDDSinputfile2> <SDDSoutputfile2>...
-    [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | -dailyFiles]
-    [-sampleInterval=<real-value>[,<time-units>]
-    [-logInterval=<integer-value>
+    [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | -dailyFiles | -monthlyFiles]
+    [-sampleInterval=<real-value>[,<time-units>]]
+    [-logInterval=<integer-value>] [-flushInterval=<integer-value>]
     [-steps=<integer-value> | -time=<real-value>[,<time-units>]]
     [-enforceTimeLimit] [-offsetTimeOfDay]
     [-verbose] [-singleshot{=noprompt | stdout}]
@@ -155,12 +155,18 @@ Many time-related parameters are defined in the output file:
                 the smallest positive integer such that the file does not already
                 exist.  By default, four digits are used for formatting \verb+<N>+, so that
                 the first generation number is 0001.
+        \item {\tt -dailyFiles} --- Starts a new output file each day. Optional qualifiers
+                \verb+rowlimit+, \verb+timelimit+, \verb+timetage+, and \verb+verbose+ control
+                file rollover behavior.
+        \item {\tt -monthlyFiles} --- Starts a new output file each month with the same optional
+                qualifiers as \verb+-dailyFiles+.
         \item {\tt -sampleInterval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
                 interval is implemented with a call to usleep between calls to the control system.
                 Because the calls to the control system may take up a significant amount of time, the average
                 effective time interval may be longer than specified. 
         \item {\tt -logInterval=<interval>} --- Specifies the number of sampling intervals to average before
                 writing to the output file.
+        \item {\tt -flushInterval=<interval>} --- Number of sampling intervals between forced flushes of data to disk.
         \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
         \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
                 seconds, minutes, hours, and days. The program calculates the number of steps by dividing this time
@@ -171,10 +177,11 @@ Many time-related parameters are defined in the output file:
                 day for which the bulk of the data is taken.  Hence, a 26 hour job started at 11pm would have an
                 initial time of day of -1 hour and a final time of day of 25 hours.
         \item {\tt -verbose} --- Prints out a message when data is taken.
-        \item {\verb+-singleShot[=noprompt]+} --- a single read is prompted at the terminal
-                and initiated by a \verb+<cr>+ key press. The time interval is disabled. 
+        \item {\verb+-singleshot[=noprompt]+} --- a single read is prompted at the terminal
+                and initiated by a \verb+<cr>+ key press. The time interval is disabled.
                 With \verb+noprompt+ present, no prompt is written to the terminal, but a \verb+<cr>+
                 is still expected. Typing ``q'' or ``Q'' terminates the monitoring.
+        \item {\tt -precision={single|double}} --- Sets floating-point precision for logged data.
         \item {\tt -onerror=\{usezero|skiprow|exit\}} --- Selects action taken when a channel access error occurs.
                 The default is using zero ({\tt usezero}) for the value of the process variable 
                 with the channel access error, and resuming execution. The second option ({\tt skiprow}) is to

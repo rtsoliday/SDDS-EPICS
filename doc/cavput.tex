@@ -9,22 +9,35 @@
     cavput sends values to EPICS process variables using Channel Access or PVAccess. It supports vector puts, delta mode, ramping, and numerical or char array data modes, making it useful for scripting accelerator operations.
   \item {\bf examples:}
     Set all storage ring quadrupoles to zero.
-    \begin{flushleft}\ttfamily
+    \begin{flushleft}{\tt
     cavput -list=S -range=begin=1,end=40,format=\%ld\\
       -list=AQ,BQ -range=begin=1,end=5 -list=:CurrentAI=0
-    \end{flushleft}
+    }\end{flushleft}
     Configure slow beam history for S1A BPMs and 4080 samples.
-    \begin{flushleft}\ttfamily
+    \begin{flushleft}{\tt
     cavput -list=S:bpm -range=begin=1,end=40,format=\%ld -list=:SlowBh:\\
       -list=MI=0,sizeAO=4080,modeBO=1,enableBO=1
-    \end{flushleft}
+    }\end{flushleft}
   \item {\bf synopsis:}
-    \begin{flushleft}\ttfamily
+    \begin{flushleft}{\tt
     cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\\\relax
       [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\\\relax
-      [-pendIoTime=<seconds>] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>]\\\relax
+      [-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>]\\\relax
       [-numerical] [-charArray] [-blunderAhead[=silently]]\\\relax
       [-provider=\{ca|pva\}]
-    \end{flushleft}
+    }\end{flushleft}
+  \item {\bf switches:}
+    \begin{itemize}
+      \item {\tt -list} --- Specify PV name components with optional values.
+      \item {\tt -range} --- Generate PV names from a range.
+      \item {\tt -pendIoTime} --- Maximum time to wait for connections and return values (default 1.0~s).
+      \item {\tt -dryRun} --- Show PV names and values without sending to IOCs.
+      \item {\tt -deltaMode} --- Treat values as deltas from current PV values; optional factor.
+      \item {\tt -ramp} --- Ramp to the value in steps with an optional pause.
+      \item {\tt -numerical} --- Force conversion to numeric mode.
+      \item {\tt -charArray} --- Use string mode for char array PVs.
+      \item {\tt -blunderAhead} --- Continue puts even if some PVs fail to connect; \verb|silently| suppresses errors.
+      \item {\tt -provider} --- Select Channel Access ({\tt ca}) or PVAccess ({\tt pva}).
+    \end{itemize}
   \item {\bf author:} M. Borland and R. Soliday, ANL/APS.
 \end{itemize}

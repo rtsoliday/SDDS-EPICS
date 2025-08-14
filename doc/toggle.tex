@@ -27,21 +27,26 @@ Time intervals and the values of the process variables upon termination can be s
 % example in the following construct:
 % 
 %
-Two states of the APS storage ring injection magnets are restored for 10 seconds each by writing 
+Two states of the APS storage ring injection magnets are restored for 10 seconds each by writing
 values of process variables listed in the snapshot files SRin.snp1 and SRin.snp2:
 \begin{verbatim}
-toggle SRin.snp1 SRin.snp2 interval=10,10
+toggle SRin.snp1 SRin.snp2 -interval=10,10
 \end{verbatim}
-In this case the magnets return returns to the initial state upon termination.
+In this case the magnets return to the initial state upon termination.
 
 \item {\bf synopsis:} 
 %
 % Insert usage message here:
 %
 \begin{verbatim}
-usage: toggle [snapshotfile1 [snapshotfile2]] [-controlname=PVname,value1[,value2] ...]
-       [-interval=interval1[,interval2]] [-cycles=number] [-finalset={0|1|2}]
-       [-prompt] [-verbose] [-warning]
+usage: toggle [snapshotfile1 [snapshotfile2]]
+       [-controlName=PVname,value1[,value2] ...]
+       [-interval=interval1[,interval2]] [-cycles=number]
+       [-finalSet={original|first|second}]
+       [-pendIOtime=seconds]
+       [-prompt]
+       [-singleShot[=noprompt|stdout][,resend]]
+       [-verbose] [-warning]
 \end{verbatim}
 
 \item {\bf files:}
@@ -73,7 +78,7 @@ Optional columns are:
 %
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
 %
-        \item {\tt -controlname=<PVname>,<value1>[,<value2>]} --- Optional. Specified a PV to be 
+        \item {\tt -controlName=<PVname>,<value1>[,<value2>]} --- Optional. Specifies a PV to be
                 alternated. If only one value is given, then the second value
                 is taken to be pre-existing. These values are synchronized with
                 the snapshot files if they are present.
@@ -82,11 +87,12 @@ Optional columns are:
                  If \verb+<interval2>+ isn't present, then \verb+<interval2>+=\verb+<interval1>+.
                  If this option isn't present, then the default interval is 1 second each.
         \item {\tt -cycles=<number>} --- Optional number of cycles. Default is 1.
-        \item {\tt -finalset=\{0|1|2\}} --- Optional. Specifies which PV value set to apply at normal termination.
-                 0,1, and 2 mean set of pre-existing values, first set and second
-                 set respectively. During abnormal termination, the PVs are
-                 returned to their pre-existing values.
+        \item {\tt -finalSet=\{original|first|second\}} --- Optional. Specifies which PV value set to apply at normal termination.
+                 \verb+original+, \verb+first+, and \verb+second+ mean the pre-existing values, first set, and second set respectively.
+                 During abnormal termination, the PVs are returned to their pre-existing values.
+        \item {\tt -pendIOtime=<seconds>} --- Optional time to wait for channel access operations.
         \item {\tt -prompt} --- Optionally toggles values only on a \verb+<CR>+ key press.
+        \item {\tt -singleShot[=noprompt|stdout][,resend]} --- Optionally performs a single toggle initiated by a \verb+<CR>+ key press. Qualifiers control prompting and resending the value.
         \item {\tt -verbose} --- Optionally prints extra information.
         \item {\tt -warning} --- Optionally prints warning messages.
     \end{itemize}

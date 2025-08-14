@@ -19,7 +19,20 @@ readbacks to zero or to given offsets, optionally logging data and applying limi
 \begin{flushleft}{\tt sddspvacontrollaw sddspvacontrollaw.inv -searchPath=/home/controls -interval=1 -steps=10 -gain=0.75 -runControlPV=string=shang:ControlLawRC -verbose}\end{flushleft}
 
 \item {\bf synopsis:}
-\begin{flushleft}{\tt sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>] [<outputfile>] [-gain={<real-value>|PVname=<name>}] [-interval={<real-value>|PVname=<name>}] [-steps=<integer>] [-updateInterval=<integer>] [-average={<number>|PVname=<name>}[,interval=<seconds>]] [-testValues=<file>] [-despike[=neighbors=<integer>][,passes=<integer>][,threshold=<value>]] [-deltaLimit={value=<value>|file=<filename>}] [-readbackLimit={value=<value>|minValue=<value>,maxValue=<value>|file=<filename>}] [-actionLimit={value=<value>|file=<filename>}] [-runControlPV={string=<string>|parameter=<string>}[,pingTimeout=<value>]] [-runControlDescription={string=<string>|parameter=<string>}] [-controlLogFile=<file>] [-glitchLogFile=file=<string>[,readbackRmsThreshold=<value>][,controlRmsThreshold=<value>]] [-CASecurityTest] [-waveforms=<filename>,<type>] [-verbose] [-dryRun]}\end{flushleft}
+\begin{flushleft}{\tt
+sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>] [<outputfile>]\\
+[-gain={<real-value>|PVname=<name>}] [-interval={<real-value>|PVname=<name>}] [-steps=<integer>]\\
+[-updateInterval=<integer>] [-average={<number>|PVname=<name>}[,interval=<seconds>]]\\
+[-testValues=<file>]\\
+[-despike[=neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>][,pvthreshold=<pvname>][,file=<filename>][,countLimit=<integer>][,startThreshold=<value>,endThreshold=<value>,stepsThreshold=<integer>][,rampThresholdPV=<string>]]\\
+[-deltaLimit={value=<value>|file=<filename>}]\\
+[-readbackLimit={value=<value>|minValue=<value>,maxValue=<value>|file=<filename>}]\\
+[-actionLimit={value=<value>|file=<filename>}]\\
+[-runControlPV={string=<string>|parameter=<string>}[,pingTimeout=<value>]]\\
+[-runControlDescription={string=<string>|parameter=<string>}] [-controlLogFile=<file>]\\
+[-glitchLogFile=file=<string>[,readbackRmsThreshold=<value>][,controlRmsThreshold=<value>][,rows=<integer>]]\\
+[-CASecurityTest] [-waveforms=<filename>,<type>] [-verbose] [-dryRun]}
+\end{flushleft}
 
 \item {\bf files:}
   \begin{itemize}
@@ -32,9 +45,11 @@ readbacks to zero or to given offsets, optionally logging data and applying limi
 \item {\bf switches:}
   \begin{itemize}
   \item {\tt -searchPath} --- directory path used to locate input files.
+  \item {\tt -actuatorColumn} --- string column in the input file naming actuators.
   \item {\tt -gain} --- scalar or PV specifying overall feedback gain.
   \item {\tt -interval} --- time between corrections.
   \item {\tt -steps} --- number of correction iterations.
+  \item {\tt -updateInterval} --- steps between output file updates.
   \item {\tt -average} --- number of readback acquisitions to average, optionally with a time interval.
   \item {\tt -testValues} --- SDDS file giving limits that suspend feedback when readbacks are out of range.
   \item {\tt -deltaLimit} --- maximum change permitted for any actuator.
@@ -43,6 +58,9 @@ readbacks to zero or to given offsets, optionally logging data and applying limi
   \item {\tt -despike} --- despike readback data using neighbors and threshold tests.
   \item {\tt -runControlPV} --- run control PV name or parameter.
   \item {\tt -runControlDescription} --- run control description parameter.
+  \item {\tt -controlLogFile} --- write actuator changes to a log file.
+  \item {\tt -glitchLogFile} --- log data when RMS thresholds are exceeded.
+  \item {\tt -CASecurityTest} --- verify write access to control PVs.
   \item {\tt -waveforms} --- specify waveform PVs to read or write in addition to scalars.
   \item {\tt -verbose} --- print extra information.
   \item {\tt -dryRun} --- compute corrections without writing to actuators.

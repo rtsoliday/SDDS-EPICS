@@ -25,7 +25,7 @@ cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
 [-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]\
 [-noQuotes] [-embrace=start=<string>,end=<string>] [-cavputForm]\
 [-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename>]]]\
-[-pendIoTime=<seconds>] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]\
+[-pendIoTime=<seconds>] [-dryRun] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]\
 [-numerical] [-errorValue=<string>] [-excludeErrors]\
 [-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]\
 [-provider={ca|pva}] [-info] [-printErrors] pvname [...]
@@ -42,6 +42,8 @@ cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
     \item {\tt -embrace} --- Surround output with given start and end strings.
     \item {\tt -cavputForm} --- Format output suitable for input to \verb+cavput+.
     \item {\tt -statistics} --- Compute statistics over repeated readings.
+    \item {\tt -pendIoTime} --- Maximum time to wait for connections.
+    \item {\tt -dryRun} --- List PV names without fetching values.
     \item {\tt -repeat} --- Take multiple readings with optional pause.
     \item {\tt -numerical} --- Use numerical values for enumerations.
     \item {\tt -errorValue} --- Substitute a value if a read fails.

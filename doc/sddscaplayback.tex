@@ -26,7 +26,7 @@ sddscaplayback orbit.sdds -interval=0.5 -mode=absolute -repetitions=1
 \begin{flushleft}{\tt
 sddscaplayback <inputFile> -interval=<seconds> [-repetitions=<number>]\
 -mode=\{absolute|differential\} [-triggerPV=<string>] [-controlNameParameter=<string>]\
-[-dataColumn=<columnName>] [-offset=<integer>] [-timeoffset=<seconds>]\
+[-dataColumn=<columnName>] [-offset=<integer>] [-timeOffset=<seconds>]\
 [-factor=<value>] [-restore] [-verbose] [-pendIOtime=<seconds>]\
 [-runControlPV=string=<string>,pingTimeout=<value>]\
 [-runControlDescription=string=<string>]
@@ -46,7 +46,7 @@ waveform data. Each page corresponds to a different PV.
   \item {\tt -controlNameParameter=<string>} --- Name of parameter holding PV names; defaults to {\tt ControlName}.
   \item {\tt -dataColumn=<columnName>} --- Column containing waveform data; defaults to {\tt Value}.
   \item {\tt -offset=<integer>} --- Offset into pages used as circular buffer.
-  \item {\tt -timeoffset=<seconds>} --- Fine time offset less than the interval.
+  \item {\tt -timeOffset=<seconds>} --- Fine time offset less than the interval.
   \item {\tt -factor=<value>} --- Scale factor applied to waveform data.
   \item {\tt -restore} --- Restore PVs to starting values on exit.
   \item {\tt -verbose} --- Print status information.

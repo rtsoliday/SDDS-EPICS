@@ -17,7 +17,7 @@
 % Insert text of description (typically a paragraph) here.
 %
 \verb+sddspvtest+ tests the process variable given by the inputfile are out-of-range
-or not and sets the number of out-of-range process variables to a control PV.   
+or not and sets the number of out-of-range process variables to a control PV.
 
 \item {\bf example:} 
 %
@@ -55,26 +55,30 @@ soliday:PM5:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00
 
 \end{verbatim}
 
-\item {\bf synopsis:} 
+\item {\bf synopsis:}
 %
 % Insert usage message here:
 %
 \begin{verbatim}
-usage: sddspvtest <inputFile> [-pvOutput=<pvName>] 
-  [-time=<timeToRun>,<timeUnits>] [-interval=<timeInterval>,<timeUnits>] 
+usage: sddspvtest <inputFile> [-pvOutput=<pvName>[
+  ,passValue=<integer>,failValue=<integer>]]
+  [-time=<timeToRun>,<timeUnits>] [-interval=<timeInterval>,<timeUnits>]
+  [-monitor]
+  [-exitCondition={allPass|anyFail|converged=<cycles>|changed}]
   [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,
-  pingInterval=<value>] 
-  [-runControlDescription={string=<string>|parameter=<string>}] 
-  [-pendIOtime=<value>] [-verbose] [-testValues=<file>[,limit=<number>]]
+  pingInterval=<value>]
+  [-runControlDescription={string=<string>|parameter=<string>}]
+  [-pendIOtime=<value>] [-verbose]
 \end{verbatim}
 \item {\bf files:}
 % Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:} \par
 The variable input file is an SDDS file with one string column: ControlName, which is required
-and gives the list of control correctors (process variables or knobs). It also contains two double
-double columns: MaximumValue and MinimumValue, which are also required.
-seconds between two settings of the correctors.
+and gives the list of control correctors (process variables or knobs). It also contains two
+double columns: MaximumValue and MinimumValue, which are also required. Optional columns
+are Monitor and ChangeLimit. Monitor values of Y or y cause monitoring to be used, while
+ChangeLimit values are used with the \verb|-exitCondition| option.
 \end{itemize}
 
 %
@@ -86,23 +90,24 @@ seconds between two settings of the correctors.
 %
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
 %
-        \item {\tt -pvOutput} --- optional. the output pv name for storing the testing results
-               of PVs in the input. If it is not given,the results are printed out.
-        \item {\tt -time} ---required. Total time for testing process variable.
-               Valid time units are seconds,minutes,hours, or days. 
-         \item {\tt -interval} ---optional. Desired time interval for testing, the units are same as time.
-        \item {\tt -runControlPV} --- specifies the runControl PV record. string|parameter is required,
-                pingInterval and pingTimeout are optional.
-        \item {\tt -runControlDescription} ---specifies a string parameter whose value is a runControl
-                PV description record.
-        \item {\tt -verbose} -- print out messages. 
-        \item {\tt -pendIOtime} -- sets the maximum time to wait for return of each value.
-        \item {\tt -testValues<file>,[limit=<number>]} --
-           file is sdds format file containing minimum and maximum values of PV's specifying
-           a range outside of which the feedback is temporarily suspended. Column names are
-           ControlName, MinimumValue, MaximumValue. Optional column names are SleepTime, 
-           ResetTime. limits is the maixum number of failure times. The program will be
-           terminated when the continuous failure times reaches the limit.
+        \item {\tt -pvOutput} --- optional. The output PV name for storing the testing results
+               of PVs in the input. Qualifiers \verb|passValue| and \verb|failValue| set
+               the values written for pass or fail. If it is not given, the number of
+               failed tests is printed.
+        \item {\tt -time} --- required. Total time for testing process variables.
+               Valid time units are seconds, minutes, hours, or days.
+        \item {\tt -interval} --- optional. Desired time interval for testing; units are the
+               same as for \verb|-time|.
+        \item {\tt -monitor} --- monitor all PVs regardless of the Monitor column.
+        \item {\tt -exitCondition} --- program exit criterion: \verb|allPass|, \verb|anyFail|,
+               \verb|converged=<cycles>|, or \verb|changed|.
+        \item {\tt -runControlPV} --- specifies the runControl PV record. \verb|string| or
+               \verb|parameter| is required; \verb|pingInterval| and \verb|pingTimeout|
+               are optional.
+        \item {\tt -runControlDescription} --- specifies a string or parameter value used
+               for a runControl PV description record.
+        \item {\tt -verbose} --- print out messages.
+        \item {\tt -pendIOtime} --- sets the maximum time to wait for return of each value.
     \end{itemize}
 \item {\bf see also:}
     \begin{itemize}

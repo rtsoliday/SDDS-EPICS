@@ -40,9 +40,10 @@ settings, such as might be saved to an SDDS file using the
 % Insert usage message here:
 %
 \begin{verbatim}
-sddscaramp 
-  -rampTo=<filename>,steps=<number>,pause=<seconds>[,percentage=<value>]
-  [-rampTo ...] [-dataColumn=<name>] [-verbose]
+sddscaramp
+  -rampTo=<filename>,steps=<number>,pause=<seconds>[,percentage=<value>][,differential=<factor>]
+  [-rampTo ...] [-controlNameColumn=<string>] [-dataColumn=<columnName>]
+  [-pendIOtime=<seconds>] [-resendFinal] [-verbose]
 \end{verbatim}
 \item {\bf files:}
 % Describe the files that are used and produced
@@ -76,19 +77,27 @@ numerical column to begin with, of course, there is no ambiguity.
 %
     \begin{itemize}
         \item {\tt -rampTo={\em filename},steps={\em
-        number},pause={\em seconds},[percentage={\em value}]} ---
+        number},pause={\em seconds},[percentage={\em value}][,differential={\em factor}]} ---
         Specifies a file to ramp to, the number of steps in the ramp,
         and the time to wait between sending setpoints for each step.
         Optionally, one may specify ramping only part of the way to
-        the configuration in the file.  If several {\tt -rampTo}
-        options are given, {\tt sddscaramp} ramps to each of them
-        in the order given.
+        the configuration in the file or offsetting by a scaled
+        amount using the {\tt differential} factor.  If several
+        {\tt -rampTo} options are given, {\tt sddscaramp} ramps to each
+        of them in the order given.
+        \item {\tt -controlNameColumn={\em name}} --- Specifies the
+        name of the column containing the PV names when it is not
+        one of {\tt ControlName}, {\tt Device}, or {\tt DeviceName}.
         \item {\tt -dataColumn={\em name}} --- Specifies the name of
-        a string column in the input files that contains the PV values.
-        By default, the program uses {\tt ValueString}.
-        \item {\tt -verbose} --- If given, informational text is printed out
-        as the ramping proceeds.
-    \end{itemize}
+        the column in the input files that contains the PV values.
+        By default, the program uses {\tt ValueString} or {\tt Value}.
+        \item {\tt -pendIOtime={\em seconds}} --- Sets the time to
+        wait for channel access operations to complete.
+        \item {\tt -resendFinal} --- Resends the final setpoint for
+        numerical PVs after ramping is complete.
+        \item {\tt -verbose} --- If given, informational text is
+        printed out as the ramping proceeds.
+      \end{itemize}
 
 \item {\bf see also:}
     \begin{itemize}

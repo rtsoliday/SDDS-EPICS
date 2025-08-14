@@ -36,13 +36,13 @@ therefore take 16.67 seconds assuming the linac is running at 6 Hz.
 Alignment of process variable data is accepted and written to the
 output file if and only if the PV time stamps are within +/- 1/6 Hz =
 0.08 seconds.  Data acquisition stops after 100 samples are acquired
-or a -timelimit of 20 seconds has elapsed.  Note, it is absolutely
+or a -timeLimit of 20 seconds has elapsed.  Note, it is absolutely
 required that the scalar synchronous PV file listed below
 (synchPVs.mon) contain at least a single PV.  This is true even if one
 wishes only to synchronously acquire waveform process variables.
 \begin{verbatim}
-sddssynchlog synchPVs.mon synchPVs.sdds -samples=100 -synchInterval=0.08 
--timelimit=20,seconds -verbose
+sddssynchlog synchPVs.mon synchPVs.sdds -samples=100 -synchInterval=0.08
+-timeLimit=20,seconds -verbose
 \end{verbatim}
 where the contents of the file \verb+synchPVs.mon+ are
 \begin{verbatim}
@@ -82,7 +82,7 @@ identical to that in example 1 except for the additional waveform file
 command which that specifies a file containing waveform PV data.
 \begin{verbatim}
 sddssynchlog synchPVs.mon synchPVs.sdds -waveformData=LCLS.wmon
--samples=100 -synchInterval=0.08 -timelimit=20,seconds -verbose
+-samples=100 -synchInterval=0.08 -timeLimit=20,seconds -verbose
 \end{verbatim}
 where the contents of the file \verb+LCLS.wmon+ are
 \begin{verbatim}
@@ -114,7 +114,7 @@ PAD:K211:3:CH2_RAW_WF PAD:K211:3:CH2_RAW_WF
 \begin{verbatim}
 sddssynchlog <input> <output> [-slowData=<input>]
 [-waveformData=<filename>] -samples=<number> [-timeLimit=<value>[,<units>]]
--eraseFile [-pendIOTime=<seconds>] [-connectTimeout=<seconds>]
+-eraseFile [-pendEventTime=<seconds>] [-connectTimeout=<seconds>]
 [-verbose] [-comment=<parameterName>,<text>]
 [-synchInterval=<seconds>] [-precision={single|double}]
 [-saveTimeStamps=<filename>] [-steps=<int>] [-interval=<value>[,<units>]] 
@@ -210,7 +210,8 @@ Many time-related parameters are defined in the output file:
                 are encountered, fewer samples will appear in the output.
         \item {\tt -timeLimit} --- Specifies maximum time to wait for data collection.
         \item {\tt -eraseFile} --- Specifies erasing the file <output> if it exists already.
-        \item {\tt -pendIOtime=<value>} --- Obsolete.
+        \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time in seconds.  The
+                default is 10.  The alias \verb+-pendIOTime+ is accepted for backward compatibility.
         \item {\tt -connectTimeout=<value>} --- Specifies maximum time in seconds to wait for a connection before
                 issuing an error message. 60 is the default.
         \item {\tt -verbose} --- Specifies printing of possibly useful data to the standard output.
@@ -231,9 +232,9 @@ Many time-related parameters are defined in the output file:
         \item {\tt -saveTimeStamps} --- Specifies the name of a file to which to write raw time-stamp data for the
                 synchronously-acquired channels.  This can be useful in diagnosing the source
                 of poor sample alignment.
-        \item {\tt -precision} Specifies PV data to be either single or double precision.  Default is double precision.  
-        \item {\tt -steps} specifies how many synchlogs will be taken with -samples of data, default is 1.
-        \item {\tt -interval} specifies the waiting time between two synchlog steps.
+        \item {\tt -precision} --- Specifies PV data to be either single or double precision.  Default is double precision.
+        \item {\tt -steps} --- Specifies how many synchlogs will be taken with -samples of data; default is 1.
+        \item {\tt -interval} --- Specifies the waiting time between two synchlog steps.
     \end{itemize}
 
 \item {\bf see also:}

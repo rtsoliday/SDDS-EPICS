@@ -52,9 +52,9 @@ file {\tt RAMcontrolBits}.
 \begin{verbatim}
 sddsgencontrolbits controlRAM RAMcontrolBits
 \end{verbatim}
-where the contents of the 3888-row file {\tt controlRAM} are 
+where the contents of the 3888-row file {\tt controlRAM} are
 \begin{verbatim}
-3 columns of data:
+2 columns of data:
 NAME            UNITS           SYMBOL          FORMAT          TYPE    FIELD  DESCRIPTION
                                                                         LENGTH
 Index           NULL            NULL            NULL            long    0       NULL
@@ -95,20 +95,22 @@ Accumulator} is referred to in \cite{Norum2007} as simply ``Plane''.
 %
 \small
 \begin{verbatim}
-sddsgencontrolbits <inputRAMFile> <outputFile> 
-          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-receiver=0|1|2|3] 
-sddsgencontrolbits {-RAMWaveformPV=<string> [-scopeArrayLength=<int>] | 
-          -scopeWaveformPV=<string> -turnsPerWrap=<int> [-RAMArrayLength=<string>] | 
-          -RAMWaveformPV=<string> -scopeWaveformPV=<string> } <outputFile> 
-          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] 
-sddsgencontrolbits  [-RAMArrayLength=<string>] [-scopeArrayLength=<int>] [-receiver=0|1|2|3] 
-          {-presetRAMconfiguration=<string>,file=<filename> | 
-           -planeMode=<string> -commutationMode=<string>] 
-           -sampleMode={single|continuous|bunchPattern=<string>} 
-           -bunchPatternFile=<filename> -samplesPerBunch=<int> 
-           -turnMarkerOffset=<int> -transitionDeadTime=<int> } 
-           [-P0Offset=<int>] [-receiver=0|1|2|3] 
-           [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] 
+sddsgencontrolbits <inputRAMFile> <outputFile>
+          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>] [-receiver=0|1|2|3]
+sddsgencontrolbits {-RAMWaveformPV=<string> [-scopeArrayLength=<int>] |
+          -scopeWaveformPV=<string> -turnsPerWrap=<int> [-RAMArrayLength=<string>] |
+          -RAMWaveformPV=<string> -scopeWaveformPV=<string> } <outputFile>
+          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>]
+sddsgencontrolbits  [-RAMArrayLength=<string>] [-scopeArrayLength=<int>] [-receiver=0|1|2|3]
+          {-presetRAMconfiguration=<string>,file=<filename> |
+           -planeMode=<string> -commutationMode=<string>]
+           -sampleMode={single|continuous|bunchPattern=<string>}
+           -bunchPatternFile=<filename> -samplesPerBunch=<int>
+           -turnMarkerOffset=<int> -transitionDeadTime=<int> }
+           [-scopeTriggerIndexOffset=<int>] [-receiver=0|1|2|3]
+           [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>]
+           [-accumulatorMode=<string>] [-turnMarkerInterval=<integer>]
+           [-secondSampleBunch=delay=<int>,samplesPerBunch=<int>]
 Creates a file of RAM control bits.
 Optionally writes to a RAM acquisition control waveform.
 Each usage represent one of three ways to supply input data:
@@ -146,14 +148,18 @@ such as preset bunch pattern and others.
 -sampleMode         sample mode with values continuous, single or pattern.
                     If "pattern" is selected, then the value of suboption bunchPattern must be given
                     and must match up with a bunch pattern defined in the preset bunch pattern file.
--bunchPatternFile   file that contains the properties of preset bunch patterns. 
--transitionDeadTime dead time length in units of timing slots for which samples will not be taken. 
--turnMarkerOffset   the offset of turn marker. The first turn marker starts from this offset, and 
-                    the others are spaced 324 time steps. 
--samplesPerBunch    number of consectuive samples to be collected per bunch. Presently it 
-                    is the same for all bunches. 
--scopeTriggerIndex  provides the offset between scope trigger and start of RAM array 
-                    (which is normally set at 2048 by PV S42B:scope:gtr:numberPTS). 
+-bunchPatternFile   file that contains the properties of preset bunch patterns.
+-accumulatorMode    accumulation switch mode; defaults to the plane mode if omitted.
+-transitionDeadTime dead time length in units of timing slots for which samples will not be taken.
+-turnMarkerOffset   the offset of turn marker. The first turn marker starts from this offset, and
+                    the others are spaced 324 time steps.
+-samplesPerBunch    number of consectuive samples to be collected per bunch. Presently it
+                    is the same for all bunches.
+-turnMarkerInterval turn marker interval, default is 324.
+-secondSampleBunch  add a second sample bunch; delay gives the offset from the first bunch
+                    and samplesPerBunch sets the number of samples.
+-scopeTriggerIndexOffset  provides the offset between scope trigger and wrap marker
+                    (which is normally set at 2048 by PV S42B:scope:gtr:numberPTS).
 
 The output options are the same in the three usages.
 <outputFile>        file of the separated control bits of a RAM waveform record. 
@@ -167,9 +173,9 @@ The output options are the same in the three usages.
                     the same values are read and written to the same PV. 
 -controlRAMFile     if provided, the control RAM long integer data will be written to this file. 
 -comment            provide comments for saving the control RAM into controlRAMFile .
--receiver           provide the receiver number to select from the control RAM when 
-                    creating the control bits file, which has room for only one set 
-                    of flags. When setting RAM all receivers have the same flags. 
+-receiver           provide the receiver number to select from the control RAM when
+                    creating the control bits file, which has room for only one set
+                    of flags. When setting RAM all receivers have the same flags.
 Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
 
 \end{verbatim}
@@ -179,22 +185,35 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
 % Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:} \par
-
-\item {\bf output file:} \par 
-
+  RAM waveform record containing unsigned long integer values.
+\item {\bf output file:} \par
+  Control bits separated into individual columns; includes simulated scope readback page.
 \item {\bf bunch pattern file:} \par
+  Definitions of preset bunch patterns for pattern-based sampling modes.
 
 %
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
-%   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
-    \item {\tt -setRAMWaveformPV} --- need description.
-      
+    \item {\tt -RAMWaveformPV} --- RAM waveform PV name.
+    \item {\tt -scopeWaveformPV} --- digital scope waveform PV name.
+    \item {\tt -planeMode} --- plane switch mode for receivers.
+    \item {\tt -accumulatorMode} --- accumulation switch mode.
+    \item {\tt -commutationMode} --- commutation switch mode.
+    \item {\tt -sampleMode} --- sampling mode, including bunch patterns.
+    \item {\tt -bunchPatternFile} --- file of preset bunch patterns.
+    \item {\tt -samplesPerBunch} --- samples collected per bunch.
+    \item {\tt -secondSampleBunch} --- add delayed second sample bunch.
+    \item {\tt -turnMarkerOffset} --- offset to first turn marker.
+    \item {\tt -turnMarkerInterval} --- interval between turn markers.
+    \item {\tt -transitionDeadTime} --- dead time in timing slots.
+    \item {\tt -RAMArrayLength} --- length of control RAM waveform PV.
+    \item {\tt -scopeArrayLength} --- length of scope waveform PV.
+    \item {\tt -turnsPerWrap} --- number of turns per wrap for scope data.
+    \item {\tt -scopeTriggerIndexOffset} --- offset between scope trigger and wrap marker.
+    \item {\tt -setRAMWaveformPV} --- write control RAM data to this PV.
+    \item {\tt -controlRAMFile} --- write control RAM data to this file.
+    \item {\tt -comment} --- comment string saved with control RAM data.
+    \item {\tt -receiver} --- select receiver when creating control bits (obsolete).
     \end{itemize}
 \end{itemize}
 

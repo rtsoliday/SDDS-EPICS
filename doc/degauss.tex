@@ -18,15 +18,15 @@ To configure magnets without starting degaussing and later query their state:
 }\end{flushleft}
 \item {\bf synopsis:}
   \begin{flushleft}{\tt
-    degauss [-query|-configure|-stop]\\
-    \phantom{degauss }[-pendIoTime <seconds>] [--] <spec-file>
+    degauss [-q|-query|-c|-configure|-s|-stop]\\
+    \phantom{degauss }[-p|-pend|-pendIoTime <seconds>] [--] <spec-file>
   }\end{flushleft}
 \item {\bf switches:}
   \begin{itemize}
-    \item {\tt -query} --- Print degaussing state of devices in {\tt spec-file}.
-    \item {\tt -configure} --- Configure records for degaussing but do not start.
-    \item {\tt -stop} --- Halt degaussing of devices in {\tt spec-file}.
-    \item {\tt -pendIoTime=<seconds>} --- Maximum time to wait for Channel Access I/O.
+    \item {\tt -q\,|\,-query} --- Print degaussing state of devices in {\tt spec-file}.
+    \item {\tt -c\,|\,-configure} --- Configure records for degaussing but do not start.
+    \item {\tt -s\,|\,-stop} --- Halt degaussing of devices in {\tt spec-file}.
+    \item {\tt -p\,|\,-pend\,|\,-pendIoTime <seconds>} --- Maximum time to wait for Channel Access I/O.
   \end{itemize}
 \item {\bf author:} C. Saunders, J. Anderson, R. Soliday, H. Shang, ANL
 \end{itemize}

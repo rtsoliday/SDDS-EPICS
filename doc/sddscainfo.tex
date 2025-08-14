@@ -23,6 +23,10 @@ sddscainfo pvList.sdds pvInfo.sdds
   \begin{flushleft}{\tt
 sddscainfo pvList.sdds pvInfo.sdds -makeLoggerInput
   }\end{flushleft}
+  Create a metadata file and a corresponding input for \progref{sddspvasaverestore}.
+  \begin{flushleft}{\tt
+sddscainfo pvList.sdds pvInfo.sdds -makeSCRInput
+  }\end{flushleft}
 
 \item {\bf synopsis:}
   \begin{flushleft}{\tt
@@ -33,6 +37,15 @@ sddscainfo [<inputfile>] [<outputfile>]\
 [-verbose]\
 [-pendIOTime=<seconds>]
   }\end{flushleft}
+
+\item {\bf switches:}
+  \begin{itemize}
+  \item {\tt -pipe[=input][,output]} --- read from standard input and/or write to standard output.
+  \item {\tt -makeLoggerInput[=withStorageType]} --- write an input file for \progref{sddspvalogger}; append \verb|withStorageType| to include the storage type.
+  \item {\tt -makeSCRInput} --- write an input file for \progref{sddspvasaverestore}.
+  \item {\tt -verbose} --- print PV metadata to the terminal.
+  \item {\tt -pendIOTime=<seconds>} --- time to wait for Channel Access operations (default 0.5 s).
+  \end{itemize}
 
 \item {\bf author: R. Soliday, ANL}
 \end{itemize}

@@ -24,7 +24,7 @@ by \verb+sddssnapshot+.
 All data in the input file (even those not needed by the program) are transferred to the output file.
 \verb+sddssnapshot+ is more for data collection as opposed to backup and restore.
 
-\item {\bf example:} 
+\item {\bf examples:}
 %
 % Insert text of examples in this section.  Examples should be simple and
 % should be proceeded by a brief description.  Wrap the commands for each
@@ -43,9 +43,7 @@ SDDS1
 &column
  name = ControlName,  type = string, &end
 &data
- mode = ascii, &end
-&data
- mode = "ascii", no_row_counts=1 &end
+ mode = ascii, no_row_counts=1 &end
 S1A:Q1:CurrentAO
 S1A:Q2:CurrentAO
 ...
@@ -57,7 +55,7 @@ S1A:Q2:CurrentAO
 %
 \begin{verbatim}
 usage: sddssnapshot [-pipe[=input][,output]] [<input>] [<output>]
-[-ezcaTiming=<timeout>,<retries>] [-unitsOfData=<string>] [-nameOfData=<string>]
+[-pendIOtime=<seconds>] [-unitsOfData=<string>] [-nameOfData=<string>]
 [-serverMode=<pidFile>] [-average=<number>,<intervalInSec>]
 Takes a snapshot of EPICS scalar process variables.
 Requires the column "ControlName" with the process variable names.
@@ -97,17 +95,16 @@ number which is the pid number of the running {\verb+sddssnapshot+} process.
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
 %
         \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-        \item {\tt -ezcaTiming=<timeout>,<retries>} --- Specifies tuning of ezca, the channel access 
-        interface used by \verb+sddssnapshot+.
+        \item {\tt -pendIOtime=<seconds>} --- Sets the maximum time to wait for channel access operations to complete.
         \item {\tt -nameOfData=<string>} --- Column name to be given to the data collected. Default name is ``Value''.
-        \item {\tt -unitsOfData=<string>} --- Optional. Name given to the units field of the column definition 
+        \item {\tt -unitsOfData=<string>} --- Optional. Name given to the units field of the column definition
                         of the data to be collected. Default value is the null string.
-        \item {\tt -serverMode=<pidFile>} --- Optional. Enables the server more. The file specified will be created and contain
+        \item {\tt -serverMode=<pidFile>} --- Optional. Enables the server mode. The file specified will be created and contain
                 the process number of the present \verb+sddssnapshot+ process. This file is the mechanism
                 through which the user will know to which process should the SIGUSR1 be sent.
                 To activate one snapshot write, the user can type
                 the command ``\verb+kill -SIGUSR1 `cat <pidFile>+`''.
-        \item {\tt -average=<number>,<intervalInSec> } --- Optional. On can specify the number of readings to
+        \item {\tt -average=<number>,<intervalInSec> } --- Optional. One can specify the number of readings to
                 average and the number of seconds interval between readings.
     \end{itemize}
 

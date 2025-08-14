@@ -26,10 +26,10 @@
 % 
 %
 The trajectory of the booster BPMs is controlled with this command:
-\begin{verbatim}
-sddsoptimize -measFile= booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12 \
-             -knobFiles=booster.cokn -verbose
-\end{verbatim}
+\begin{flushleft}{\tt
+sddsoptimize -measFile=booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12\\
+\quad -knobFiles=booster.cokn -verbose
+}\end{flushleft}
 where the contents of the file \verb+booster.h.moni+ are
 \begin{verbatim}
 SDDS1
@@ -97,23 +97,20 @@ oag:B1C2H:KickAO -0.93188756664225914
 
 \end{verbatim}
 
-\item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
-\begin{verbatim}
-usage: sddsoptimize -measFile=<filename> -measScript=<script> 
-        [-varScript=<scriptname>]
-       -varFile=<filename> -knobFiles=<filename1> , <filename2>,... 
-       [-simplex=[restarts=<nRestarts>][,cycles=<nCycles>,] 
-       [evaluations=<nEvals>,][no1dscans][,divisions=<int>]] 
-       [-logFile=<filename>] [-verbose] [-tolerance=<value>] [-maximize] 
-       [-1dscan=[divisions=<value>,][cycles=<number>][,evaluations=<value>][,refresh]]
-       [-target=<value>] [-testValues=file=<filename>[,limit=<count>]]
-       [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,
-         pingInterval=<value>
-Perform optimization on APS control system process variables using simplex or 1dscan method.
-\end{verbatim}
+\item {\bf synopsis:}
+\begin{flushleft}{\tt
+sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]\\
+[-restartFile=<file>] [-pendIOtime=<seconds>] [-conditioning=<script>]\\
+-varFile=<file> -knobFiles=<file1>[,<file2>...]\\
+[-simplex=[restarts=<nRestarts>][,cycles=<nCycles>][,evaluations=<nEvals>][,no1dscans][,divisions=<int>][,randomSigns]]\\
+[-rcds=[cycles=<number>][,evaluations=<number>][,step=<value>][,noise=<value>][,dmatFile=<file>][,useMinForBracket][,verbose]]\\
+[-1dscan=[divisions=<value>][,cycles=<number>][,evaluations=<value>][,refresh]]\\
+[-logFile=<file>] [-extraLogFile=<file>] [-dryRun] [-verbose] [-tolerance=<value>] [-maximize]\\
+[-target=<value>] [-testValues=file=<file>[,limit=<count>]]\\
+[-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]\\
+[-runControlDescription={string=<string>|parameter=<string>}]
+}\end{flushleft}
+Perform optimization on APS control system process variables using simplex, 1dscan, or RCDS methods.
 \item {\bf files:}
 % Describe the files that are used and produced
 \begin{itemize}
@@ -187,46 +184,27 @@ Also two more columns and two parameters are defined:
 %
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
 %
-        \item {\tt -varFile} --- required, see above. Data in \verb+ControlName+may be valid process
-                variable names or knobs defined in knob files.
-        \item {\tt -measFile} ---specifies the name of measurement file. See above about its content.
-         \item {\tt -knobFiles} ---specifies list of knob files, which contain the knob correctors
-                given in varFile. See above about its content.
-        \item {\tt -measScript=<measScript>} --- user given script for measuring PVs. Either -measScript or -measFile
-                is given for measurement. {\\tt<measScript>} is an executable script which is called by optimizer and
-                outputs a value to the stand outputs. This value is the evaluation value and read by the optimizer.
-        \item {\tt -varScript=<varScript>} --- user given script for setting setpoint PVs or tags. 
-                If both -measScript and -varScript are given, there are no obvious ioc calls.
-                The calling syntax of {\tt<varScript>} is: {\tt<varScript> -tagList <tagList> -valueList <valueList>}
-                where {\tt<varScript>} is an executable command, {\tt<tagList>} is a list of setpoints or 
-                tag names supplied by the varFile and {\tt<valueList>} is a list of values for 
-                setting the setpoints or tags. These values are calculated by optimizer in each evaluation.
-        \item {\tt -simplex} ---  Give parameters of the simplex optimization. Each start or restart 
-                allows <nCycles> cycles with up to <nEvals> evaluations of the function.  Defaults are
-                1 restarts, 1 cycles, and 100 evaluations (iterations). If no1dscan is given, then turn
-                off the 1D scan function in simplex. Divisions gives the parameter of maximum divisions
-                used in simplex. If repeat is given, then read the previous better point again to keep
-                track with the noise. If there is not much noise, it should be turned off to have a 
-                better performance.
-        \item {\tt -1dscan} --- Give parameters of one dimensional scan optimization. Cycles gives the max.
-            number of cycles (i.e. loops) of 1dscan and with an maximum number of 
-            evaluations. Divisions is the max. number of division applied in 1dscan. 
-            Either 1dscan or simplex method is used for optimize. 
-            repeat: read the measurement again if the variable PVs are set back
-            to their previous values to keep track with noise.
-        \item {\tt -verbose } --- Specifies printing of possibly useful data to the standard output.
-        \item {\tt -target} --- the target value for RMS of measurement PV (or PVs).
-        \item {\tt -tolerance} --- tolerance should be given if measScript is used, otherwise,
-            a default value of 0.001 is set to tolerance.
-        \item {\tt -maximize} --- If maximize option is given, sddsoptimize maximizes measurement by
-                varying control correctors. Otherwise, it minimizes the measurement.
-        \item {\tt -runControlPV} -- specifies the runControl PV record.
-        \item {\tt -runControlDescription} -- specifies a string parameter whose value is a 
-                runControl PV description record.
-        \item {\tt -testValues} -- <filename> is name of an sdds format file containing minimum 
-            and maximum values of PV's specifying a range outside of which the feedback is temporarily
-            suspended. Column names are ControlName, MinimumValue, MaximumValue. limit specifies
-            the maximum times of testing when test fails.
+        \item {\tt -varFile=<file>} --- Required; defines control correctors or knobs.
+        \item {\tt -measFile=<file>} --- Specifies the measurement file.
+        \item {\tt -knobFiles=<file1>[,<file2>...]} --- List of knob definition files.
+        \item {\tt -measScript=<script>} --- Script for measuring PVs.
+        \item {\tt -varScript=<script>} --- Script for setting setpoint PVs or tags.
+        \item {\tt -restartFile=<file>} --- Save optimized values for later use.
+        \item {\tt -logFile=<file>} --- Write optimization data to an SDDS log.
+        \item {\tt -extraLogFile=<file>} --- Additional PVs for logging.
+        \item {\tt -pendIOtime=<seconds>} --- Channel access pendIO timeout.
+        \item {\tt -conditioning=<script>} --- Conditioning script executed before optimization.
+        \item {\tt -simplex} --- Parameters for simplex optimization.
+        \item {\tt -rcds} --- Parameters for robust conjugate direction search.
+        \item {\tt -1dscan} --- Parameters for one-dimensional scan optimization.
+        \item {\tt -dryRun} --- Compute settings without applying them.
+        \item {\tt -verbose} --- Print additional progress information.
+        \item {\tt -target=<value>} --- Target value for RMS of measurement PVs.
+        \item {\tt -tolerance=<value>} --- Tolerance when using a measurement script.
+        \item {\tt -maximize} --- Maximize instead of minimize the measurement.
+        \item {\tt -runControlPV} --- Specifies the runControl PV record.
+        \item {\tt -runControlDescription} --- Specifies a runControl PV description record.
+        \item {\tt -testValues=file=<file>[,limit=<count>]} --- Enforce temporary feedback limits.
   \end{itemize}
 \item {\bf see also:}
     \begin{itemize}

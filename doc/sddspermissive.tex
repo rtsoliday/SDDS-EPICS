@@ -27,9 +27,9 @@ sddspermissive permissive.sdds -executionTime=60\\
 \item {\bf synopsis:}
 \begin{flushleft}{\tt
 sddspermissive <inputfile>\
- -executionTime=<seconds>\
- -runControlPV=string=<string>,pingTimeout=<value>,pingInterval=<value>\
- -runControlDescription=string=<string>\
+[-executionTime=<seconds>]\
+-runControlPV=string=<string>[,pingTimeout=<value>][,pingInterval=<value>]\
+[-runControlDescription=string=<string>]\
 [-verbose] [-pendIOTime=<seconds>]
 }\end{flushleft}
 
@@ -47,10 +47,10 @@ is ignored.
 \item {\bf switches:}
 \begin{itemize}
 \item {\tt -executionTime=<seconds>} --- total time to run before exiting.
-\item {\tt -runControlPV=string=<pv>,pingTimeout=<value>,pingInterval=<value>} --- run
-control record to set when limits are violated.
+\item {\tt -runControlPV=string=<pv>[,pingTimeout=<value>][,pingInterval=<value>]} --- run
+  control record to set when limits are violated.
 \item {\tt -runControlDescription=string=<text>} --- description placed in the run
-control record.
+  control record (default: \verb+sddspermissive session+).
 \item {\tt -verbose} --- enable progress messages.
 \item {\tt -pendIOTime=<seconds>} --- maximum time to wait for Channel Access operations.
 \end{itemize}

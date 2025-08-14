@@ -89,17 +89,19 @@ S1B:P4:ms:x S1B:P4:ms:x:SetpointAO 0.4 1
 % Insert usage message here:
 %
 \begin{verbatim}
-usage: squishPVs <inputfile> 
-    [-count=<pvName>,<lower>,<upper>,<number>] 
-    [-averages=<number>,<pauseInSeconds>] [-stepSize=<value>] 
+usage: squishPVs <inputfile>
+    [-count=<pvName>,<lower>,<upper>,<number>]
+    [-averages=<number>,<seconds-between-readings>] [-stepSize=<value>]
     [-subdivisions=<number>,<factor>]
     [-upstep=count=<number>,factor=<value>]
-    [-repeat={number=<integer> | forever}[,pause=<seconds>]
-    [-ezcaTiming=<timeout>,<retries>]
+    [-repeat={number=<integer> | forever}[,pause=<seconds>]]
+    [-pendIOtime=<seconds>]
     [-settlingTime=<seconds>] [-verbose]
-    [-criterion={mav | rms}] [-maximize]
+    [-criterion={mav|rms|min|max|average}] [-maximize]
     [-threshold=<value>] [-actionLevel=<value>]
     [-testValues=<file>,[limit=<number>]]
+    [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>]
+    [-runControlDescription={string=<string>|parameter=<string>}]
 \end{verbatim}
 
 \item {\bf files:}
@@ -118,8 +120,8 @@ consists of a list of readback PVs and one corrector PV. The required column and
         \item {\tt Weight} --- Optional double-precision column of values by which to multiply the
                 \verb+readback-offset+ values.  The default weight is 1.
         \item {\tt CorrectorPV} --- String parameter of the corrector PV used in the correction group.
-        \item {\tt Gain} --- Double parameter for factor by which to multiply the 
-                value of the command line option \verb+stepsize+. 
+        \item {\tt Gain} --- Double parameter for factor by which to multiply the
+                value of the command line option \verb+stepSize+.
 \end{itemize}
 \end{itemize}
 %
@@ -133,18 +135,19 @@ consists of a list of readback PVs and one corrector PV. The required column and
                 \verb+<pvName>+ is read at 1 second intervals. If this
                 PV is within the validity limits specified for this number of readbacks, then
                 the PVs of the correction group are read.                
-        \item {\tt -averages=<number>,<pauseInSeconds} --- Optional. Number of PV readings to average
+        \item {\tt -averages=<number>,<seconds-between-readings>} --- Optional. Number of PV readings to average
                 and the number of seconds to wait between readings.
-        \item {\tt -stepsize=<value>} --- Optional. Initial step size to attempt for corrector PVs.
+        \item {\tt -stepSize=<value>} --- Optional. Initial step size to attempt for corrector PVs.
         \item {\tt -subdivisions=<number>,<factor>} --- Optionally specifies number and size of interval
                      subdivisions.
         \item {\tt -upstep=count=<number>,factor=<value>} --- Optionally specifies the number of steps
-                to take in one direction before increasing the stepsize by the given factor.
+                to take in one direction before increasing the step size by the given factor.
         \item {\tt -repeat={number=<integer> | forever}[,pause=<seconds>]} --- Specifies repeated
                 optimization, either a given number of times or indefinitely, with a pause in between.
                 This is useful if a system needs periodic tuning up.
+        \item {\tt -pendIOtime=<seconds>} --- Optionally specifies the channel-access pendIO timeout for reading PVs.
         \item {\tt -settlingTime=<seconds> } --- Optionally specifies the settling time after corrector PV changes.
-        \item {\tt -criterion={mav|rms}} --- Optionally specifies mean-absolute-value or RMS reduction. 
+        \item {\tt -criterion={mav|rms|min|max|average}} --- Optionally specifies the criterion for optimization.
                 Mean-absolute-value is the default.
         \item {\tt -threshold=<value>} --- Specifies that the change in the criterion must be below the specified
         value in order to be considered a genuine improvement.
@@ -152,16 +155,19 @@ consists of a list of readback PVs and one corrector PV. The required column and
         in order for optimization to start.
         \item {\tt -maximize} --- Specifies that the criterion should be maximized.  The default is
                 minimization.
-        \item {\tt -ezcaTiming=<timeout>,<retries>} --- Optionally specifies EZCA timing parameters.
         \item {\tt -verbose} --- Optionally requests output during run.
-        \item {\tt -testValues=<file>,[limit=<number>]} -- 
+        \item {\tt -testValues=<file>,[limit=<number>]} --
                      file is a sdds format file containing minimum and maximum values
                      of PV's specifying a range outside of which the feedback
                      is temporarily suspended. Column names are ControlName,
-                     MinimumValue, MaximumValue. Optional column names are 
+                     MinimumValue, MaximumValue. Optional column names are
                      SleepTime, ResetTime.
-                     limits is the maixum number of failure times. The program will be 
+                     limits is the maximum number of failure times. The program will be
                      terminated when the continuous failure times reaches the limit.
+        \item {\tt -runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>} ---
+                    Specifies a run control PV by name or parameter with optional ping timeout.
+        \item {\tt -runControlDescription={string=<string>|parameter=<string>}} ---
+                    Specifies a run control description PV by name or parameter.
     \end{itemize}
 
 \item {\bf see also:}

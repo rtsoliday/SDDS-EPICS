@@ -27,7 +27,7 @@
 Process variable setpoints from the storage ring are monitored
 with the command below.
 \begin{verbatim}
-sddslogonchange SR.loc SR.sdds -loginitial -watchInput -connectTimeout=120
+sddslogonchange SR.loc SR.sdds -logInitialValues -watchInput -connectTimeout=120
 \end{verbatim}
 where the contents of the file \verb+SR.loc+ are
 \begin{verbatim}
@@ -64,8 +64,12 @@ usage: sddslogonchange <input> <output>
   [-includeTimeOfDay] 
   [-offsetTimeOfDay]
   [-logInitialValues]
-  [-logAlarms] 
+  [-logAlarms]
   [-watchInput]
+  [-runControlPV=string=<string>,pingTimeout=<value>]
+  [-runControlDescription=string=<string>]
+  [-sddslogger]
+  [-noToleranceMinLimit]
 
 Logs data for the process variables named in the ControlName
 column of <input> to an SDDS file <output>.
@@ -158,6 +162,14 @@ The output file contains parameters, arrays, and columns.
         \item {\tt -comment=<parameterName>,<text>} --- Gives the parameter name for a comment to be placed in the SDDS output file, along with the text to be placed in the file.
         \item {\tt -requireChange[=severity][,status][,both]} --- Specifies that either severity, status, or both must change before an event is logged.  The default behavior is to log an event whenever a callback occurs, which means either severity or status has changed.
         \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- Checks this PV periodically.  If nonzero, then data collection is aborted.
+        \item {\tt -includeTimeOfDay} --- Includes time-of-day information in the output.
+        \item {\tt -logInitialValues} --- Logs the initial value of each process variable.
+        \item {\tt -logAlarms} --- Logs alarm events even if the value doesn't change.
+        \item {\tt -watchInput} --- Watches the input file and exits if it changes or is removed.
+        \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Specifies a run control PV name and optional ping timeout.
+        \item {\tt -runControlDescription=string=<string>} --- Specifies a run control PV description record.
+        \item {\tt -sddslogger} --- Writes the output file in \verb+sddslogger+ column format.
+        \item {\tt -noToleranceMinLimit} --- Disables the default minimum change limit when logging values.
     \end{itemize}
 
 \item {\bf see also:}

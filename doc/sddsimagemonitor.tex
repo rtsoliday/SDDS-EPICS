@@ -43,9 +43,41 @@ usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
     [-scalars=<filename>] [-flushSteps=<integer>]
     [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]
     [-comment=<parameterName>,<text>] [-nowarnings]
-    [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]
-    [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]
+    [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
+    [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
+    [-singleColumn] [-logOnChange] [-device=<name>] [-retakeStep]
 \end{verbatim}
+\item {\bf switches:}
+  \begin{itemize}
+  \item {\verb+-PVnames=<name>[,<name>]+} --- specifies image PV names to read.
+  \item {\verb+-scalars=<filename>+} --- logs scalar PVs as parameters in the output file.
+  \item {\tt -erase} --- overwrites the output file if it exists.
+  \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} --- writes to a unique generation file.
+  \item {\verb+-pendIOtime=<seconds>+} --- sets the wait time for channel access searches.
+  \item {\verb+-steps=<integer>+} --- number of image acquisitions to perform.
+  \item {\verb+-time=<value>[,<units>]+} --- total acquisition time; seconds, minutes, hours, or days.
+  \item {\verb+-interval=<value>[,<units>]+} --- desired time between acquisitions.
+  \item {\tt -enforceTimeLimit} --- enforces the time limit given with \verb+-time+.
+  \item {\tt -offsetTimeOfDay} --- adjusts the starting \verb+TimeOfDay+ value.
+  \item {\tt -verbose} --- prints a message when data are taken.
+  \item {\verb+-singleShot[=noprompt|stdout]+} --- single acquisition triggered by a key press.
+  \item {\verb+-precision={single|double}+} --- sets data precision for image PVs.
+  \item {\verb+-dataType={short|long|float|double|character|string}+} --- forces an SDDS data type.
+  \item {\verb+-onCAerror={useZero|skipPage|exit}+} --- action to take on channel access errors.
+  \item {\verb+-flushSteps=<integer>+} --- buffers this many steps before writing to the file.
+  \item {\verb+-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]+} ---
+        applies limits from a conditions file to gate data logging.
+  \item {\verb+-comment=<parameterName>,<text>+} --- inserts a comment parameter with the given text.
+  \item {\tt -nowarnings} --- suppresses warning messages.
+  \item {\verb+-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]+} ---
+        defines X-axis parameter information.
+  \item {\verb+-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]+} ---
+        defines Y-axis parameter information.
+  \item {\tt -singleColumn} --- writes image data to a single column with index parameters.
+  \item {\tt -logOnChange} --- writes data only if scalar PVs change.
+  \item {\verb+-device=<name>+} --- selects the device type (e.g., areadector or FLID).
+  \item {\tt -retakeStep} --- repeats a step if timestamps or scalar values do not change.
+  \end{itemize}
 \item {\bf see also:}
   \begin{itemize}
   \item \progref{sddsmonitor}

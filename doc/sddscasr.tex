@@ -39,9 +39,9 @@ save snapshot with daemon mode, the output file in following command is out1-<cu
 Whenever the value of casavePV (oag:casave) is changed to 1, a new saving starts and data is written
 to a new output file with rootname of out1. (var1 is the input file contains PVs to be read)
 \begin{verbatim}
-sddscasr var1 out1 -runControlPV=string=oag:ControlLawRC 
--runControlDesc=string=test -daemon -daily -save -pidFile=pidFile
- -casavePV=oag:casave -logFile=logFile &
+sddscasr var1 out1 -runControlPV=string=oag:ControlLawRC
+-runControlDescription=string=test -daemon -dailyFiles -save -pidFile=pidFile
+-casavePV=oag:casave -logFile=logFile &
 \end{verbatim}
 
 \item {\bf synopsis:} 
@@ -49,13 +49,14 @@ sddscasr var1 out1 -runControlPV=string=oag:ControlLawRC
 % Insert usage message here:
 %
 \begin{verbatim}
-usage: sddscasr <inputfile> <outputRoot> [-verbose]
-    [-daemon] [-dailyFiles] [-semaphore=<filename>] [-save] [-restore] [-logFile=<filename>]
+usage: sddscasr <inputFile> <outputRoot> [-verbose]
+    [-daemon] [-dailyFiles] [-semaphore=<filename>] [-save] [-restore[=verify]] [-logFile=<filename>]
     [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]
-    [-runControlDescription={string=<string>|parameter=<string>}] [-unique] [-outputFilePV=<pvname>]
-    [-pidFile=<pidFile>] [-casavePV=<string>] [-interval=<seconds>] [-pipe=[input|output]]
-    [-numerical] [-waveform=[rootname=<string>][,directory=<string>]]
-    [-outputFilePV=<pvname>] [-casavePV=<string>]
+    [-runControlDescription={string=<string>|parameter=<string>}] [-unique]
+    [-outputFilePV=<pvname>] [-inputFilePV=<pvname>] [-add] [-dryRun]
+    [-pidFile=<pidFile>] [-casavePV=<string>] [-interval=<seconds>] [-pendIOTime=<seconds>]
+    [-pipe=[input|output]] [-waveform=[rootname=<string>][,extension=<string>][,directory=<string>][,onefile][,saveWaveformFile[,fullname]]]
+    [-numerical] [-description=<string>|pv=<pvname>]
 \end{verbatim}
 \item {\bf files:}
 % Describe the files that are used and produced
@@ -82,42 +83,35 @@ corresponding PV or n if no error occurs.
 %
 % Describe the switches that are available
 %
-    \begin{itemize}
-    \item {\tt inputFile} --- inputFile name (SDDS file).
-    \item {\tt outputRoot} --- output file or root if -dailyFiles option is specified.
-    \item {\tt pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-         -dailyFile option is ignored if -pipe=out or -pipe option is present.
-    \item {\tt semaphore} --- specify the flag file for indicating CA connection completence.
-               the current outputFile name is written to semaphore file.
-    \item {\tt daemon} --- run in daemon mode, that is, stay in background and start 
-          running whenever signal event arrived until terminating signal received.
-    \item {\tt save} --- read the values of PVs given in the input file and write
-               to the output file.
-    \item {\tt restore} --- set the values of process variables given in the input file.
-               -save and -restore can not be given in the same time.
-    \item {\tt logFile} --- file for logging the printout information.
-    \item {\tt pidFile} --- provide the file to write the PID into.
-    \item {\tt interval} --- the interval (in seconds) of checking monitor pv 
-               or the sleeping time if no signal handling arrived. 
-    \item {\tt pendIOTime} --- specifies maximum time to wait for connections and
-               return values. Default is 30.0s. It is important to give enough pendIOTime,
-               otherwise, the CA connection could not set up and errors would occur. For SR
-               request file, normally 100 seconds is appropriate.
-    \item {\tt casavePV} --- a monitor pv to turn on/off sddscasr. Whenever the casavePV is 
-               set to 1, sddssave make a save or restore and change the pv back to 0.
-    \item {\tt outputFilePV} --- a string pv to store the output file name (exclude the path).
-    \item {\tt unique} --- remove all duplicates but the first occurrence of each PV from
-               the input file to prevent channel access errors when setting pv values.
-    \item {\tt description} --- specify SnapshotDescription parameter of output file.
-    \item {\tt runControlPV=string=<string>|parameter=<string>[,pingTimeout=<value>,pingInterval=<value>]} --- specifies the runControl PV record.
-    \item {\tt runControlDescription} --- specifies a string parameter whose value is
-               a runControl PV description record.
-    \item {\tt numerical} ---return a numerical string value rather than a string for enumerated types.
-    \item {\tt waveform=rootname=<string>[,directory=<string>]} ---provide the waveform rootname and directory in restore option. By default, the directory is pwd, the rootname is the SnapshotFilename parameter in the input file.
-    \item {\tt outputFilePV} --- a charachter-waveform pv to store the output file name with full path.
-    \item {\tt casavePV} --- a monitor pv to turn on/off sddscasr. When the pv changed from 0 to 1, sddssave make a save and change the pv back to 0.
-    
-    \end{itemize}
+  \begin{itemize}
+  \item {\tt inputFile} --- input file name (SDDS file).
+  \item {\tt outputRoot} --- output file or root if -dailyFiles option is specified.
+  \item {\tt pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+        -dailyFiles option is ignored if -pipe=out or -pipe option is present.
+  \item {\tt semaphore} --- specify the flag file for indicating CA connection completion;
+        the current output file name is written to the semaphore file.
+  \item {\tt daemon} --- run in daemon mode, staying in the background until a terminating signal is received.
+  \item {\tt dailyFiles} --- append the current date to the output file name.
+  \item {\tt save} --- read the values of PVs given in the input file and write to the output file.
+  \item {\tt restore[=verify]} --- set the values of process variables given in the input file.
+        -save and -restore cannot be given at the same time.
+  \item {\tt add} --- with -restore, set PVs to current value plus provided value.
+  \item {\tt dryRun} --- with -restore, show PV values that would be set without changing them.
+  \item {\tt logFile} --- file for logging the printout information.
+  \item {\tt pidFile} --- file to which the PID is written.
+  \item {\tt interval} --- interval (in seconds) for checking the monitor PV or sleeping if no signal arrives.
+  \item {\tt pendIOTime} --- maximum time to wait for connections and return values.
+  \item {\tt casavePV} --- a monitor PV to turn on/off sddscasr. When set to 1, a save or restore is made and the PV is reset to 0.
+  \item {\tt outputFilePV} --- a character-waveform PV to store the output file name with full path.
+  \item {\tt inputFilePV} --- a character-waveform PV containing the input file name with full path.
+  \item {\tt unique} --- remove all duplicates but the first occurrence of each PV from the input file to prevent channel access errors when setting PV values.
+  \item {\tt description} --- specify SnapshotDescription parameter of the output file or provide a PV using {\tt pv=<pvname>}.
+  \item {\tt runControlPV=string=<string>|parameter=<string>[,pingTimeout=<value>,pingInterval=<value>]} --- specifies the run control PV record.
+  \item {\tt runControlDescription} --- specifies a string parameter whose value is a run control PV description record.
+  \item {\tt numerical} --- return a numerical string value rather than a string for enumerated types.
+  \item {\tt waveform=rootname=<string>[,extension=<string>][,directory=<string>][,onefile][,saveWaveformFile][,fullname]} --- provide the waveform rootname and directory for the restore option. By default, the directory is pwd and the rootname is the SnapshotFilename parameter in the input file.
+  \item {\tt verbose} --- print out messages.
+  \end{itemize}
 
 \item {\bf see also:}
     \begin{itemize}

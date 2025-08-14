@@ -57,9 +57,9 @@ where the line starting with a ``!'' is a comment.
 % Insert usage message here:
 %
 \begin{verbatim}
-usage: sddsexperiment <inputfile> [<outputfile-rootname>]
-[-echoinput] [-dryrun] [-summarize] [-verbose]  [-pendIOtime=<seconds>] 
-[-describeInput] [-macro=<tag>=<value>,[...]] [-comment=<string value>]
+usage: sddsexperiment <inputfile> [<outputfile-rootname|outputfilename>]
+[-echoinput] [-dryrun] [-summarize] [-verbose] [-pendIOtime=<seconds>]
+[-describeInput] [-macro=<tag>=<value>,[...]] [-comment=<string value>] [-scalars=<filename>]
 \end{verbatim}
 
 \item {\bf files:}
@@ -568,6 +568,7 @@ In addition, some time columns and parameters are defined:
     \item {\verb+-describeinput+} --- Printouts the list of namelist commands and fields of the input file.
     \item {\verb+-macro=<tag>=<value>[,...]+} --- replaces the macros (<tag>) in the input file by actual values (<value>).
     \item {\verb+-comment=<string value>+} --- provides the comment, which will be written to the output file as parameter.
+    \item {\verb+-scalars=<filename>+} --- reads additional scalar process variables from the specified file.
     \end{itemize}
 
 \item {\bf see also:}

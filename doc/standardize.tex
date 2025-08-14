@@ -12,7 +12,7 @@
 \verb+standardize+ standardizes magnet power supplies using parameters from an SDDS specification file.
 It can configure the required subroutine records and optionally start, stop, or query the standardization process.
 
-\item {\bf example:}
+\item {\bf examples:}
   \begin{flushleft}{\tt
     standardize -query magnets.sdds\\
     standardize -configure magnets.sdds\\
@@ -30,7 +30,7 @@ It can configure the required subroutine records and optionally start, stop, or 
   \item {\tt -query} --- Print the standardization state of devices in the specification file.
   \item {\tt -configure} --- Configure records for standardization without initiating.
   \item {\tt -stop} --- Halt standardization of devices in the specification file.
-  \item {\tt -pendIoTime=<seconds>} --- Maximum time to wait for Channel Access I/O.
+  \item {\tt -pendIoTime <seconds>} --- Maximum time to wait for Channel Access I/O.
   \end{itemize}
 
 \item {\bf files:}
