@@ -7,7 +7,7 @@ input file defines an inverse response matrix: each column names a readback PV a
 string column lists the actuator PVs. The program adjusts actuators to regulate the
 readbacks to zero or to given offsets, optionally logging data and applying limits.
 
-\item \textbf{example:}
+\item \textbf{examples:}
 \begin{flushleft}{\tt sddspvacontrollaw sddspvacontrollaw.inv -searchPath=/home/controls -interval=1 -steps=10 -gain=0.75 -runControlPV=string=shang:ControlLawRC -verbose}\end{flushleft}
 
 \item \textbf{synopsis:}

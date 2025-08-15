@@ -8,7 +8,7 @@
   parameters, and data may be conditioned on other PV values. Two-dimensional
   images produce one page per acquisition, while multi-plane data result in one
   page per plane.
-\item \textbf{example:}
+\item \textbf{examples:}
 The following command logs a set of camera images once per minute.
 \begin{verbatim}
 sddsimagemonitor cam.mon cam.sdds -interval=1,minute -steps=10
@@ -34,8 +34,14 @@ usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
     [-comment=<parameterName>,<text>] [-nowarnings]
     [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
     [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
-    [-singleColumn] [-logOnChange] [-device=<name>] [-retakeStep]
+[-singleColumn] [-logOnChange] [-device=<name>] [-retakeStep]
 \end{verbatim}
+\item \textbf{files:}
+  \begin{itemize}
+  \item \textbf{input file:} optional SDDS file with string column \verb|WaveformPV| naming image PVs.
+  \item \textbf{output file:} SDDS file containing the logged images and related parameters.
+  \end{itemize}
+
 \item \textbf{switches:}
   \begin{itemize}
   \item {\verb+-PVnames=<name>[,<name>]+} --- specifies image PV names to read.

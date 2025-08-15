@@ -24,6 +24,11 @@ sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]\
   [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]\
   [-runControlDescription={string=<string>|parameter=<string>}]
 }\end{flushleft}
+\item \textbf{files:}
+  \begin{itemize}
+  \item \textbf{input file:} SDDS file listing PVs to save or restore, including columns \verb|ControlName| and \verb|ValueString| for restoring.
+  \item \textbf{output file:} SDDS file receiving saved PV values when \texttt{-save} is used.
+  \end{itemize}
 \item \textbf{switches:}
   \begin{itemize}
   \item {\tt -save} --- read PV values and write them to the output file.

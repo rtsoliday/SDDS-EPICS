@@ -2,7 +2,7 @@
 \begin{sddsprog}{sddspvalogger}
 \item \textbf{description:}
 \verb+sddspvalogger+ connects to process variables over the EPICS7 PVA and CA protocols and logs the values to an SDDS file. The program supports conditional logging, data strobes, generation-based file rotation, and optional glitch capture.
-\item \textbf{example:}
+\item \textbf{examples:}
 \begin{flushleft}{\tt
 sddspvalogger pvlist.sdds data.sdds -sampleInterval=1,seconds -steps=10\\
 }\end{flushleft}
@@ -40,6 +40,23 @@ Glitch Logger Options:
   [-holdoffTime=<seconds>]
   [-autoHoldoff]
 \end{verbatim}
+\item \textbf{files:}
+  \begin{itemize}
+  \item \textbf{input file:} SDDS file with string column \verb|ControlName| listing PVs to log.
+  \item \textbf{output file:} SDDS file containing logged PV values.
+  \end{itemize}
+
+\item \textbf{switches:}
+  \begin{itemize}
+  \item {\tt -sampleInterval=<value>[,<units>]} --- sampling interval between readings.
+  \item {\tt -steps=<integer>} --- number of samples to take before exiting.
+  \item {\tt -watchInput} --- reload the input file when it changes.
+  \item {\tt -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]} --- rotate output files.
+  \item {\tt -conditions=<file>,\{allMustPass|oneMustPass\}[,touchOutput][,retakeStep]} --- condition data taking on PV limits.
+  \item {\tt -runControlPV=string=<pv>,pingTimeout=<value>} --- integrate with run-control.
+  \item {\tt -verbose} --- print progress messages.
+  \end{itemize}
+
 \item \textbf{see also:}
   \begin{itemize}
   \item \progref{sddslogger}

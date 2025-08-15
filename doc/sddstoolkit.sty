@@ -1,6 +1,15 @@
 % sddstoolkit.sty - common macros for SDDS EPICS toolkit documentation
 \ProvidesPackage{sddstoolkit}
 
+% Canonical order for sections in an sddsprog itemize block:
+%   \item {\bf description:}
+%   \item {\bf examples:}
+%   \item {\bf synopsis:}
+%   \item {\bf files:} (optional)
+%   \item {\bf switches:} (optional)
+%   \item {\bf see also:} (optional)
+%   \item {\bf author:}
+
 % Provide no-op environments for compatibility when html/latex distinctions are unnecessary
 \newenvironment{htmlonly}{}{}
 \newenvironment{latexonly}{}{}
