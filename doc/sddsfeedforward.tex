@@ -1,11 +1,6 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsfeedforward: apply feedforward tables to drive actuators from readbacks.
 \begin{sddsprog}{sddsfeedforward}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddsfeedforward+ performs feedforward on process variables.
 Feedforward essentially means that one or more process variables are
 set according to a predetermined function of other process variables.
@@ -17,12 +12,7 @@ actuator is, however, driven by only one readback.  One readback may
 drive any number of actuators.
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 \begin{verbatim}
 sddsfeedforward ID1GapCompensation.sdds -interval=10
 \end{verbatim}
@@ -44,9 +34,6 @@ ReadbackName = ID1:Gap             ActuatorName = S1B:H1:CurrentAO
 At each iteration step, ID1:Gap is read and \verb+sddsfeedforward+ interpolates a new value for
 \verb+S1B:H1:CurrentAO+ based on this table, which it writes to the PV.
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 sddsfeedforward <inputfile>
        [-controlLog=<rootname>]
@@ -61,7 +48,6 @@ sddsfeedforward <inputfile>
        [-ezcaTiming=<timeout>,<retries>]
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:} \par
 The input file is an SDDS file with the following elements:
@@ -115,11 +101,7 @@ one optional one:
 \end{itemize}
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
       \item {\tt controlLog=<rootname>} --- Log input and output data to an SDDS file using the given rootname.
       \item {\tt interval=<real-value>} --- Specifies the interval in seconds between readings. The time
@@ -153,14 +135,8 @@ one optional one:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsexperiment}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland, ANL}
 \end{sddsprog}

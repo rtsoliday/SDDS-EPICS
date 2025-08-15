@@ -1,22 +1,12 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% toggle: alternate between two sets of PV values.
 \begin{sddsprog}{toggle}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+toggle+ alternates between two sets of process variable values stored in 
 snapshot files and/or
 process variables specified on the command line.
 Time intervals and the values of the process variables upon termination can be specified.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 Two states of the APS storage ring injection magnets are restored for 10 seconds each by writing
 values of process variables listed in the snapshot files SRin.snp1 and SRin.snp2:
 \begin{verbatim}
@@ -25,9 +15,6 @@ toggle SRin.snp1 SRin.snp2 -interval=10,10
 In this case the magnets return to the initial state upon termination.
 
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: toggle [snapshotfile1 [snapshotfile2]]
        [-controlName=PVname,value1[,value2] ...]
@@ -40,7 +27,6 @@ usage: toggle [snapshotfile1 [snapshotfile2]]
 \end{verbatim}
 
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input files:}\par
 The input files are valid snapshot files as described in \progref{sddscasr}. At least three
@@ -59,15 +45,9 @@ Optional columns are:
 \end{itemize}
         Both files must have the same set of PV names.
 \end{itemize}
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
         \item {\tt -controlName=<PVname>,<value1>[,<value2>]} --- Optional. Specifies a PV to be
                 alternated. If only one value is given, then the second value
                 is taken to be pre-existing. These values are synchronized with
@@ -89,14 +69,8 @@ Optional columns are:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddscasr}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: L. Emery, ANL} 
 \end{sddsprog}

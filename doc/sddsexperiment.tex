@@ -1,21 +1,11 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsexperiment: vary PVs and record measurements with optional statistics.
 \begin{sddsprog}{sddsexperiment}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddsexperiment+ varies process variables and measures process variables, with optional statistical analysis.
 An input file of namelist commands gives the specific instructions. 
 The results are recorded in one or more SDDS files.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The strength of a beamline horizontal corrector (LTP:H1) is varied while the readbacks at a horizontal beam position
 monitor (LTP:PH1) are recorded. The output file is LTP:H1.sdds.
 \begin{verbatim}
@@ -43,9 +33,6 @@ where the contents of the file \verb+LTP:H1.exp+ are
 
 where the line starting with a ``!'' is a comment.
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddsexperiment <inputfile> [<outputfile-rootname|outputfilename>]
 [-echoinput] [-dryrun] [-summarize] [-verbose] [-pendIOtime=<seconds>]
@@ -544,9 +531,6 @@ In addition, some time columns and parameters are defined:
 
 
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
     \item {\verb+-echoinput+} --- echos input file to stdout.
     \item {\verb+-dryrun+} --- the ``variable'' process variables are left untouched during the execution. The ``measurement''
@@ -563,14 +547,8 @@ In addition, some time columns and parameters are defined:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsvexperiment}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland, L. Emery, H. Shang and R. Soliday ANL} 
 \end{sddsprog}

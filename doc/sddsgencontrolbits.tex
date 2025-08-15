@@ -1,11 +1,6 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsgencontrolbits: create BPM acquisition control bits or send RAM data.
 \begin{sddsprog}{sddsgencontrolbits}
 \item {\bf description:}
-%
-% Insert text of description (typicallyy a paragraph) here.
-%
 \verb+sddsgencontrolbits+ creates a file of BPM acquisition control
 bits from unsigned-long RAM data or from command line
 parameters. There is an option to send the RAM data to EPICS,
@@ -32,12 +27,7 @@ explained in further detail in \cite{Norum2007}.
 \end{figure}
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 
 The contents of the file {\tt controlRAM} is converted to control bits
 file {\tt RAMcontrolBits}.
@@ -82,9 +72,6 @@ in position 0 (from receiver positions 0,1,2,3). The column {\tt
 Accumulator} is referred to in \cite{Norum2007} as simply ``Plane''.
 
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \small
 \begin{verbatim}
 sddsgencontrolbits <inputRAMFile> <outputFile>
@@ -174,7 +161,6 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
 \normalsize
 
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:} \par
   RAM waveform record containing unsigned long integer values.
@@ -183,7 +169,6 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
 \item {\bf bunch pattern file:} \par
   Definitions of preset bunch patterns for pattern-based sampling modes.
 
-%
 \item {\bf switches:}
     \begin{itemize}
     \item {\tt -RAMWaveformPV} --- RAM waveform PV name.
@@ -211,14 +196,8 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsexperiment}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: L. Emery, H. Shang, R. Soliday, ANL}
 \end{sddsprog}

@@ -1,19 +1,9 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddslogonchange: log PV values only when they change.
 \begin{sddsprog}{sddslogonchange}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddslogonchange+ records only the values of process variables that change. This reduces the output file size if process variables do not change often.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 Process variable setpoints from the storage ring are monitored
 with the command below.
 \begin{verbatim}
@@ -33,9 +23,6 @@ S1A:H3:CurrentAI.AOFF 0.0 ""
 ...
 \end{verbatim}
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddslogonchange <input> <output> 
   [-timeDuration=<realValue>[,<time-units>]]
@@ -65,7 +52,6 @@ Logs data for the process variables named in the ControlName
 column of <input> to an SDDS file <output>.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:}\par
 The input file is an SDDS file with only one data column required:
@@ -129,15 +115,9 @@ The output file contains parameters, arrays, and columns.
 
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
         \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.  The default time units are seconds; you may also specify days, hours, or minutes.
         \item {\tt -offsetTimeOfDay} --- Adjusts the starting TimeOfDay value so that it corresponds to the day for which the bulk of the data is taken.  Hence, a 26 hour job started at 11pm would have initial time of day of -1 hour and final time of day of 25 hours.
         \item {\tt -append[=recover]} --- Specifies appending to the file <output> if it exists already. If the recover qualifier is given, recovery of a corrupted file is attempted using sddsconvert, at the risk of loss of some of the data already in the file.
@@ -164,15 +144,9 @@ The output file contains parameters, arrays, and columns.
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddslogger}
     \item \progref{sddssnapshot}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: R. Soliday, ANL} 
 \end{sddsprog}

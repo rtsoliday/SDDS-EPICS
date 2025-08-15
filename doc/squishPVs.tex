@@ -1,11 +1,6 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% squishPVs: minimize readback PVs by tweaking a single actuator.
 \begin{sddsprog}{squishPVs}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+squishPVs+ minimizes the values of a set of readback process 
 variables (for example bpm readbacks) by varying one setpoint process 
 variable (for example a corrector magnet setpoint) which has
@@ -19,12 +14,7 @@ worth the trouble.
 The name \verb+squishPVs+ comes from the apparent squishing of the real-time
 trajectory display when \verb+squishPVs+ is running.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The first-turn horizontal trajectory of the APS ring is minimized with this command:
 \begin{verbatim}
 squishPVs xTrajCorr.sdds 
@@ -76,9 +66,6 @@ S1B:P4:ms:x S1B:P4:ms:x:SetpointAO 0.4 1
 
 
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: squishPVs <inputfile>
     [-count=<pvName>,<lower>,<upper>,<number>]
@@ -96,7 +83,6 @@ usage: squishPVs <inputfile>
 \end{verbatim}
 
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:}\par
 The input file data pages define correction groups. A correction group
@@ -115,11 +101,7 @@ consists of a list of readback PVs and one corrector PV. The required column and
                 value of the command line option \verb+stepSize+.
 \end{itemize}
 \end{itemize}
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
       \item {\tt -count=<pvName>,<lower>,<upper>,<number>} --- Optional. Specifies
                 a condition after which a reading will be taken. The process variable
@@ -163,14 +145,8 @@ consists of a list of readback PVs and one corrector PV. The required column and
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddscontrollaw}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland, ANL} 
 \end{sddsprog}

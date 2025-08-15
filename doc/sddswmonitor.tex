@@ -1,11 +1,6 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddswmonitor: monitor waveform PVs at intervals.
 \begin{sddsprog}{sddswmonitor}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddswmonitor+ reads values of waveform process variables 
 and writes them to a file at a specified time interval.
 An input file defines the process variables to be monitored.
@@ -18,12 +13,7 @@ changes though. In the future an option that allows logging of duplicate
 waveform PVs may be implemented.
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The history of a beam position monitor readback is collected with this command:
 \begin{verbatim}
 sddswmonitor SlowBh.wmon SlowBh.sdds -steps=1
@@ -49,9 +39,6 @@ S1A:P1:bh:x_wf S1A:P1:x
 S1A:P1:bh:y_wf S1A:P1:y
 \end{verbatim}
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddswmonitor {<inputfile> | -PVnames=<name>[,<name>]} <outputfile>
     [{-erase | -generations[=digits=<integer>][,delimiter=<string>]}]
@@ -74,7 +61,6 @@ usage: sddswmonitor {<inputfile> | -PVnames=<name>[,<name>]} <outputfile>
 Writes values of waveform process variables to a binary SDDS file.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:}\par
 The input file is an SDDS file with two required columns and one required parameter:
@@ -146,9 +132,7 @@ Many additional parameters which don't change values throughout the file are def
 \end{itemize}
 \end{itemize}
 
-%
 \item {\bf switches:}
-% Describe the switches that are available
   \begin{itemize}
     \item {\verb+-PVnames=<name>[,<name>]+} ---
           specifies a list of PV names to read. If the waveforms are of different
@@ -220,16 +204,10 @@ Many additional parameters which don't change values throughout the file are def
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsmonitor}
     \item \progref{sddsvmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland and L. Emery, ANL} 
 \end{sddsprog}

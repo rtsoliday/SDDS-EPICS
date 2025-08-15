@@ -1,21 +1,11 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsglitchlogger: log PV values when triggers occur.
 \begin{sddsprog}{sddsglitchlogger}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddsglitchlogger+ reads values of process variables and writes them to a file at a specified time interval when a trigger occurs.
 An input file defines the process variables to be monitored and/or the trigger parameters.
 An trigger file defines the the process variables that act as triggers.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The position readbacks of PMs in linac are monitored with the command below.
 \begin{verbatim}
 sddsglitchlogger SRvac.mon . -time=24,hours -sampleInterval=1,minute
@@ -46,9 +36,6 @@ soliday:PM2:X:positionM  soliday:PM2:X:positionM  mm
 ...
 \end{verbatim}
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddsglitchlogger <input> <outputDirectory>|<outputRootname> [-triggerFile=<filename>]
         [-lockFile=<filename>[,verbose]] [-sampleInterval=<secs>] [-time=<real-value>[,<time-units>]
@@ -62,7 +49,6 @@ usage: sddsglitchlogger <input> <outputDirectory>|<outputRootname> [-triggerFile
 Writes values of process variables or devices to a binary SDDS file.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:}\par
 The input file is an SDDS file with a few data columns required:
@@ -190,11 +176,7 @@ Many time-related parameters are defined in the output file:
 \end{itemize}
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
 
         \item {\tt -triggerFile} --- specifies the name of trigger file.
@@ -243,14 +225,8 @@ Many time-related parameters are defined in the output file:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsmonitor}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: Hairong Shang, ANL} 
 \end{sddsprog}

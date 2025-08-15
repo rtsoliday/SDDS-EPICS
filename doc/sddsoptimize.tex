@@ -1,20 +1,10 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsoptimize: optimize readback RMS by varying setpoints.
 \begin{sddsprog}{sddsoptimize}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddsoptimize+ optimizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.   
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The trajectory of the booster BPMs is controlled with this command:
 \begin{flushleft}{\tt
 sddsoptimize -measFile=booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12\\
@@ -102,7 +92,6 @@ sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]\
 }\end{flushleft}
 Perform optimization on APS control system process variables using simplex, 1dscan, or RCDS methods.
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf variable input file:} \par
 The variable input file is an SDDS file with one string column: ControlName, which is required
@@ -165,15 +154,9 @@ Also two more columns and two parameters are defined:
 
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
         \item {\tt -varFile=<file>} --- Required; defines control correctors or knobs.
         \item {\tt -measFile=<file>} --- Specifies the measurement file.
         \item {\tt -knobFiles=<file1>[,<file2>...]} --- List of knob definition files.
@@ -198,14 +181,8 @@ Also two more columns and two parameters are defined:
   \end{itemize}
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsexperiment}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: H. Shang, ANL}
 \end{sddsprog}

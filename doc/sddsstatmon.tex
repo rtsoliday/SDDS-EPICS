@@ -1,22 +1,12 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsstatmon: collect statistics for PVs and log results.
 \begin{sddsprog}{sddsstatmon}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddsstatmon+ reads EPICS process variables, collects statistics,
 and writes these statistics to an output file.
 The statistics are the mean, standard deviation, minimum, maximum, and sigma.
 An input file defines the process variables to be monitored.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 Statistics of the pressure readbacks of storage ring ion pumps and the stored current 
 for groups of 60 data points taken at 1 second interval are collected
 with the command below.
@@ -46,9 +36,6 @@ VM:01:2IP3.VAL pv Torr VM:01:2IP3
 ...
 \end{verbatim}
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddsstatmon <input> <output>
     [-erase | -generations[=digits=<integer>][,delimiter=<string>] | -append[=recover][,toPage]]
@@ -69,7 +56,6 @@ usage: sddsstatmon <input> <output>
     Writes values of process variables or devices to a binary SDDS file.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:}\par
 The input file is an SDDS file with a few data columns required:
@@ -127,11 +113,7 @@ Many time-related parameters are defined in the output file:
 \end{itemize} % end of itemized files
 
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
         \item {\tt -erase} --- If the output file already exists, it will be overwritten.
         \item {\tt -append[=recover][,toPage]} --- Append data to an existing output file. With \verb+recover+, attempt to salvage a corrupted file; \verb+toPage+ appends rows to the last page.
@@ -161,16 +143,10 @@ Many time-related parameters are defined in the output file:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsvmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland, ANL} 
 \end{sddsprog}

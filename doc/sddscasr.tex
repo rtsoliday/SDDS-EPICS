@@ -1,22 +1,12 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddscasr: save and restore PV configurations with enhanced features.
 \begin{sddsprog}{sddscasr}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddscasr+ is an alternative version of casave and carestore. sddscasr is
 more efficient and has more features than casave/carestore. It can save
 and restore configurations in one program.
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 Save a snapshot of APS storage ring:
 \begin{verbatim}
 sddscasr SR.req SR.snapshot -save -pendIOTime=100
@@ -35,9 +25,6 @@ sddscasr var1 out1 -runControlPV=string=oag:ControlLawRC
 \end{verbatim}
 
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddscasr <inputFile> <outputRoot> [-verbose]
     [-daemon] [-dailyFiles] [-semaphore=<filename>] [-save] [-restore[=verify]] [-logFile=<filename>]
@@ -49,7 +36,6 @@ usage: sddscasr <inputFile> <outputRoot> [-verbose]
     [-numerical] [-description=<string>|pv=<pvname>]
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:} \par
 The input file is an SDDS file with a string column. For saving snapshot, the input file
@@ -68,11 +54,7 @@ corresponding PV or n if no error occurs.
 \end{itemize}
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
   \begin{itemize}
   \item {\tt inputFile} --- input file name (SDDS file).
   \item {\tt outputRoot} --- output file or root if -dailyFiles option is specified.
@@ -105,15 +87,9 @@ corresponding PV or n if no error occurs.
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddssnapshot}
     \item \progref{sddscaramp}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: H. Shang, ANL}
 \end{sddsprog}

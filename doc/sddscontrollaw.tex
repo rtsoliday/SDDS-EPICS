@@ -1,11 +1,6 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddscontrollaw: perform simple feedback using a gain matrix.
 \begin{sddsprog}{sddscontrollaw}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddscontrollaw+ performs simple feedback on process variables.
 The input file defines a gain matrix in a simple control law equation. The set of process variables for
 measurement are given by the names of the numerical data columns, and the set
@@ -16,12 +11,7 @@ For robustness, a file of tests for a set of process variables may be defined
 so that the feedback may be suspended when any tests fail.
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The trajectory of the LTP beamline and the energy of the linac upstream of the LTP
 beamline is controlled with this command:
 \begin{verbatim}
@@ -52,9 +42,6 @@ L5:SledTiming   0.00e-00  0.00e-00  8.25e-03  9.45e-03
 LTP:H4          0.00e-00  0.00e-00 -9.81e-03  1.44e-01 
 \end{verbatim}
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddscontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>]
        [<outputfile>] [-infiniteLoop] [-pendIOTime] [-filterFile=<file>]
@@ -86,7 +73,6 @@ usage: sddscontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<str
 Perform simple feedback on APS control system process variables using ca calls.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:} \par
 The input file is an SDDS file with a string column and at least one numerical column. 
@@ -161,13 +147,8 @@ There are two parameters defined:
 \end{itemize}
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
         \item {\tt {\em inputfile}} --- gain matrix in sdds format.
         \item {\tt {\em outputfile}} --- optional file in which the readback and
@@ -326,15 +307,10 @@ where $x_0$ is the vector of initial values of measurement PVs (i.e. values befo
         
 \item {\bf see also:}
  
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
 %    
     \begin{itemize}
     \item \progref{sddsexperiment}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: L. Emery, H. Shang, R. Soliday, ANL}
 \end{sddsprog}

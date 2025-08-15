@@ -1,22 +1,12 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddssynchlog: synchronously log PVs enforcing aligned timestamps.
 \begin{sddsprog}{sddssynchlog}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddssynchlog+ Reads values of process variables synchronously
 and writes them to an output file.  Synchronism is imposed by
 requiring that all PVs generated callbacks occur within the number of
 seconds given by the -synchInterval argument.
 \item {\bf example 1:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 
 The linac bpms and MV200 PVs are synchronously monitored using the
 command below.  One might wish to monitor these PVs determine if linac
@@ -59,12 +49,7 @@ LI:VD1:y:raw:cal:sigmaM pv Pixels LVid:yRawSigma
 
 \end{verbatim}
 \item {\bf example 2:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 
 The scalar linac bpm and MV200 PVs are synchronously monitored along
 with LCLS bpm data waveforms using the command below.  The command is
@@ -98,9 +83,6 @@ PAD:K211:3:CH2_RAW_WF PAD:K211:3:CH2_RAW_WF
 ...
 \end{verbatim}
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 sddssynchlog <input> <output> [-slowData=<input>]
 [-waveformData=<filename>] -samples=<number> [-timeLimit=<value>[,<units>]]
@@ -115,7 +97,6 @@ requiring that all PVs generated callbacks within the number of seconds
 given by the -synchInterval argument.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:}\par
 The input file is an SDDS file with a few data columns required:
@@ -189,13 +170,8 @@ Many time-related parameters are defined in the output file:
         \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
 \end{itemize}
 \end{itemize}
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
         \item {\tt -samples} --- Specifies the number of samples to attempt.  If synchronism problems
                 are encountered, fewer samples will appear in the output.
         \item {\tt -timeLimit} --- Specifies maximum time to wait for data collection.
@@ -229,16 +205,10 @@ Many time-related parameters are defined in the output file:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddsvmonitor}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland, ANL} 
 \end{sddsprog}

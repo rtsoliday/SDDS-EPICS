@@ -1,20 +1,10 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddslogger: log PV values at intervals defined in an input file.
 \begin{sddsprog}{sddslogger}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddslogger+ reads values of process variables and writes them to a file at a specified time interval.
 One or more input files defines the process variables to be monitored.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The pressure readbacks of storage ring ion pumps and the stored current are monitored
 with the command below.
 \begin{verbatim}
@@ -42,9 +32,6 @@ VM:01:2IP3.VAL pv Torr VM:01:2IP3
 ...
 \end{verbatim}
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddslogger <SDDSinputfile1> <SDDSoutputfile1> <SDDSinputfile2> <SDDSoutputfile2>...
     [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | -dailyFiles | -monthlyFiles]
@@ -59,7 +46,6 @@ usage: sddslogger <SDDSinputfile1> <SDDSoutputfile1> <SDDSinputfile2> <SDDSoutpu
 Writes values of process variables or devices to a binary SDDS file.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file(s):}\par
 The input files are SDDS files with a few data columns required:
@@ -131,15 +117,9 @@ Many time-related parameters are defined in the output file:
 \end{itemize}
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
         \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
                 The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
                 the smallest positive integer such that the file does not already
@@ -195,17 +175,11 @@ Many time-related parameters are defined in the output file:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsmonitor}
     \item \progref{sddsvmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: R. Soliday, M. Borland, H. Shang ANL} 
 \end{sddsprog}

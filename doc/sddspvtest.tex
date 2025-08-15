@@ -1,21 +1,11 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddspvtest: test PVs against limits and report out-of-range count.
 \begin{sddsprog}{sddspvtest}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddspvtest+ tests the process variable given by the inputfile are out-of-range
 or not and sets the number of out-of-range process variables to a control PV.
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 \begin{verbatim}
 sddspvtest linac.sdds -time=20 -runControlPV={string=shang:ControlLawRC,pingTimeout=4}\
   -runControlDescription=string=hi
@@ -46,9 +36,6 @@ soliday:PM5:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00
 \end{verbatim}
 
 \item {\bf synopsis:}
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddspvtest <inputFile> [-pvOutput=<pvName>[
   ,passValue=<integer>,failValue=<integer>]]
@@ -61,7 +48,6 @@ usage: sddspvtest <inputFile> [-pvOutput=<pvName>[
   [-pendIOtime=<value>] [-verbose]
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:} \par
 The variable input file is an SDDS file with one string column: ControlName, which is required
@@ -71,15 +57,9 @@ are Monitor and ChangeLimit. Monitor values of Y or y cause monitoring to be use
 ChangeLimit values are used with the \verb|-exitCondition| option.
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
         \item {\tt -pvOutput} --- optional. The output PV name for storing the testing results
                of PVs in the input. Qualifiers \verb|passValue| and \verb|failValue| set
                the values written for pass or fail. If it is not given, the number of
@@ -101,14 +81,8 @@ ChangeLimit values are used with the \verb|-exitCondition| option.
     \end{itemize}
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddscontrollaw}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: H. Shang, ANL}
 \end{sddsprog}

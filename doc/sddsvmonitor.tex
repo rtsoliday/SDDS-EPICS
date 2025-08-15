@@ -1,11 +1,6 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsvmonitor: monitor PVs defined by rootname and suffix lists.
 \begin{sddsprog}{sddsvmonitor}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddsvmonitor+ reads values of process variables and writes them to a file at a specified time interval.
 This command differs from \verb+sddsmonitor+ in that the monitored
 process variables names are specified in two lists.  The first list
@@ -22,12 +17,7 @@ changes though. In the future an option that allows logging of duplicate
 vector PVs may be implemented.
 
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The pressures readbacks of storage ring vacuum gauges are monitored with the command below.
 \begin{verbatim}
 sddsvmonitor SRvac.vmon SRvac.vsdds -time=24,hours -interval=1,minute
@@ -54,9 +44,6 @@ There is only one element in the suffix list of this example. The output file wi
 \verb+Rootname+ and \verb+VGC1.PRES+.
 
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddsvmonitor [<inputfile> | -rootnames=<file> -suffixes=<file>]
     <outputfile> [{-erase | -append[=recover] | -generations[=digits=<integer>][,delimiter=<string>]}]
@@ -71,7 +58,6 @@ usage: sddsvmonitor [<inputfile> | -rootnames=<file> -suffixes=<file>]
 Writes values of process variables to a binary SDDS file.
 \end{verbatim}
 \item {\bf files:}
-% Describe the files that are used and produced
 \begin{itemize}
 \item {\bf input file:}\par
 The input file is an SDDS file with one data column and one parameter:
@@ -154,15 +140,9 @@ Many time-related parameters which don't change values throughout the file are d
 \end{itemize}
 \end{itemize}
 
-%
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
     \begin{itemize}
-%
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-%
         \item {\tt -rootnames=<file>} --- Specifies input file for rootnames. String values
                 must be in column \verb+Rootname+.
         \item {\tt -suffixes=<file>} --- Specifies input file for suffixes. String values
@@ -230,16 +210,10 @@ Many time-related parameters which don't change values throughout the file are d
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsvmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland and L. Emery, ANL} 
 \end{sddsprog}

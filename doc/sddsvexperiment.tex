@@ -1,11 +1,6 @@
-%
-% Template for making SDDS Toolkit manual entries.
-%
+% sddsvexperiment: vary PVs and log measurements using rootname/suffix lists.
 \begin{sddsprog}{sddsvexperiment}
 \item {\bf description:}
-%
-% Insert text of description (typically a paragraph) here.
-%
 \verb+sddsvexperiment+ varies process variables and measures process variables, with optional averaging.
 An input file of namelist commands gives the specific instructions.
 The results are recorded in one or more SDDS files. This command differs from
@@ -13,12 +8,7 @@ The results are recorded in one or more SDDS files. This command differs from
 list gives PV ``rootnames''.  The second list gives suffixes to apply to each of 
 the rootnames.
 \item {\bf example:} 
-%
-% Insert text of examples in this section.  Examples should be simple and
-% should be proceeded by a brief description.  Wrap the commands for each
-% example in the following construct:
 % 
-%
 The strength of a storage ring horizontal corrector (S1A:H1) is varied while the readbacks at all horizontal beam position
 monitors are recorded. The output file is S1A:H1.sdds.
 \begin{verbatim}
@@ -81,9 +71,6 @@ SDDS1
 \end{verbatim}
 
 \item {\bf synopsis:} 
-%
-% Insert usage message here:
-%
 \begin{verbatim}
 usage: sddsvexperiment <inputFile> <outputFile>
 [-suffixFile=<filename>] [-rootnameFile=<filename>]
@@ -618,9 +605,6 @@ Many time parameters are defined:
 \end{itemize}
 
 \item {\bf switches:}
-%
-% Describe the switches that are available
-%
    \begin{itemize}
    \item {\verb+-suffixFile=<filename>+} --- SDDS file defining the suffixes and measurement parameters. If not specified
                on the command line, then the namelist command {\verb+suffix_list+} is required in the input file.
@@ -638,14 +622,8 @@ Many time parameters are defined:
 
 \item {\bf see also:}
     \begin{itemize}
-%
-% Insert references to other programs by duplicating this line and 
 % replacing <prog> with the program to be referenced:
-%
     \item \progref{sddsexperiment}
     \end{itemize}
-%
-% Insert your name and affiliation after the '}'
-%
 \item {\bf author: M. Borland, ANL} 
 \end{sddsprog}
