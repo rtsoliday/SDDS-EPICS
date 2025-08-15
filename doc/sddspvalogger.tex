@@ -41,13 +41,13 @@ Glitch Logger Options:
   [-autoHoldoff]
 \end{verbatim}
 \item \textbf{files:}
-  \begin{itemize}
+\begin{itemize}
   \item \textbf{input file:} SDDS file with string column \verb|ControlName| listing PVs to log.
   \item \textbf{output file:} SDDS file containing logged PV values.
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{switches:}
-  \begin{itemize}
+\begin{itemize}
   \item {\tt -sampleInterval=<value>[,<units>]} --- sampling interval between readings.
   \item {\tt -steps=<integer>} --- number of samples to take before exiting.
   \item {\tt -watchInput} --- reload the input file when it changes.
@@ -55,13 +55,13 @@ Glitch Logger Options:
   \item {\tt -conditions=<file>,\{allMustPass|oneMustPass\}[,touchOutput][,retakeStep]} --- condition data taking on PV limits.
   \item {\tt -runControlPV=string=<pv>,pingTimeout=<value>} --- integrate with run-control.
   \item {\tt -verbose} --- print progress messages.
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{see also:}
-  \begin{itemize}
+\begin{itemize}
   \item \progref{sddslogger}
   \item \progref{sddsglitchlogger}
   \item \progref{sddspvtest}
-  \end{itemize}
+\end{itemize}
 \item \textbf{author:} R. Soliday, H. Shang, ANL/APS.
 \end{sddsprog}

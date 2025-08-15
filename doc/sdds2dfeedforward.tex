@@ -47,34 +47,34 @@ sdds2dfeedforward <inputfile>\
   \verb+ActuatorValue+.
 \end{itemize}
 \item \textbf{switches:}
-    \begin{itemize}
-        \item {\tt interval=<real-value>} --- Interval in seconds between corrections.
-        \item {\tt steps=<integer-value>} --- Number of iterations before exiting.
-        \item {\tt verbose} --- Print additional information.
-        \item {\tt dryRun} --- Readbacks are read but actuators are not changed.
-        \item {\tt offsetOnly} --- Offset tables using initial readback values so
+\begin{itemize}
+  \item {\tt interval=<real-value>} --- Interval in seconds between corrections.
+  \item {\tt steps=<integer-value>} --- Number of iterations before exiting.
+  \item {\tt verbose} --- Print additional information.
+  \item {\tt dryRun} --- Readbacks are read but actuators are not changed.
+  \item {\tt offsetOnly} --- Offset tables using initial readback values so
                no change is made until a readback moves.
-        \item {\tt averageOf=<number>[,interval=<seconds>]} --- Average multiple
+  \item {\tt averageOf=<number>[,interval=<seconds>]} --- Average multiple
                readings of each readback before computing corrections.
-        \item {\tt advance=<seconds>} --- Advance readback values based on their
+  \item {\tt advance=<seconds>} --- Advance readback values based on their
                ramp rate by the given number of seconds.
-        \item {\tt testValues=<file>} --- SDDS file giving limits for PV tests that
+  \item {\tt testValues=<file>} --- SDDS file giving limits for PV tests that
                suspend feedforward when violated.
-        \item {\tt runControlPV=string=<string>[,pingTimeout=<value>]} --- Use a
+  \item {\tt runControlPV=string=<string>[,pingTimeout=<value>]} --- Use a
                run-control PV and optional ping timeout.
-        \item {\tt runControlDescription=<string>} --- Description for the
+  \item {\tt runControlDescription=<string>} --- Description for the
                run-control record.
-        \item {\tt CASecurityTest} --- Check Channel Access security before
+  \item {\tt CASecurityTest} --- Check Channel Access security before
                writing values.
-        \item {\tt pendIOtime=<seconds>} --- Time to wait for Channel Access
+  \item {\tt pendIOtime=<seconds>} --- Time to wait for Channel Access
                operations.
-        \item {\tt infiniteLoop} --- Run indefinitely.
-        \item {\tt controlLog=<rootname>} --- Log input and output data to an
+  \item {\tt infiniteLoop} --- Run indefinitely.
+  \item {\tt controlLog=<rootname>} --- Log input and output data to an
                SDDS file using the given root name.
-    \end{itemize}
+\end{itemize}
 \item \textbf{see also:}
-  \begin{itemize}
-    \item \progref{sddsfeedforward}
-  \end{itemize}
+\begin{itemize}
+  \item \progref{sddsfeedforward}
+\end{itemize}
 \item \textbf{author:} M. Borland, ANL
 \end{sddsprog}

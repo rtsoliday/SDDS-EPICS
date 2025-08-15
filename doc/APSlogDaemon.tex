@@ -63,18 +63,18 @@ int logOpen(LOGHANDLE *h, char *serviceId, char *sourceId, char *tagList);\\
 Open a connection with the logDaemon (not in TCP sense, though, since library is UDP based). User must provide a ptr to a pre-allocated LOGHANDLE. The sourceId is an arbitrary string up to 250 chars in length. The serviceId ptr may be NULL, in which case the default logDaemon is contacted. Otherwise, serviceId is an arbitrary string up to 255 chars in length. The tagList is a space delimited set of tag names. Tag names may not have spaces in them. Each tag name may be up to 255 chars in length.
 
 \begin{itemize}
-\item {\bf h} - ptr to pre-allocated LOGHANDLE struct
-\item {\bf sourceId} - ptr to null terminated string up to 250 chars in length
-\item {\bf serviceId} - NULL, or ptr to null terminated string up to 255 chars in length.
-\item {\bf tagList} - ptr to null terminated string. Total length limited by UDP packet size, but each space delimited tag name may be no longer than 255 chars.
+  \item {\bf h} - ptr to pre-allocated LOGHANDLE struct
+  \item {\bf sourceId} - ptr to null terminated string up to 250 chars in length
+  \item {\bf serviceId} - NULL, or ptr to null terminated string up to 255 chars in length.
+  \item {\bf tagList} - ptr to null terminated string. Total length limited by UDP packet size, but each space delimited tag name may be no longer than 255 chars.
 \end{itemize}
 Returns:
 
 \begin{itemize}
-\item LOG\_OK - connection opened, sourceId and tagList validated
-\item LOG\_TOOBIG - one of the strings supplied is too long
-\item LOG\_ERROR - unable to open connection to logDaemon
-\item LOG\_INVALID - logDaemon rejected given sourceId and tagList
+  \item LOG\_OK - connection opened, sourceId and tagList validated
+  \item LOG\_TOOBIG - one of the strings supplied is too long
+  \item LOG\_ERROR - unable to open connection to logDaemon
+  \item LOG\_INVALID - logDaemon rejected given sourceId and tagList
 \end{itemize}
 {\bf logString}\\
 \\
@@ -83,15 +83,15 @@ int logString(LOGHANDLE h, char *valueList);\\
 Sends a log message to the logDaemon. The message is time-stamped with secs and usecs past UNIX epoch automatically. The remaining data comes from valueList, a space delimited string of tag values. There must be a value supplied for each tag defined by the logOpen() call. If a tag value has internal spaces, you must double quote the full value. Ie. ``val1 ``val2 with spaces'' val3''. The valueList has no size limit other than that imposed by the UDP packet size.
 
 \begin{itemize}
-\item {\bf h} - LOGHANDLE from logOpen() call
-\item {\bf valueList} - ptr to null terminated string of space delimited tag values.
+  \item {\bf h} - LOGHANDLE from logOpen() call
+  \item {\bf valueList} - ptr to null terminated string of space delimited tag values.
 \end{itemize}
 Returns:
 
 \begin{itemize}
-\item LOG\_OK - message logged
-\item LOG\_TOOBIG - the valueList string supplied takes packet over UDP size limit.
-\item LOG\_ERROR - unable to send message to logDaemon
+  \item LOG\_OK - message logged
+  \item LOG\_TOOBIG - the valueList string supplied takes packet over UDP size limit.
+  \item LOG\_ERROR - unable to send message to logDaemon
 \end{itemize}
 {\bf logArguments}\\
 \\
@@ -100,15 +100,15 @@ int logArguments(LOGHANDLE h, ...);\\
 Sends a log message to the logDaemon. The message is time-stamped with secs and usecs past UNIX epoch automatically. The remaining data comes from a series of (char *) arguments, the last of which must be NULL. Ie. logArguments(h, ``val1'', ``val2'', NULL); There must be a value supplied for each tag defined by the logOpen() call.
 
 \begin{itemize}
-\item {\bf h} - LOGHANDLE from logOpen() call
-\item {\bf ...} - series of (char *) arguments. The last argument must be NULL.
+  \item {\bf h} - LOGHANDLE from logOpen() call
+  \item {\bf ...} - series of (char *) arguments. The last argument must be NULL.
 \end{itemize}
 Returns:
 
 \begin{itemize}
-\item LOG\_OK - message logged
-\item LOG\_TOOBIG - the total length of tag values takes packet over UDP size limit.
-\item LOG\_ERROR - unable to send message to logDaemon
+  \item LOG\_OK - message logged
+  \item LOG\_TOOBIG - the total length of tag values takes packet over UDP size limit.
+  \item LOG\_ERROR - unable to send message to logDaemon
 \end{itemize}
 {\bf logArray}\\
 \\
@@ -117,15 +117,15 @@ int logArray(LOGHANDLE h, char *valueArray[]);\\
 Sends a log message to the logDaemon. The message is time-stamped with secs and usecs past UNIX epoch automatically. The remaining data comes from valueArray, an array of pointers to null terminated value strings. The last element of the array must be NULL. Ie. val[0] = ``this''; val[1] = ``that'' ; val[2] = NULL; logArray(h, val). There must be a value supplied for each tag defined by the logOpen() call.
 
 \begin{itemize}
-\item {\bf h} - LOGHANDLE from logOpen() call
-\item {\bf valueArray} - array of pointers to null terminated strings, last element is NULL
+  \item {\bf h} - LOGHANDLE from logOpen() call
+  \item {\bf valueArray} - array of pointers to null terminated strings, last element is NULL
 \end{itemize}
 Returns:
 
 \begin{itemize}
-\item LOG\_OK - message logged
-\item LOG\_TOOBIG - the total length of tag values takes packet over UDP size limit.
-\item LOG\_ERROR - unable to send message to logDaemon
+  \item LOG\_OK - message logged
+  \item LOG\_TOOBIG - the total length of tag values takes packet over UDP size limit.
+  \item LOG\_ERROR - unable to send message to logDaemon
 \end{itemize}
 {\bf logClose}\\
 \\
@@ -134,22 +134,22 @@ int logClose(LOGHANDLE h);\\
 Close up logDaemon ``connection''. LOGHANDLE may be reused after closing.
 
 \begin{itemize}
-\item {\bf h} - LOGHANDLE from logOpen() call
+  \item {\bf h} - LOGHANDLE from logOpen() call
 \end{itemize}
 Returns:
 
 \begin{itemize}
-\item LOG\_OK - connection closed
+  \item LOG\_OK - connection closed
 \end{itemize}
 \section{logDaemon Reference}
 
 Command line options:\\
 \\
 logDaemon\\
-{\bf [-m (text|SDDS)]} Log file format. This  option only available if SDDS compiled 
+{\bf [-m (text|SDDS)]} Log file format. This  option only available if SDDS compiled
 in.\\
 {\bf [-i $<$serviceId$>$]} Text name for logDaemon. Defaults if not given.\\
-{\bf [-f $<$config file name$>$]} Configuration file  name. Defaults to log.config (see -e 
+{\bf [-f $<$config file name$>$]} Configuration file  name. Defaults to log.config (see -e
 option).\\
 {\bf [-p $<$UDP port$>$]} UDP port for daemon to listen on. Defaults if not given.\\
 {\bf [-r]} Remove any current log files at startup, and start with fresh ones.\\

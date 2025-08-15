@@ -30,7 +30,7 @@ usage: sddspvaglitchlogger <input> <outputDirectory>|<outputRootname>
 \end{verbatim}
 
 \item \textbf{files:}
-  \begin{itemize}
+\begin{itemize}
   \item \textbf{input file:}\par
     SDDS file defining the PVs to log. Required columns include
     {\tt ControlName}, {\tt ReadbackName}, {\tt ReadbackUnits},
@@ -42,32 +42,32 @@ usage: sddspvaglitchlogger <input> <outputDirectory>|<outputRootname>
     Optional SDDS file containing trigger definitions. Columns mirror the
     trigger-related parameters and may include {\tt GlitchScript} to specify a
     command executed when a trigger fires.
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{switches:}
-    \begin{itemize}
-    \item {\tt -sampleInterval=<real>[,<units>]} --- interval between readings.
-    \item {\tt -time=<real>[,<units>]} --- total logging time.
-    \item {\tt -circularBuffer=[before=<n>,][after=<n>]} --- samples to keep around triggers.
-    \item {\tt -delay=<steps>} --- delay reading after a trigger.
-    \item {\tt -holdoffTime=<seconds>} --- wait time after a trigger before enabling new triggers.
-    \item {\tt -autoHoldoff} --- set holdoff time based on post-trigger samples.
-    \item {\tt -pendIOtime=<value>} --- maximum time to wait for PV replies.
-    \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- inhibit logging when this PV is nonzero.
-    \item {\tt -conditions=<file>,{allMustPass|oneMustPass}} --- require limits to be satisfied before logging.
-    \item {\tt -triggerFile=<file>} --- read trigger definitions from a separate SDDS file.
-    \item {\tt -lockFile=<file>[,verbose]} --- prevent multiple instances.
-    \item {\tt -watchInput} --- reload input files if they change.
-    \item {\tt -runControlPV=string=<name>,pingTimeout=<value>} --- run-control PV.
-    \item {\tt -runControlDescription=string=<text>} --- run-control description record.
-    \item {\tt -verbose} --- print messages while running.
-    \end{itemize}
+\begin{itemize}
+  \item {\tt -sampleInterval=<real>[,<units>]} --- interval between readings.
+  \item {\tt -time=<real>[,<units>]} --- total logging time.
+  \item {\tt -circularBuffer=[before=<n>,][after=<n>]} --- samples to keep around triggers.
+  \item {\tt -delay=<steps>} --- delay reading after a trigger.
+  \item {\tt -holdoffTime=<seconds>} --- wait time after a trigger before enabling new triggers.
+  \item {\tt -autoHoldoff} --- set holdoff time based on post-trigger samples.
+  \item {\tt -pendIOtime=<value>} --- maximum time to wait for PV replies.
+  \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- inhibit logging when this PV is nonzero.
+  \item {\tt -conditions=<file>,{allMustPass|oneMustPass}} --- require limits to be satisfied before logging.
+  \item {\tt -triggerFile=<file>} --- read trigger definitions from a separate SDDS file.
+  \item {\tt -lockFile=<file>[,verbose]} --- prevent multiple instances.
+  \item {\tt -watchInput} --- reload input files if they change.
+  \item {\tt -runControlPV=string=<name>,pingTimeout=<value>} --- run-control PV.
+  \item {\tt -runControlDescription=string=<text>} --- run-control description record.
+  \item {\tt -verbose} --- print messages while running.
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
-    \item \progref{sddsglitchlogger}
-    \item \progref{sddsmonitor}
-    \end{itemize}
+\begin{itemize}
+  \item \progref{sddsglitchlogger}
+  \item \progref{sddsmonitor}
+\end{itemize}
 
 \item \textbf{author:} H. Shang, ANL
 \end{sddsprog}

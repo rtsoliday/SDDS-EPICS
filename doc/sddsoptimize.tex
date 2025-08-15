@@ -1,10 +1,10 @@
 % sddsoptimize: optimize readback RMS by varying setpoints.
 \begin{sddsprog}{sddsoptimize}
 \item \textbf{description:}
-\verb+sddsoptimize+ optimizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.   
+\verb+sddsoptimize+ optimizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.
 
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 The trajectory of the booster BPMs is controlled with this command:
 \begin{flushleft}{\tt
 sddsoptimize -measFile=booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12\\
@@ -17,7 +17,7 @@ SDDS1
  name = "ControlName",  type = "string", &end
 &column
  name = "ReadbackName",  type = "string", &end
-&column             
+&column
  name = "ReadbackUnits",  type = "string", &end
 &data
  mode = ascii, no_row_counts=1 &end
@@ -37,9 +37,9 @@ SDDS1
 &column name=UpperLimit, type=double,  &end
 &column name=InitialChange, type=double,  &end
 &data mode=ascii,no_row_counts=1,&end
-oag:B1C1H:KickAO -2  2  2 
-oag:B1C2H:KickAO -2.500000000000000e+01  2.500000000000000e+01  2.000000000000000e-01 
-oag:B1C3H:KickAO -2.500000000000000e+01  2.500000000000000e+01  2.000000000000000e-01 
+oag:B1C1H:KickAO -2  2  2
+oag:B1C2H:KickAO -2.500000000000000e+01  2.500000000000000e+01  2.000000000000000e-01
+oag:B1C3H:KickAO -2.500000000000000e+01  2.500000000000000e+01  2.000000000000000e-01
 B:h11cos         -25                     25                     0.1
 B:h12sin         -25                     25                     0.1
 B:h12cos         -25                     25                     0.1
@@ -93,96 +93,96 @@ sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]\
 Perform optimization on APS control system process variables using simplex, 1dscan, or RCDS methods.
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{variable input file:} \par
+  \item \textbf{variable input file:} \par
 The variable input file is an SDDS file with one string column: ControlName, which is required
 and gives the list of control correctors (process variables or knobs). It also contains three
 double columns: LowerLimit, UpperLimit, IntialChange and InitialValue. InitialValue column
 is optional. Others are required. InitialChange column specifies the initial changes to the correctors.
 Variable input file has one parameter --PauseBetweenReadings(double), which sets the waiting time in
 seconds between two settings of the correctors.
-\item \textbf{measurement file:} \par This file specifies the measurement to be optimized. 
+  \item \textbf{measurement file:} \par This file specifies the measurement to be optimized.
 It has four columns:
-\begin{itemize}
-        \item {\tt ControlName} --- Required string column. Gives the list of process variables
+  \begin{itemize}
+    \item {\tt ControlName} --- Required string column. Gives the list of process variables
                  to be controlled.
-        \item {\tt ReadbackName} --- string, optional.
-        \item {\tt ReadbackUnits} --- string, optional.
-        \item {\tt Weight} -- double, optional. Defines the weight of each PV contributed to RMS.
-\end{itemize}
-It has three parameters: 
-\begin{itemize}
-        \item {\tt Tolerance} --- double, sets the converging limit.
-        \item {\tt NumberToAverage} --- long, sets number of average for measurement PVs.
-        \item {\tt PauseBetweenReadings} --- double, sets interval between two readings.
+    \item {\tt ReadbackName} --- string, optional.
+    \item {\tt ReadbackUnits} --- string, optional.
+    \item {\tt Weight} -- double, optional. Defines the weight of each PV contributed to RMS.
+  \end{itemize}
+It has three parameters:
+  \begin{itemize}
+    \item {\tt Tolerance} --- double, sets the converging limit.
+    \item {\tt NumberToAverage} --- long, sets number of average for measurement PVs.
+    \item {\tt PauseBetweenReadings} --- double, sets interval between two readings.
 
-\end{itemize}
+  \end{itemize}
 
-\item \textbf{knob file:} \par
+  \item \textbf{knob file:} \par
 To make \verb+sddsoptimize+ more robust, one can implement optimizaion on knobs,
 that are composed of set point process variables. The process variables that a knob contains are
 given in knob file, which contain following parameters and columns:
-\begin{itemize}
-        \item {\tt ControlName} --- Required string parameter. The name of knob, which
+  \begin{itemize}
+    \item {\tt ControlName} --- Required string parameter. The name of knob, which
                 acts as a corrector as other PVs do.
-        \item {\tt ControlName} --- Required string column. The names of PVs the knob
+    \item {\tt ControlName} --- Required string column. The names of PVs the knob
                 specified above contains.
-        \item {\tt Weight} --- Required double columns. Defines the weights of PVs that
+    \item {\tt Weight} --- Required double columns. Defines the weights of PVs that
                 compose the knob.
-        \item {\tt Gain} ---Optional double parameter. The value of each PV the knob contains
+    \item {\tt Gain} ---Optional double parameter. The value of each PV the knob contains
                 is value(PV)=value(knob)*Gain*Weight(PV). When it is not given, set it to 1.
-        \item {\tt ControlType} --- Optional string parameter. Specifies the control type.
-        \item {\tt ControlUnits}  --- Optional string parameter.
+    \item {\tt ControlType} --- Optional string parameter. Specifies the control type.
+    \item {\tt ControlUnits}  --- Optional string parameter.
                  Specifies the units of control PVs.
-        \item {\tt KnobDescription} -- Optional string parameter.
-        \item {\tt Filename}--- Optional string parameter. The name of the file where 
+    \item {\tt KnobDescription} -- Optional string parameter.
+    \item {\tt Filename}--- Optional string parameter. The name of the file where
                 this knob comes from.
-        \item {\tt Numbercombined} --- Optional long parameter. The number of files combined.
+    \item {\tt Numbercombined} --- Optional long parameter. The number of files combined.
                 The resulted knob file contains all the information of the files combined.
                 The content of each page is from the combined file specified in filename parameter.
-\end{itemize}
+  \end{itemize}
 
-\item \textbf{output log file:} \par
-The output file contains one data column for each process variables defined in the variable 
+  \item \textbf{output log file:} \par
+The output file contains one data column for each process variables defined in the variable
 input file. By default, the data type is double. One row is written at every evaluation.
-Also two more columns and two parameters are defined: 
-\begin{itemize}
-        \item {\tt EvalIndex} --- Long Column. The index of evaluations.
-        \item {\tt currentValue} --- Double column. The RMS value of measurement at each evaluaion.
-        \item {\tt variableFile} --- String parameter. The name of input variable file.
-        \item {\tt measurementFile} --- String parameter. The name of input measurement file.
-\end{itemize}
+Also two more columns and two parameters are defined:
+  \begin{itemize}
+    \item {\tt EvalIndex} --- Long Column. The index of evaluations.
+    \item {\tt currentValue} --- Double column. The RMS value of measurement at each evaluaion.
+    \item {\tt variableFile} --- String parameter. The name of input variable file.
+    \item {\tt measurementFile} --- String parameter. The name of input measurement file.
+  \end{itemize}
 
 \end{itemize}
 
 \item \textbf{switches:}
-    \begin{itemize}
+\begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-        \item {\tt -varFile=<file>} --- Required; defines control correctors or knobs.
-        \item {\tt -measFile=<file>} --- Specifies the measurement file.
-        \item {\tt -knobFiles=<file1>[,<file2>...]} --- List of knob definition files.
-        \item {\tt -measScript=<script>} --- Script for measuring PVs.
-        \item {\tt -varScript=<script>} --- Script for setting setpoint PVs or tags.
-        \item {\tt -restartFile=<file>} --- Save optimized values for later use.
-        \item {\tt -logFile=<file>} --- Write optimization data to an SDDS log.
-        \item {\tt -extraLogFile=<file>} --- Additional PVs for logging.
-        \item {\tt -pendIOtime=<seconds>} --- Channel access pendIO timeout.
-        \item {\tt -conditioning=<script>} --- Conditioning script executed before optimization.
-        \item {\tt -simplex} --- Parameters for simplex optimization.
-        \item {\tt -rcds} --- Parameters for robust conjugate direction search.
-        \item {\tt -1dscan} --- Parameters for one-dimensional scan optimization.
-        \item {\tt -dryRun} --- Compute settings without applying them.
-        \item {\tt -verbose} --- Print additional progress information.
-        \item {\tt -target=<value>} --- Target value for RMS of measurement PVs.
-        \item {\tt -tolerance=<value>} --- Tolerance when using a measurement script.
-        \item {\tt -maximize} --- Maximize instead of minimize the measurement.
-        \item {\tt -runControlPV} --- Specifies the runControl PV record.
-        \item {\tt -runControlDescription} --- Specifies a runControl PV description record.
-        \item {\tt -testValues=file=<file>[,limit=<count>]} --- Enforce temporary feedback limits.
-  \end{itemize}
+  \item {\tt -varFile=<file>} --- Required; defines control correctors or knobs.
+  \item {\tt -measFile=<file>} --- Specifies the measurement file.
+  \item {\tt -knobFiles=<file1>[,<file2>...]} --- List of knob definition files.
+  \item {\tt -measScript=<script>} --- Script for measuring PVs.
+  \item {\tt -varScript=<script>} --- Script for setting setpoint PVs or tags.
+  \item {\tt -restartFile=<file>} --- Save optimized values for later use.
+  \item {\tt -logFile=<file>} --- Write optimization data to an SDDS log.
+  \item {\tt -extraLogFile=<file>} --- Additional PVs for logging.
+  \item {\tt -pendIOtime=<seconds>} --- Channel access pendIO timeout.
+  \item {\tt -conditioning=<script>} --- Conditioning script executed before optimization.
+  \item {\tt -simplex} --- Parameters for simplex optimization.
+  \item {\tt -rcds} --- Parameters for robust conjugate direction search.
+  \item {\tt -1dscan} --- Parameters for one-dimensional scan optimization.
+  \item {\tt -dryRun} --- Compute settings without applying them.
+  \item {\tt -verbose} --- Print additional progress information.
+  \item {\tt -target=<value>} --- Target value for RMS of measurement PVs.
+  \item {\tt -tolerance=<value>} --- Tolerance when using a measurement script.
+  \item {\tt -maximize} --- Maximize instead of minimize the measurement.
+  \item {\tt -runControlPV} --- Specifies the runControl PV record.
+  \item {\tt -runControlDescription} --- Specifies a runControl PV description record.
+  \item {\tt -testValues=file=<file>[,limit=<count>]} --- Enforce temporary feedback limits.
+\end{itemize}
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddsexperiment}
-    \end{itemize}
+  \item \progref{sddsexperiment}
+\end{itemize}
 \item \textbf{author:} H. Shang, ANL
 \end{sddsprog}

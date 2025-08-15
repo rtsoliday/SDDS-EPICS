@@ -26,12 +26,12 @@ APS. Self-describing means that the data is referred to and accessed by
 name. Thus, a user doesn't need to know, say, in which column a piece
 of tabular data is located. An ASCII header contains information about the
 file's data structure, i.e. definitions of structure elements
-such as columns (tabular data) and parameters (single values). 
+such as columns (tabular data) and parameters (single values).
 
 Initially adopted for complex physics simulation programs, it was clear
 that the SDDS file protocol would excel in data-collecting software as
-well. Typically, an EPICS tool would write EPICS data to an SDDS file with 
-each readback written to a column of name corresponding to the 
+well. Typically, an EPICS tool would write EPICS data to an SDDS file with
+each readback written to a column of name corresponding to the
 EPICS database record name. Single value data that describe the experimental conditions
 might be written to the file as parameters.
 Once collected, the EPICS data can be further analyzed and plotted
@@ -47,10 +47,10 @@ to as ``process variables'' or PVs in this manual.
 \subsection{EPICS Toolkit Programs by Category}
 \subsubsection{Configuration Save and Restore}
 \begin{itemize}
-\item \progref{sddscasr} --- a new configuration save and restore program with many unique features.
-\item \progref{sddscaramp} --- Performs ramping of process variables between
+  \item \progref{sddscasr} --- a new configuration save and restore program with many unique features.
+  \item \progref{sddscaramp} --- Performs ramping of process variables between
 the present state and the states in one or more SDDS files.
-\item \progref{toggle} --- Alternates between two sets of process variable values stored in snapshot files
+  \item \progref{toggle} --- Alternates between two sets of process variable values stored in snapshot files
         at a regular interval.
         Example application: Alternate between two configurations of an accelerator for debugging
         accelerator performance.
@@ -58,53 +58,53 @@ the present state and the states in one or more SDDS files.
 
 \subsubsection{Data Collecting}
 \begin{itemize}
-\item \progref{sddssnapshot} --- Reads values of process variables and writes them to a snapshot file. 
+  \item \progref{sddssnapshot} --- Reads values of process variables and writes them to a snapshot file.
         Example application: Taking successive sets of data.
-\item \progref{sddsmonitor} --- Reads values of process variables and writes them to a file at regular intervals.
+  \item \progref{sddsmonitor} --- Reads values of process variables and writes them to a file at regular intervals.
         Example application: archiving of system performance, investigation of glitches.
-\item \progref{sddsglitchlogger} --- Reads values of process variables and writes them to a file or multifile at regular intervals when certain trigger occurs. 
-        Example application: archiving of system performance, inverstigation of 
-        transition-based, glitch-based and alarmed-based triggers. 
-\item \progref{sddsvmonitor} --- Reads values of process variables
+  \item \progref{sddsglitchlogger} --- Reads values of process variables and writes them to a file or multifile at regular intervals when certain trigger occurs.
+        Example application: archiving of system performance, inverstigation of
+        transition-based, glitch-based and alarmed-based triggers.
+  \item \progref{sddsvmonitor} --- Reads values of process variables
         and writes them to a file at regular intervals. The list of readback process
         variables is constructed by multiplying a rootname list and a suffix list.
         Example application: archiving of system performance, investigation of
         glitches.
-\item \progref{sddswmonitor} --- Reads values of waveform and scalar process variables and writes them to a file at regular intervals.
+  \item \progref{sddswmonitor} --- Reads values of waveform and scalar process variables and writes them to a file at regular intervals.
         Example application: archiving of system performance, investigation of glitches.
-\item \progref{sddsstatmon} --- Reads values of process variables, calculates statistics and writes them to a file at regular intervals.
+  \item \progref{sddsstatmon} --- Reads values of process variables, calculates statistics and writes them to a file at regular intervals.
         Example application: archiving of system performance.
-\item \progref{sddssynchlog} --- Reads values of process variables
+  \item \progref{sddssynchlog} --- Reads values of process variables
         synchronously.  Example application: Analyze for correlations
         between various systems.
-\item \progref{sddsexperiment} --- Varies process variables and measures process variables, 
+  \item \progref{sddsexperiment} --- Varies process variables and measures process variables,
         with optional statistical analysis.
         Example application:  investigation of unforeseen physical dependences,
         measure corrector-bpm response matrices.
-\item \progref{sddsvexperiment} --- Varies process variables and measures process variables, 
+  \item \progref{sddsvexperiment} --- Varies process variables and measures process variables,
         with optional statistical analysis. The list of readback process variables is
         constructed by multiplying a rootname list and a suffix list.  Example
         application: investigation of unforeseen physical dependences, measure
         corrector-bpm response matrices.
-\item \progref{sddsalarmlog} --- Collects alarm status of a list of process variables.
+  \item \progref{sddsalarmlog} --- Collects alarm status of a list of process variables.
         Example applications: Logging alarms for a particular accelerator system over a period of
         many runs in order to compile a history of faults statistics.
-\item \progref{sddslogger} --- Reads values of process variables and writes them to a file at regular intervals. Similar to sddsmonitor but it generates less network traffic.
-\item \progref{sddslogonchange} --- Records only the values of process variables that change. This reduces the output file size if process variables do not change often.
+  \item \progref{sddslogger} --- Reads values of process variables and writes them to a file at regular intervals. Similar to sddsmonitor but it generates less network traffic.
+  \item \progref{sddslogonchange} --- Records only the values of process variables that change. This reduces the output file size if process variables do not change often.
 \end{itemize}
 
 \subsubsection{Control}
 \begin{itemize}
-\item \progref{sddscontrollaw} --- Reads a matrix for a control law-type equation and regulates the
+  \item \progref{sddscontrollaw} --- Reads a matrix for a control law-type equation and regulates the
 values of a list of readback process variables by applying corrections to another list of process variables.
         Example application: removing slow drifts in accelerators (such as the energy of a linac beam), trajectory
         and orbit correction.
-\item \progref{squishPVs} --- Minimizes the absolute values of a set of readback process variables
+  \item \progref{squishPVs} --- Minimizes the absolute values of a set of readback process variables
         by varying setpoint process variables which have a physical influence on the readback process variables.
         Example application: Reducing the size of the trajectory in a beamline without knowledge of the
         response matrix between bpms and correctors.
-\item \progref{sddsoptimize} ---Minimizes or maximizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.
-\item \progref{sddspvtest} ---tests the process variable given by the inputfile are out-of-range or not and sets the number of out-of-range process variables to a control PV.
+  \item \progref{sddsoptimize} ---Minimizes or maximizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.
+  \item \progref{sddspvtest} ---tests the process variable given by the inputfile are out-of-range or not and sets the number of out-of-range process variables to a control PV.
 \end{itemize}
 
 \subsection{Toolkit Program Usage Conventions}
@@ -119,7 +119,7 @@ case, a help message is printed that shows syntax and (usually)
 describes the meaning of the switches.  In general, program usage is
 of the following form:\\
 \hspace*{5mm}{\tt programName} {\em fileNames} {\em switches}.\\
-Probably the simplest example would be \\ 
+Probably the simplest example would be \\
 \hspace*{5mm}{\tt sddsquery } {\em fileName},\\
 which would invoke {\tt sddsquery} to describe the contents of an SDDS file.
 A slightly more complicated example would be\\
@@ -129,7 +129,7 @@ which invokes {\tt sddsquery} to list just names of columns in a file.
 Programs assume that any commandline argument beginning with a minus sign ('-') is an option; all others are
 assumed to be filenames.  Note that case is ignored in commandline switches.  The specific meaning of a
 filename is dictated by its order on the commandline.  For example, if two filenames are given, the first
-would commonly be an input file while the second would commonly be an output file.  
+would commonly be an input file while the second would commonly be an output file.
 
 In some cases, a command with a single filename implies replacement of the existing file.  For example,\\
 \hspace*{5mm}{\tt sddsconvert} {\em fileName} {\tt -binary}\\
@@ -145,14 +145,14 @@ telling the program what to do.
 In following manual pages and in the program-generated help text, program usage is described using the following
 conventions:
 \begin{itemize}
-\item The first token on the commandline  is the name of the program.
-\item Items in square-brackets ({\tt []}) are optional.  Items not in square brackets are required.
-\item Items in curly-brackets ({\tt \{\}}) represent a list of choices.  The choices are separated by
+  \item The first token on the commandline  is the name of the program.
+  \item Items in square-brackets ({\tt []}) are optional.  Items not in square brackets are required.
+  \item Items in curly-brackets ({\tt \{\}}) represent a list of choices.  The choices are separated by
 a \verb+|+ character, as in\\
 {\tt \{ {\em choice1} | {\em choice2} | {\em choice3} \}}
-\item Items in italics are descriptions of arguments or data that must be supplied by the user.  These items are not typed 
+  \item Items in italics are descriptions of arguments or data that must be supplied by the user.  These items are not typed
 literally as shown.
-\item Items in normal print are typed as shown, with optional abbreviation.  These are
+  \item Items in normal print are typed as shown, with optional abbreviation.  These are
 usually switch keywords or qualifiers.  Any unique abbreviation is acceptable.
 \end{itemize}
 
@@ -163,12 +163,12 @@ conversion:\\
 \hspace*{5mm}{\tt sddsconvert -binary -pipe=out {\em fileName} \verb+|+ sddsconvert -ascii -pipe=in {\em fileName1} }\\
 The {\tt -pipe=out} option to {\tt sddsconvert} tells it to deliver its output to a pipe; it still
 expects a filename for input.  Similarly, the {\tt -pipe=in} option to {\tt sddsquery} tells it to
-accept input from a pipe.  
+accept input from a pipe.
 
 The {\tt -pipe} switch may be given in one of five forms: {\tt -pipe}, {\tt -pipe=input,output}, {\tt
 -pipe=output,input}, {\tt -pipe=input}, {\tt -pipe=output} .  The first three forms are equivalent.  In a usage
 message, these forms would be summarized as {\tt -pipe[=input][,output]}.  One could also use abbreviations like
-{\tt -pipe=i}, {\tt -pipe=i,o}, etc.  For convenience in the manual, the data stream from or to a pipe will 
+{\tt -pipe=i}, {\tt -pipe=i,o}, etc.  For convenience in the manual, the data stream from or to a pipe will
 often be referred to by the name of the file for which it substitutes.  Note that you may not deliver more
 than one file on the same pipe.
 
@@ -219,7 +219,7 @@ than one file on the same pipe.
     Available \href{http://ops.aps.anl.gov/manuals/SDDStoolkit/SDDStoolkit.html}{here.}
 
 \bibitem{SDDSEPICS_PAC95}
-        L. Emery, ``Commissioning Software Tools at the Advanced Photon Source'', 
+        L. Emery, ``Commissioning Software Tools at the Advanced Photon Source'',
         to appear in {\em Proceedings of the 1995 Particle Accelerator Conference}, May 1995, Dallas.
 
 \bibitem{Norum2007}

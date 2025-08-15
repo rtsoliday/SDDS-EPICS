@@ -25,12 +25,12 @@ sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]\
   [-runControlDescription={string=<string>|parameter=<string>}]
 }\end{flushleft}
 \item \textbf{files:}
-  \begin{itemize}
+\begin{itemize}
   \item \textbf{input file:} SDDS file listing PVs to save or restore, including columns \verb|ControlName| and \verb|ValueString| for restoring.
   \item \textbf{output file:} SDDS file receiving saved PV values when \texttt{-save} is used.
-  \end{itemize}
+\end{itemize}
 \item \textbf{switches:}
-  \begin{itemize}
+\begin{itemize}
   \item {\tt -save} --- read PV values and write them to the output file.
   \item {\tt -restore[=verify]} --- write values from the input file to PVs; optional {\tt verify} reads back each value.
   \item {\tt -daemon} --- run in background, waiting for file changes or trigger PV activity.
@@ -51,10 +51,10 @@ sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]\
   \item {\tt -unique} --- remove duplicate PVs from the input file.
   \item {\tt -verbose} --- print progress messages.
   \item {\tt -pipe[=input][,output]} --- standard SDDS Toolkit pipe option.
-  \end{itemize}
+\end{itemize}
 \item \textbf{see also:}
-  \begin{itemize}
+\begin{itemize}
   \item \progref{sddssnapshot}
-  \end{itemize}
+\end{itemize}
 \item \textbf{author:} H. Shang and R. Soliday, ANL
 \end{sddsprog}

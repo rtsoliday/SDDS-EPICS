@@ -5,8 +5,8 @@
 more efficient and has more features than casave/carestore. It can save
 and restore configurations in one program.
 
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 Save a snapshot of APS storage ring:
 \begin{verbatim}
 sddscasr SR.req SR.snapshot -save -pendIOTime=100
@@ -24,7 +24,7 @@ sddscasr var1 out1 -runControlPV=string=oag:ControlLawRC
 -casavePV=oag:casave -logFile=logFile &
 \end{verbatim}
 
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddscasr <inputFile> <outputRoot> [-verbose]
     [-daemon] [-dailyFiles] [-semaphore=<filename>] [-save] [-restore[=verify]] [-logFile=<filename>]
@@ -37,25 +37,25 @@ usage: sddscasr <inputFile> <outputRoot> [-verbose]
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:} \par
+  \item \textbf{input file:} \par
 The input file is an SDDS file with a string column. For saving snapshot, the input file
 contains at least one string column - ControlName. For restoring snapshot, the input file
 contains at least two string columns - ControlName and ValueString, where ValueString is the
 value of the PVs to be restored.
-\item \textbf{output file:} \par
+  \item \textbf{output file:} \par
 The output file only exists for saving snapshot. The output file contains everything in the input
 file, except that the ValueString column (if the input file has ValueString column) is update. And
 three more columns are created if they do not exist in the input file and their values are updated.
-\begin{itemize}
-\item {ValueString}: the values of the PVs given in the input file.
-\item {IndirectName}: its value  is - for scalar PV or PVname for waveform PV.
-\item {CAError}: its value is y if error occurred during channel access for
+  \begin{itemize}
+    \item {ValueString}: the values of the PVs given in the input file.
+    \item {IndirectName}: its value  is - for scalar PV or PVname for waveform PV.
+    \item {CAError}: its value is y if error occurred during channel access for
 corresponding PV or n if no error occurs.
-\end{itemize}
+  \end{itemize}
 \end{itemize}
 
 \item \textbf{switches:}
-  \begin{itemize}
+\begin{itemize}
   \item {\tt inputFile} --- input file name (SDDS file).
   \item {\tt outputRoot} --- output file or root if -dailyFiles option is specified.
   \item {\tt pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
@@ -83,13 +83,13 @@ corresponding PV or n if no error occurs.
   \item {\tt numerical} --- return a numerical string value rather than a string for enumerated types.
   \item {\tt waveform=rootname=<string>[,extension=<string>][,directory=<string>][,onefile][,saveWaveformFile][,fullname]} --- provide the waveform rootname and directory for the restore option. By default, the directory is pwd and the rootname is the SnapshotFilename parameter in the input file.
   \item {\tt verbose} --- print out messages.
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddssnapshot}
-    \item \progref{sddscaramp}
-    \end{itemize}
+  \item \progref{sddssnapshot}
+  \item \progref{sddscaramp}
+\end{itemize}
 \item \textbf{author:} H. Shang, ANL
 \end{sddsprog}

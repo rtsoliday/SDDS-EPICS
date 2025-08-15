@@ -21,19 +21,19 @@
   The output file contains parameters \verb+Time+, \verb+TimeStamp+, and \verb+WaveformPV+ along with columns \verb+Index+ and the waveform data.
 
 \item \textbf{switches:}
-  \begin{itemize}
-    \item {\tt -PVnames=<name>[,<name>]} --- list waveform PVs on the command line.
-    \item {\tt -inputStyle={wget|wmonitor|automatic}} --- choose how PV names are read from the input file.  Wmonitor style expects a \verb+WaveformPV+ column; wget style uses a \verb+WaveformPV+ parameter.
-    \item {\tt -pendIOtime=<seconds>} --- EPICS connection timeout.
-    \item {\tt -pipe[=input][,output]} --- standard SDDS Toolkit pipe option.
-    \item {\tt -provider={ca|pva}} --- select EPICS Channel Access (default) or PVAccess.
-  \end{itemize}
+\begin{itemize}
+  \item {\tt -PVnames=<name>[,<name>]} --- list waveform PVs on the command line.
+  \item {\tt -inputStyle={wget|wmonitor|automatic}} --- choose how PV names are read from the input file.  Wmonitor style expects a \verb+WaveformPV+ column; wget style uses a \verb+WaveformPV+ parameter.
+  \item {\tt -pendIOtime=<seconds>} --- EPICS connection timeout.
+  \item {\tt -pipe[=input][,output]} --- standard SDDS Toolkit pipe option.
+  \item {\tt -provider={ca|pva}} --- select EPICS Channel Access (default) or PVAccess.
+\end{itemize}
 
 \item \textbf{see also:}
-  \begin{itemize}
-    \item \progref{sddswmonitor}
-    \item \progref{sddswput}
-  \end{itemize}
+\begin{itemize}
+  \item \progref{sddswmonitor}
+  \item \progref{sddswput}
+\end{itemize}
 
 \item \textbf{author:} M. Borland, ANL/APS
 \end{sddsprog}

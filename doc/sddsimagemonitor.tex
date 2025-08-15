@@ -37,13 +37,13 @@ usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
 [-singleColumn] [-logOnChange] [-device=<name>] [-retakeStep]
 \end{verbatim}
 \item \textbf{files:}
-  \begin{itemize}
+\begin{itemize}
   \item \textbf{input file:} optional SDDS file with string column \verb|WaveformPV| naming image PVs.
   \item \textbf{output file:} SDDS file containing the logged images and related parameters.
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{switches:}
-  \begin{itemize}
+\begin{itemize}
   \item {\verb+-PVnames=<name>[,<name>]+} --- specifies image PV names to read.
   \item {\verb+-scalars=<filename>+} --- logs scalar PVs as parameters in the output file.
   \item {\tt -erase} --- overwrites the output file if it exists.
@@ -72,12 +72,12 @@ usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
   \item {\tt -logOnChange} --- writes data only if scalar PVs change.
   \item {\verb+-device=<name>+} --- selects the device type (e.g., areadector or FLID).
   \item {\tt -retakeStep} --- repeats a step if timestamps or scalar values do not change.
-  \end{itemize}
+\end{itemize}
 \item \textbf{see also:}
-  \begin{itemize}
+\begin{itemize}
   \item \progref{sddsmonitor}
   \item \progref{sddsvmonitor}
   \item \progref{sddswmonitor}
-  \end{itemize}
+\end{itemize}
 \item \textbf{author:} M. Borland, L. Emery, H. Shang, R. Soliday, ANL
 \end{sddsprog}

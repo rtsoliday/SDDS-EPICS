@@ -4,18 +4,18 @@
 \verb+sddscaramp+ performs ramping of process variables between
 the present state and the states in one or more SDDS files.
 
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 The following example shows how one would use \verb+sddscaramp+ to
 ramp 50\% of the way to a new steering configuration, using 10
-steps and pausing 1 second between steps: 
+steps and pausing 1 second between steps:
 \begin{verbatim}
 sddscaramp -rampTo=steering.snap,steps=10,pause=1,percentage=50
 \end{verbatim}
 The file \verb+steering.snap+ contains corrector magnet power supply
 settings, such as might be saved to an SDDS file using the
 \verb+sddssnapshot+ program.
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
 sddscaramp
   -rampTo=<filename>,steps=<number>,pause=<seconds>[,percentage=<value>][,differential=<factor>]
@@ -30,7 +30,7 @@ process variable names.  There must also be a string column named {\tt
 ValueString}, a numerical column named {\tt Value}, or a column of
 either type with the name specified by the \verb+-dataColumn+ option;
 this column contains the final value for the corresponding process
-variable.  
+variable.
 
 When data is supplied in a string column, {\tt sddscaramp} needs a way
 to determine if the data value is actually a number rather than a
@@ -47,8 +47,8 @@ IsNumerical} with string data is required.  If the data is in a
 numerical column to begin with, of course, there is no ambiguity.
 
 \item \textbf{switches:}
-    \begin{itemize}
-        \item {\tt -rampTo={\em filename},steps={\em
+\begin{itemize}
+  \item {\tt -rampTo={\em filename},steps={\em
         number},pause={\em seconds},[percentage={\em value}][,differential={\em factor}]} ---
         Specifies a file to ramp to, the number of steps in the ramp,
         and the time to wait between sending setpoints for each step.
@@ -57,25 +57,25 @@ numerical column to begin with, of course, there is no ambiguity.
         amount using the {\tt differential} factor.  If several
         {\tt -rampTo} options are given, {\tt sddscaramp} ramps to each
         of them in the order given.
-        \item {\tt -controlNameColumn={\em name}} --- Specifies the
+  \item {\tt -controlNameColumn={\em name}} --- Specifies the
         name of the column containing the PV names when it is not
         one of {\tt ControlName}, {\tt Device}, or {\tt DeviceName}.
-        \item {\tt -dataColumn={\em name}} --- Specifies the name of
+  \item {\tt -dataColumn={\em name}} --- Specifies the name of
         the column in the input files that contains the PV values.
         By default, the program uses {\tt ValueString} or {\tt Value}.
-        \item {\tt -pendIOtime={\em seconds}} --- Sets the time to
+  \item {\tt -pendIOtime={\em seconds}} --- Sets the time to
         wait for channel access operations to complete.
-        \item {\tt -resendFinal} --- Resends the final setpoint for
+  \item {\tt -resendFinal} --- Resends the final setpoint for
         numerical PVs after ramping is complete.
-        \item {\tt -verbose} --- If given, informational text is
+  \item {\tt -verbose} --- If given, informational text is
         printed out as the ramping proceeds.
-      \end{itemize}
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddssnapshot}
-    \item \progref{sddscasr}
-    \end{itemize}
+  \item \progref{sddssnapshot}
+  \item \progref{sddscasr}
+\end{itemize}
 \item \textbf{author:} M. Borland (ANL)
 \end{sddsprog}

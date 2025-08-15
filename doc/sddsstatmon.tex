@@ -5,9 +5,9 @@
 and writes these statistics to an output file.
 The statistics are the mean, standard deviation, minimum, maximum, and sigma.
 An input file defines the process variables to be monitored.
-\item \textbf{examples:} 
-% 
-Statistics of the pressure readbacks of storage ring ion pumps and the stored current 
+\item \textbf{examples:}
+%
+Statistics of the pressure readbacks of storage ring ion pumps and the stored current
 for groups of 60 data points taken at 1 second interval are collected
 with the command below.
 \begin{verbatim}
@@ -31,11 +31,11 @@ SDDS1
 ! page number 1
 S35DCCT:currentCC pv mA S35DCCT
 VM:01:3IP1.VAL pv Torr VM:01:3IP1
-VM:01:2IP2.VAL pv Torr VM:01:2IP2 
-VM:01:2IP3.VAL pv Torr VM:01:2IP3 
+VM:01:2IP2.VAL pv Torr VM:01:2IP2
+VM:01:2IP3.VAL pv Torr VM:01:2IP3
 ...
 \end{verbatim}
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsstatmon <input> <output>
     [-erase | -generations[=digits=<integer>][,delimiter=<string>] | -append[=recover][,toPage]]
@@ -57,96 +57,96 @@ usage: sddsstatmon <input> <output>
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:}\par
+  \item \textbf{input file:}\par
 The input file is an SDDS file with a few data columns required:
-\begin{itemize}
-        \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
+  \begin{itemize}
+    \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
                 or devices to be monitored. Both column names are equivalent.
-        \item {\tt Message} --- Optional string column for the device read message. If a row entry in
+    \item {\tt Message} --- Optional string column for the device read message. If a row entry in
                 column {\tt ControlName} is a process variable, then the corresponding entry
-                in {\tt Message} should be a null string. 
-        \item {\tt ReadbackName} --- Optional string column for the names of the data columns in the 
+                in {\tt Message} should be a null string.
+    \item {\tt ReadbackName} --- Optional string column for the names of the data columns in the
                 output file. If absent, process variable or device name is used.
-        \item {\tt ReadbackUnits} --- Optional string column for the units fields of the data columns in the 
+    \item {\tt ReadbackUnits} --- Optional string column for the units fields of the data columns in the
                 output file.If absent, units are null.
-        \item {\tt ScaleFactor} --- Optional double column for a factor with which to multiply
+    \item {\tt ScaleFactor} --- Optional double column for a factor with which to multiply
                 values of the readback in the output file.
-\end{itemize}
+  \end{itemize}
 
-\item \textbf{output file:}\par
+  \item \textbf{output file:}\par
 The output file contains one column per statistic per process variable monitored.
 The five statistics are the mean, standard deviation, minimum value,
 maximum value, and sigma. The corresponding column names are {\tt <name>Mean}, {\tt <name>StDev},
 {\tt <name>Min}, {\tt <name>Max}, and {\tt <name>Sigma}, where {\tt <name>}
 is the {\tt ReadbackName} name value of the process variable in the input file.
 
-By default, the data type is float (single precision). 
-Time columns and other miscellaneous columns are defined: 
-\begin{itemize}
-        \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
+By default, the data type is float (single precision).
+Time columns and other miscellaneous columns are defined:
+  \begin{itemize}
+    \item {\tt Time} --- Double column of time since start of epoch. This time data can be used by
         the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
-        \item {\tt TimeOfDay} --- Float column of system time in units of hours. 
+    \item {\tt TimeOfDay} --- Float column of system time in units of hours.
         The time does not wrap around at 24 hours.
-        \item {\tt DayOfMonth} --- Float column of system time in units of days. 
+    \item {\tt DayOfMonth} --- Float column of system time in units of days.
         The day does not wrap around at the month boundary.
-        \item {\tt Step} --- Long column for step number.
-        \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step. 
-\end{itemize}
+    \item {\tt Step} --- Long column for step number.
+    \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step.
+  \end{itemize}
 
 Many time-related parameters are defined in the output file:
-\begin{itemize}
-        \item {\tt TimeStamp} --- String parameter for time stamp for file.
-        \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
+  \begin{itemize}
+    \item {\tt TimeStamp} --- String parameter for time stamp for file.
+    \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
                 is appended to an existing file, the new data is written to a new
                 page. The {\tt PageTimeStamp} value for the new page is the creation
-                date of the new page. The {\tt TimeStamp} value for the new page is the creation 
+                date of the new page. The {\tt TimeStamp} value for the new page is the creation
                 date of the very first page.
-        \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
-        \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
-        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
-        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
-        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
-        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
-        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
-\end{itemize}
+    \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
+    \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
+    \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+    \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+    \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+    \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+    \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+  \end{itemize}
 \end{itemize} % end of itemized files
 
 
 \item \textbf{switches:}
-    \begin{itemize}
-        \item {\tt -erase} --- If the output file already exists, it will be overwritten.
-        \item {\tt -append[=recover][,toPage]} --- Append data to an existing output file. With \verb+recover+, attempt to salvage a corrupted file; \verb+toPage+ appends rows to the last page.
-        \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} --- Send output to \verb+<output>-<N>+ where \verb+<N>+ is the first nonexisting integer, formatted to four digits by default.
-        \item {\tt -steps=<integer>} --- Number of statistic sets to collect before exiting.
-        \item {\tt -time=<real>[,<time-units>]} --- Total monitoring time. Units are seconds, minutes, hours, or days.
-        \item {\tt -dataStrobeSamplePV=<pv>} --- PV whose change triggers sampling of data.
-        \item {\tt -dataStrobeOutputPV=<pv>} --- PV whose change triggers writing statistics to the output file.
-        \item {\tt -interval=<real>[,<time-units>]} --- Interval between readings. Actual interval may be longer due to control system overhead.
-        \item {\tt -singleShot[={noprompt|stdout}]} --- Acquire a single set of samples on a terminal return. Qualifiers suppress or redirect the prompt.
-        \item {\tt -enforceTimeLimit} --- Enforce the time limit given with \verb+-time+ even if the expected number of samples is not reached.
-        \item {\tt -offsetTimeOfDay} --- Offset starting \verb+TimeOfDay+ so long jobs remain monotonic across midnight.
-        \item {\tt -includeStatistics=<list>} --- Include only selected statistics. Qualifiers include \verb+mean+, \verb+standardDeviation+, \verb+minimum+, \verb+maximum+, \verb+sigma+, \verb+extreme+, \verb+sample+, \verb+sum+, \verb+first+, \verb+last+, or \verb+all+.
-        \item {\tt -samplesPerStatistic=<integer>} --- Number of samples used for each statistic (default 25).
-        \item {\tt -verbose} --- Print a message when data is taken.
-        \item {\tt -precision=\{single|double\}} --- Select the data type for statistics columns.
-        \item {\tt -updateInterval=<integer>} --- Number of sample sets between each output file update (default 1).
-        \item {\tt -watchInput} --- Reload the input file if it changes.
-        \item {\tt -oncaerror=\{repeat|skip|exit\}} --- Action on channel access errors: \verb+repeat+ uses zero and continues (default), \verb+skip+ drops the row, and \verb+exit+ terminates.
-        \item {\tt -comment=<parameterName>,<text>} --- Add a parameter and text comment to the output file.
-        \item {\tt -conditions=<filename>,\{allMustPass|oneMustPass\}[,touchOutput][,retakeStep]} --- Take data only when specified PV limits are satisfied.
-        \item {\tt -getUnits=\{force|ifBlank|ifNoneGiven\}} --- Obtain units from EPICS. Qualifiers control when retrieved units override file data.
-        \item {\tt -pendIOtime=<seconds>} --- Timeout for channel access \verb+pendIO+ calls.
-        \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- Check this PV before each sample; data collection is inhibited if it is nonzero.
-        \item {\tt -ezcaTiming=<timeout>,<retries>} --- Set EZCA timeout and retry values (obsolete).
-    \end{itemize}
+\begin{itemize}
+  \item {\tt -erase} --- If the output file already exists, it will be overwritten.
+  \item {\tt -append[=recover][,toPage]} --- Append data to an existing output file. With \verb+recover+, attempt to salvage a corrupted file; \verb+toPage+ appends rows to the last page.
+  \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} --- Send output to \verb+<output>-<N>+ where \verb+<N>+ is the first nonexisting integer, formatted to four digits by default.
+  \item {\tt -steps=<integer>} --- Number of statistic sets to collect before exiting.
+  \item {\tt -time=<real>[,<time-units>]} --- Total monitoring time. Units are seconds, minutes, hours, or days.
+  \item {\tt -dataStrobeSamplePV=<pv>} --- PV whose change triggers sampling of data.
+  \item {\tt -dataStrobeOutputPV=<pv>} --- PV whose change triggers writing statistics to the output file.
+  \item {\tt -interval=<real>[,<time-units>]} --- Interval between readings. Actual interval may be longer due to control system overhead.
+  \item {\tt -singleShot[={noprompt|stdout}]} --- Acquire a single set of samples on a terminal return. Qualifiers suppress or redirect the prompt.
+  \item {\tt -enforceTimeLimit} --- Enforce the time limit given with \verb+-time+ even if the expected number of samples is not reached.
+  \item {\tt -offsetTimeOfDay} --- Offset starting \verb+TimeOfDay+ so long jobs remain monotonic across midnight.
+  \item {\tt -includeStatistics=<list>} --- Include only selected statistics. Qualifiers include \verb+mean+, \verb+standardDeviation+, \verb+minimum+, \verb+maximum+, \verb+sigma+, \verb+extreme+, \verb+sample+, \verb+sum+, \verb+first+, \verb+last+, or \verb+all+.
+  \item {\tt -samplesPerStatistic=<integer>} --- Number of samples used for each statistic (default 25).
+  \item {\tt -verbose} --- Print a message when data is taken.
+  \item {\tt -precision=\{single|double\}} --- Select the data type for statistics columns.
+  \item {\tt -updateInterval=<integer>} --- Number of sample sets between each output file update (default 1).
+  \item {\tt -watchInput} --- Reload the input file if it changes.
+  \item {\tt -oncaerror=\{repeat|skip|exit\}} --- Action on channel access errors: \verb+repeat+ uses zero and continues (default), \verb+skip+ drops the row, and \verb+exit+ terminates.
+  \item {\tt -comment=<parameterName>,<text>} --- Add a parameter and text comment to the output file.
+  \item {\tt -conditions=<filename>,\{allMustPass|oneMustPass\}[,touchOutput][,retakeStep]} --- Take data only when specified PV limits are satisfied.
+  \item {\tt -getUnits=\{force|ifBlank|ifNoneGiven\}} --- Obtain units from EPICS. Qualifiers control when retrieved units override file data.
+  \item {\tt -pendIOtime=<seconds>} --- Timeout for channel access \verb+pendIO+ calls.
+  \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- Check this PV before each sample; data collection is inhibited if it is nonzero.
+  \item {\tt -ezcaTiming=<timeout>,<retries>} --- Set EZCA timeout and retry values (obsolete).
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddsvmonitor}
-    \item \progref{sddswmonitor}
-    \item \progref{sddssnapshot}
-    \end{itemize}
-\item \textbf{author:} M. Borland, ANL 
+  \item \progref{sddsvmonitor}
+  \item \progref{sddswmonitor}
+  \item \progref{sddssnapshot}
+\end{itemize}
+\item \textbf{author:} M. Borland, ANL
 \end{sddsprog}

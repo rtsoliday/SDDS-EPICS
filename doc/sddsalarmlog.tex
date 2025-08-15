@@ -2,8 +2,8 @@
 \begin{sddsprog}{sddsalarmlog}
 \item \textbf{description:}
 \verb+sddsalarmlog+ logs changes of alarm status for process variables named in an input file.
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 The status of the positron accumulator ring process variables are logged
 for a one day duration.
 \begin{verbatim}
@@ -12,7 +12,7 @@ sddsalarmlog PAR.along PAR.along.sdds -timeDuration=1,day
 where the file \verb+PAR.along+ is the input file containing the names of the
 process variables, and the file \verb+PAR.along.sdds+ is the output file.
 
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsalarmlog <input> <output>
 -timeDuration=<realValue>[,<time-units>] [-offsetTimeOfDay]
@@ -29,11 +29,11 @@ usage: sddsalarmlog <input> <output>
 
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:}\par
+  \item \textbf{input file:}\par
 The input file is an SDDS file with the required string column {\tt ControlName}
 which contains the names of the process variables whose status is to be monitored.
 
-\item \textbf{output file:}\par
+  \item \textbf{output file:}\par
 The output file contains information on the process variable alarm status
 change, such as the time of occurrence, the alarm designation, the severity of the alarm, and the
 row location of the previous alarm status change.
@@ -42,7 +42,7 @@ In order to save disk space {\tt sddsalarmlog} logs integer codes
 (indexes) instead of the actual string values for the control name,
 the alarm status and the alarm severity. The integer codes are indices
 into one of three string arrays written to the output file. The logging information
-can be recovered using SDDS tool sddsderef. 
+can be recovered using SDDS tool sddsderef.
 
 As an option, and for a direct interpretation of the output file, the control
 name, alarm status and alarm severity can be written explicitly as
@@ -50,98 +50,98 @@ string columns with or without the integer codes. However this
 option uses up a lot more disk space.
 
 In either case the following columns are defined:
-\begin{itemize}
-        \item {\tt PreviousRow} --- Long column of row numbers. For each 
-        process variables alarm status change, the row location of the 
-        previous alarm status change is written.                
-        \item {\tt TimeOfDay} --- Float column of system time in units of hours. 
+  \begin{itemize}
+    \item {\tt PreviousRow} --- Long column of row numbers. For each
+        process variables alarm status change, the row location of the
+        previous alarm status change is written.
+    \item {\tt TimeOfDay} --- Float column of system time in units of hours.
         The time does not wrap around at 24 hours.
-\end{itemize}
+  \end{itemize}
 
 By default these columns are defined (except when the option {\tt -explicit=only} is specified):
-\begin{itemize}
-        \item {\tt ControlNameIndex} --- Long column indicating the process variable whose
-        alarm status changed. The value of this data is the index into the string array 
+  \begin{itemize}
+    \item {\tt ControlNameIndex} --- Long column indicating the process variable whose
+        alarm status changed. The value of this data is the index into the string array
         {\tt ControlNameString}, which is the list of all process variables monitored.
-        \item {\tt AlarmStatusIndex} --- Short column indicating the alarm status.
-         The value of this data is the index into the string array 
+    \item {\tt AlarmStatusIndex} --- Short column indicating the alarm status.
+         The value of this data is the index into the string array
         {\tt AlarmStatusString}, which is the list of all possible alarm status values.
-        \item {\tt AlarmSeverityIndex} --- Short column indicating the alarm status.
-        The value of this data is the index into the string array 
+    \item {\tt AlarmSeverityIndex} --- Short column indicating the alarm status.
+        The value of this data is the index into the string array
         {\tt AlarmSeverityString}, which is the list of all possible alarm severity values.
-\end{itemize}
+  \end{itemize}
 
 These columns are created by the option {\tt -explicit}:
-\begin{itemize}
-        \item {\tt ControlName} --- String column for the process variable whose alarm
+  \begin{itemize}
+    \item {\tt ControlName} --- String column for the process variable whose alarm
         status just changed.
-        \item {\tt AlarmStatus} --- String column for the alarm status. 
-        \item {\tt AlarmSeverity} --- String column for the alarm severity. 
-\end{itemize}
+    \item {\tt AlarmStatus} --- String column for the alarm status.
+    \item {\tt AlarmSeverity} --- String column for the alarm severity.
+  \end{itemize}
 
 This column is created with option {\tt -durations}:
-\begin{itemize}
-        \item {\tt Duration} --- String column for the duration of the previous alarm state.
-\end{itemize}
+  \begin{itemize}
+    \item {\tt Duration} --- String column for the duration of the previous alarm state.
+  \end{itemize}
 
 These arrays are created by default except when the option {\tt -explicit=only} is specified:
-\begin{itemize}
-        \item {\tt ControlNameString} --- String colunm of all process variables to be monitored.
-        \item {\tt AlarmStatusString} --- String colunm of all possible alarm status values.
-        \item {\tt AlarmSeverityString} --- String colunm of all possible alarm severity values.
-\end{itemize}
+  \begin{itemize}
+    \item {\tt ControlNameString} --- String colunm of all process variables to be monitored.
+    \item {\tt AlarmStatusString} --- String colunm of all possible alarm status values.
+    \item {\tt AlarmSeverityString} --- String colunm of all possible alarm severity values.
+  \end{itemize}
 
 These parameters are defined:
-\begin{itemize}
-        \item {\tt InputFile} --- String parameter for the name of the input file.
-        \item {\tt TimeStamp} --- String parameter for time stamp for file.
-        \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
+  \begin{itemize}
+    \item {\tt InputFile} --- String parameter for the name of the input file.
+    \item {\tt TimeStamp} --- String parameter for time stamp for file.
+    \item {\tt PageTimeStamp} --- String parameter for time stamp for each page. When data
                 is appended to an existing file, the new data is written to a new
                 page. The {\tt PageTimeStamp} value for the new page is the creation
-                date of the new page. The {\tt TimeStamp} value for the new page is the creation 
+                date of the new page. The {\tt TimeStamp} value for the new page is the creation
                 date of the very first page.
-        \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
-        \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
-        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
-        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
-        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
-        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
-        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
-\end{itemize}
+    \item {\tt StartTime} --- Double parameter for start time from the {\tt C} time call cast to type double.
+    \item {\tt YearStartTime} --- Double parameter for start time of present year from the {\tt C} time call cast to type double.
+    \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+    \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+    \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+    \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+    \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+  \end{itemize}
 \end{itemize} % end of itemized files
 
 
 \item \textbf{switches:}
-    \begin{itemize}
-      \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.
+\begin{itemize}
+  \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.
         The default time units are seconds; one may also specify days, hours, or minutes.
-      \item {\tt -offsetTimeOfDay} --- Adjusts the starting \verb+TimeOfDay+ value so it corresponds to the day for which most data is taken.
-      \item {\tt -append[=recover]} --- Specifies appending to the file \verb+<output>+ if it exists already.
+  \item {\tt -offsetTimeOfDay} --- Adjusts the starting \verb+TimeOfDay+ value so it corresponds to the day for which most data is taken.
+  \item {\tt -append[=recover]} --- Specifies appending to the file \verb+<output>+ if it exists already.
         If the \verb+recover+ qualifier is given, recovery of a corrupted file is attempted using \verb+sddsconvert+.
-      \item {\tt -eraseFile} --- If the output file already exists, then it will be overwritten.
-      \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
+  \item {\tt -eraseFile} --- If the output file already exists, then it will be overwritten.
+  \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
         Sends output to \verb+<output>-<N>+, where \verb+<N>+ is the smallest positive integer such that the file does not already exist.
         By default, four digits are used for formatting \verb+<N>+.
-      \item {\tt -dailyFiles[=verbose]} --- Uses daily generation filenames of the form \verb+<output>-YYYY-JJJ-MMDD.<N>+.
+  \item {\tt -dailyFiles[=verbose]} --- Uses daily generation filenames of the form \verb+<output>-YYYY-JJJ-MMDD.<N>+.
         If \verb+verbose+ is given, a message is printed when a new file is started.
-      \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time in seconds. The default is 10.
-      \item {\tt -durations} --- Includes state duration and previous row reference data in the output.
-      \item {\tt -connectTimeout=<seconds>} --- Specifies maximum time in seconds to wait for a connection before issuing an error message.
+  \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time in seconds. The default is 10.
+  \item {\tt -durations} --- Includes state duration and previous row reference data in the output.
+  \item {\tt -connectTimeout=<seconds>} --- Specifies maximum time in seconds to wait for a connection before issuing an error message.
         The default is 60.
-      \item {\tt -explicit[=only]} --- Specifies that explicit columns with control name, alarm status, and alarm severity strings be output in addition to the integer codes.
+  \item {\tt -explicit[=only]} --- Specifies that explicit columns with control name, alarm status, and alarm severity strings be output in addition to the integer codes.
         If the \verb+only+ qualifier is given, the integer codes are omitted.
-      \item {\tt -verbose} --- Prints a message when data is taken.
-      \item {\tt -comment=<parameterName>,<text>} --- Adds a comment parameter with the given text to the output file.
-      \item {\tt -requireChange[=severity][,status][,both]} --- Requires the specified changes before an event is logged.
-      \item {\tt -inhibitPV=name=<name>,pendIOTime=<seconds>} --- Checks this process variable periodically and aborts data collection if it is nonzero.
-      \item {\tt -watchInput} --- Monitors the input file for modifications and exits if it changes.
-      \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Specifies a run control PV name and optional ping timeout in seconds.
-      \item {\tt -runControlDescription=string=<string>} --- Specifies a run control PV description record.
-    \end{itemize}
+  \item {\tt -verbose} --- Prints a message when data is taken.
+  \item {\tt -comment=<parameterName>,<text>} --- Adds a comment parameter with the given text to the output file.
+  \item {\tt -requireChange[=severity][,status][,both]} --- Requires the specified changes before an event is logged.
+  \item {\tt -inhibitPV=name=<name>,pendIOTime=<seconds>} --- Checks this process variable periodically and aborts data collection if it is nonzero.
+  \item {\tt -watchInput} --- Monitors the input file for modifications and exits if it changes.
+  \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Specifies a run control PV name and optional ping timeout in seconds.
+  \item {\tt -runControlDescription=string=<string>} --- Specifies a run control PV description record.
+\end{itemize}
 
 \item \textbf{see also:}
 
 % replacing <prog> with the program to be referenced:
 
-\item \textbf{author:} M. Borland, ANL 
+\item \textbf{author:} M. Borland, ANL
 \end{sddsprog}

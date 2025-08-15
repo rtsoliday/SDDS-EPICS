@@ -5,10 +5,10 @@
 An input file of namelist commands gives the specific instructions.
 The results are recorded in one or more SDDS files. This command differs from
 \verb+sddsexperiment+ in that the measurement process variables are specified in two lists.  The first
-list gives PV ``rootnames''.  The second list gives suffixes to apply to each of 
+list gives PV ``rootnames''.  The second list gives suffixes to apply to each of
 the rootnames.
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 The strength of a storage ring horizontal corrector (S1A:H1) is varied while the readbacks at all horizontal beam position
 monitors are recorded. The output file is S1A:H1.sdds.
 \begin{verbatim}
@@ -17,10 +17,10 @@ sddsvexperiment S1A:H1.vexp S1A:H1.sdds
 
 where the contents of the file \verb+S1A:H1.vexp+ are
 \begin{verbatim}
-&rootname_list 
+&rootname_list
         filename=bpmRoot.sdds
 &end
-&suffix_list 
+&suffix_list
         filename=bpmSuffix.sdds
 &end
 
@@ -30,7 +30,7 @@ where the contents of the file \verb+S1A:H1.vexp+ are
         index_number = 0, index_limit = 5,
         initial_value = -1.0, final_value = 1.0,
 &end
-        
+
 &execute
         post_change_pause=4,
         intermeasurement_pause=1
@@ -56,7 +56,7 @@ S1B:P4
 S1B:P3
 S1B:P2
 S1B:P1
-S2A:P1  
+S2A:P1
 ...
 \end{verbatim}
 The contents of the file \verb+bpmSuffix.sdds+ is
@@ -70,7 +70,7 @@ SDDS1
 :ms:y   10
 \end{verbatim}
 
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsvexperiment <inputFile> <outputFile>
 [-suffixFile=<filename>] [-rootnameFile=<filename>]
@@ -83,38 +83,38 @@ usage: sddsvexperiment <inputFile> <outputFile>
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % input file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\item \textbf{input file:}\par
+  \item \textbf{input file:}\par
 The input file consists of namelist commands that set up and execute the experiment. The functions of the commands
 are described below.
-\begin{itemize}
-   \item {\verb+variable+} --- specifies a process variable to vary,
+  \begin{itemize}
+    \item {\verb+variable+} --- specifies a process variable to vary,
       and the range and steps of the variation. More than one variable
       command may be defined, so that many process variables may vary
       at a time.
 
-   \item {\verb+rootname_list+} --- specifies rootnames from which to
+    \item {\verb+rootname_list+} --- specifies rootnames from which to
       generate process variable to measure at each step during the
       experiment.
 
-   \item {\verb+suffix_list+} --- specifies suffixes from which to
+    \item {\verb+suffix_list+} --- specifies suffixes from which to
       generate process variable to measure at each step during the
       experiment.
 
-   \item {\verb+execute+} --- start executing the experiment. One
+    \item {\verb+execute+} --- start executing the experiment. One
       group of variable, measurement and execute commands may follow
       another in the same file for multiple experiments.
 
-   \item {\verb+erase+} --- deletes previous variable or measurement
+    \item {\verb+erase+} --- deletes previous variable or measurement
       setups.
 
-   \item {\verb+list_control_quantities+} --- makes a cross-reference
+    \item {\verb+list_control_quantities+} --- makes a cross-reference
       file for process variable names and column names of the data
       file.
 
-   \item {\verb+system_call+} --- specifies a system call (usually a
+    \item {\verb+system_call+} --- specifies a system call (usually a
        script) to be executed either before a measurement or before
        setting a process variable.
-\end{itemize}
+  \end{itemize}
 The following text describes all the namelist commands and their
 respective fields in more detail.  The command definition listing is
 of the form
@@ -131,12 +131,12 @@ of the form
 where the part \verb+<variable-type>+, which doesn't appear in an
 actual command, is used to illustrate the valid type of the value. The
 three valid types are:
-\begin{itemize}
-   \item \verb+double+ --- for a double-precision type, used for most
+  \begin{itemize}
+    \item \verb+double+ --- for a double-precision type, used for most
    physical quantity variables,
-   \item \verb+long+ ---   for an integer type, used for flags mostly.
-   \item \verb+STRING+ --- for a character string enclosed in double quotes.
-\end{itemize}
+    \item \verb+long+ ---   for an integer type, used for flags mostly.
+    \item \verb+STRING+ --- for a character string enclosed in double quotes.
+  \end{itemize}
 An actual namelist in an input file should look like this:
 \begin{verbatim}
 &<command-name>
@@ -163,11 +163,11 @@ have default values in general are string variables.
 \newpage\begin{center}{\Large \verb+variable+}\end{center}
 \end{latexonly}
 \begin{htmlonly}
-\item {\Large \verb+variable+}
+  \item {\Large \verb+variable+}
 \end{htmlonly}
 
-\begin{itemize}
-   \item function: Specifies a process variable to vary, and the range
+  \begin{itemize}
+    \item function: Specifies a process variable to vary, and the range
       and steps of the variation.  Values of variables at each
       measurement step are written to an SDDS output file.  The
       readback-related fields are used to confirm that the physical
@@ -209,29 +209,29 @@ have default values in general are string variables.
         double readback_tolerance = 0
         long readback_attempts = 10
         long reset_to_original = 1
-&end        
+&end
 \end{verbatim}
-   \item {\verb+PV_name+} --- Required. Process variable name to vary.
+    \item {\verb+PV_name+} --- Required. Process variable name to vary.
 
-   \item {\verb+parameter_name+} --- Required. Parameter name for the
+    \item {\verb+parameter_name+} --- Required. Parameter name for the
    variable data recorded in the output file.
 
-   \item {\verb+symbol+} --- Optional. Symbol field for the above
+    \item {\verb+symbol+} --- Optional. Symbol field for the above
    column definition of the variable data.
 
-   \item {\verb+units+} --- Optional. Units field for the above column
+    \item {\verb+units+} --- Optional. Units field for the above column
    definition of the variable data.
 
-   \item {\verb+initial_value+} --- Required. The initial value of the
+    \item {\verb+initial_value+} --- Required. The initial value of the
    process variable in the variation.
 
-   \item {\verb+final_value+} --- Required. The final value of the
+    \item {\verb+final_value+} --- Required. The final value of the
    process variable in the variation.
 
-   \item {\verb+index_limit+} --- Number of steps in the
+    \item {\verb+index_limit+} --- Number of steps in the
    variation. Measurements are taken at each step.
 
-   \item {\verb+index_number+} --- Required. The counter (or index)
+    \item {\verb+index_number+} --- Required. The counter (or index)
       number with which the defined variation is associated. In a
       \verb+sddsexperiment+ run, counters must be defined in an
       increasing sequence starting from counter 0. That is, the first
@@ -248,7 +248,7 @@ have default values in general are string variables.
       might be efficient to assign devices with slower response times
       to higher \verb+index_number+ counter.
 
-   \item {\verb+index_limit+} --- Normally required.  Number of steps
+    \item {\verb+index_limit+} --- Normally required.  Number of steps
       in the variation. Measurements are taken at each step.  When
       more than one variable is associated with the same counter, only
       the {\verb+index_limit+} of the first variable definition for
@@ -257,17 +257,17 @@ have default values in general are string variables.
       {\verb+index_number+} value, then the first {\verb+index_limit+}
       remain in force.
 
-   \item {\verb+relative_to_original+} --- Optional. If non-zero, then
+    \item {\verb+relative_to_original+} --- Optional. If non-zero, then
       the variation range is defined relative to the original process
       variable value (i.e. the value prior to running the program).
 
-   \item {\verb+range_multiplier+} --- Optional. Factor by which the
+    \item {\verb+range_multiplier+} --- Optional. Factor by which the
       range, {\verb+final_value+} - {\verb+initial_value+}, is
       multiplied.  New values of {\verb+initial_value+} and
       {\verb+final_value+} are calculated while keeping the midpoint
       of the range the same.
 
-   \item {\verb+function+} --- Optional. A string of rpn operations
+    \item {\verb+function+} --- Optional. A string of rpn operations
       used to transform the range specified by {\verb+initial_value+},
       {\verb+final_value+}, and {\verb+index_limit+}. For convenience,
       the original value of the process variable, and the calculated
@@ -278,7 +278,7 @@ have default values in general are string variables.
       to read a rpn definition file at the start of the execution of
       \verb+sddsvexperiment+.
 
-   \item {\verb+values_file+} --- Optional. An SDDS data file
+    \item {\verb+values_file+} --- Optional. An SDDS data file
       containing setpoints for the variable.  This is useful is one
       has arbitrary setpoints values to apply.  The values of the
       fields {\verb+initial_value+}, {\verb+final_value+},
@@ -292,12 +292,12 @@ have default values in general are string variables.
       in the file and the values calculated for the other variable
       will vary together with the same number of steps.
 
-   \item {\verb+values_file_column+} --- Required when
+    \item {\verb+values_file_column+} --- Required when
       {\verb+values_file+} is specified.  {\verb+values_file_column+}
       gives the column name of the setpoints data in file
       {\verb+values_file+}.
 
-   \item {\verb+substeps+} --- Optional. If greater than one, the
+    \item {\verb+substeps+} --- Optional. If greater than one, the
       steps are subdivided into this number.  Measurements are not
       made at substeps. Substeps are useful when the physical device
       associated with the process variable cannot reliably make steps
@@ -305,24 +305,24 @@ have default values in general are string variables.
       {\verb+initial_value+}, {\verb+final_value+}, and
       {\verb+index_limit+}.
 
-   \item {\verb+substep_pause+} --- Optional. Number of seconds to
+    \item {\verb+substep_pause+} --- Optional. Number of seconds to
       pause after the variable change of each substeps.
 
-   \item {\verb+readback_name+} --- Optional. Readback process
+    \item {\verb+readback_name+} --- Optional. Readback process
       variable name associated with {\verb+PV_name+}. The default
       value for {\verb+readback_name+} is {\verb+PV_name+}.
 
-   \item {\verb+readback_tolerance+} --- Optional. Maximum acceptable
+    \item {\verb+readback_tolerance+} --- Optional. Maximum acceptable
       absolute value of the difference between the process variable
       setpoint and its readback. A positive value is required in order
       to enable readbacks.
 
-   \item {\verb+readback_pause+} --- Optional. Number of seconds to
+    \item {\verb+readback_pause+} --- Optional. Number of seconds to
       pause after each reading of the {\verb+readback_name+} process
       variable.  This pause time is in addition to other pauses
       defined.
 
-   \item {\verb+readback_attempts+} --- Optional. Number of allowed
+    \item {\verb+readback_attempts+} --- Optional. Number of allowed
        readings of the {\verb+readback_name+} process variable and
        readback pauses after a variable change has occurred.  After
        this number of readings, the program exits.  The first readback
@@ -330,54 +330,54 @@ have default values in general are string variables.
        setpoint command to the {\verb+PV_name+}.  A positive value is
        required in order to enable readbacks.
 
-   \item {\verb+reset_to_original+} --- Optional. A value of 1 means
+    \item {\verb+reset_to_original+} --- Optional. A value of 1 means
        that the variable is reset to its original value when the
        experiment terminates normally or abnormally.
-\end{itemize}
+  \end{itemize}
 
 
 \begin{latexonly}
 \newpage\begin{center}{\Large \verb+rootname_list+}\end{center}
 \end{latexonly}
 \begin{htmlonly}
-\item {\Large \verb+rootname_list+}
+  \item {\Large \verb+rootname_list+}
 \end{htmlonly}
 
-\begin{itemize}
-   \item function: specifies rootnames from which to generate names of process variable to measure at each step during the experiment.
+  \begin{itemize}
+    \item function: specifies rootnames from which to generate names of process variable to measure at each step during the experiment.
 \begin{verbatim}
 &rootname_list
         STRING filename = NULL;
 &end
 \end{verbatim}
-   \item {\verb+filename+} --- Required. See description of rootname file below.
-\end{itemize}
+    \item {\verb+filename+} --- Required. See description of rootname file below.
+  \end{itemize}
 
 \begin{latexonly}
 %\newpage
 \begin{center}{\Large \verb+suffix_list+}\end{center}
 \end{latexonly}
 \begin{htmlonly}
-\item {\Large \verb+suffix_list+}
+  \item {\Large \verb+suffix_list+}
 \end{htmlonly}
-\begin{itemize}
-   \item function: specifies suffixes from which to generate names of process variable to measure at each step during the experiment.
+  \begin{itemize}
+    \item function: specifies suffixes from which to generate names of process variable to measure at each step during the experiment.
 \begin{verbatim}
 &suffix_list
         STRING filename = NULL;
 &end
 \end{verbatim}
-   \item {\verb+filename+} --- Required. See description of suffix file below.
-\end{itemize}
+    \item {\verb+filename+} --- Required. See description of suffix file below.
+  \end{itemize}
 
 \begin{latexonly}
 \newpage\begin{center}{\Large \verb+execute+}\end{center}
 \end{latexonly}
 \begin{htmlonly}
-\item {\Large \verb+execute+}
+  \item {\Large \verb+execute+}
 \end{htmlonly}
-\begin{itemize}
-   \item function: start executing the experiment. Some global parameters are defined here.
+  \begin{itemize}
+    \item function: start executing the experiment. Some global parameters are defined here.
 \begin{verbatim}
 &execute
         double post_change_pause = 0
@@ -393,47 +393,47 @@ have default values in general are string variables.
         long ramp_steps = 10;
 &end
 \end{verbatim}
-   \item {\verb+post_change_pause+} ---  Optional. Number of seconds to pause after each change before
+    \item {\verb+post_change_pause+} ---  Optional. Number of seconds to pause after each change before
       attempting to make any measurement.
 
-   \item {\verb+intermeasurement_pause+} --- Optional. Number of
+    \item {\verb+intermeasurement_pause+} --- Optional. Number of
       seconds to pause between each measurement.  Individual
       measurements for averaging are taken at this interval.
 
-   \item {\verb+rollover_pause+} --- Optional. Number of seconds to
+    \item {\verb+rollover_pause+} --- Optional. Number of seconds to
       pause after a counter has reached its upper limit, and must
       rollover to zero. This allows any physical devices associated
       with the counter to settle after a change equal to the total
       range of the variation.
 
-   \item {\verb+post_change_key_wait+} --- Optional. If non-zero, then
+    \item {\verb+post_change_key_wait+} --- Optional. If non-zero, then
       wait for a key press after making variable changes but before
       taking measurements. A prompt is given.
 
-   \item {\verb+allowed_timeout_errors+} --- Optional. Number of
+    \item {\verb+allowed_timeout_errors+} --- Optional. Number of
       timeout errors allowed before aborting the program.
 
-   \item {\verb+allowed_limit_errors+} --- Optional. Number of invalid
+    \item {\verb+allowed_limit_errors+} --- Optional. Number of invalid
       range measurement errors allowed before aborting the
       program. The valid range of a measurement is specified in the
       {\verb+measurement+} command.
 
-   \item {\verb+outlimit_pause+} --- Optional. Number of seconds to
+    \item {\verb+outlimit_pause+} --- Optional. Number of seconds to
       pause after an invalid range measurement error occurred. This is
       to permit equipment time to recover from whatever glitch caused
       the out-of-limit reading.
 
-   \item {\verb+repeat_reading+} --- Optional. The measurements and
+    \item {\verb+repeat_reading+} --- Optional. The measurements and
       statistical analyses are repeated this number of times for each
       variable settings. A page of data is written to the output file
       for each repetition.
 
-   \item {\verb+post_reading_pause+} --- Optional. Number of seconds
+    \item {\verb+post_reading_pause+} --- Optional. Number of seconds
       to pause after taking a set of measurements and making a
       statistical analysis.  If measurements are repeated then the
       pause is repeated after each set of measurements.
 
-   \item {\verb+ramp_steps+} --- Optional. Number of steps in the
+    \item {\verb+ramp_steps+} --- Optional. Number of steps in the
       variables PV ramp which occurs at the start and the end of the
       experiment.
 
@@ -445,56 +445,56 @@ have default values in general are string variables.
       final values back the original values. Ramping back to original
       values is also done when the experiment aborts for some reason.
 
-   \item {\verb+ramp_pause+} --- Optional. Time interval at each step
+    \item {\verb+ramp_pause+} --- Optional. Time interval at each step
       of the variables PV ramp which occurs at the start and the end
       of the experiment. This is not the same variable as the pause
       between variable changes during the experiment.
-\end{itemize}
+  \end{itemize}
 
 \begin{latexonly}
 \newpage\begin{center}{\Large \verb+erase+}\end{center}
 \end{latexonly}
 \begin{htmlonly}
-\item {\Large \verb+erase+}
+  \item {\Large \verb+erase+}
 \end{htmlonly}
-\begin{itemize}
-   \item function: deletes previous variable or measurement setups.
+  \begin{itemize}
+    \item function: deletes previous variable or measurement setups.
 \begin{verbatim}
 &erase
         long variable_definitions = 1
         long measurement_definitions = 1
 &end
 \end{verbatim}
-   \item {\verb+variable_definitions+} --- Optional. If non-null, then all the variable definitions are erased.
-   \item {\verb+measurement_definitions+} --- Optional. If non-null, then all the measurement definitions are erased.
-\end{itemize}
+    \item {\verb+variable_definitions+} --- Optional. If non-null, then all the variable definitions are erased.
+    \item {\verb+measurement_definitions+} --- Optional. If non-null, then all the measurement definitions are erased.
+  \end{itemize}
 
 \begin{latexonly}
 %\newpage
 \begin{center}{\Large \verb+list_control_quantities+}\end{center}
 \end{latexonly}
 \begin{htmlonly}
-\item {\Large \verb+list_control_quantities+}
+  \item {\Large \verb+list_control_quantities+}
 \end{htmlonly}
-\begin{itemize}
-   \item function: makes a cross-reference file for process variable names and column names of the data file.
+  \begin{itemize}
+    \item function: makes a cross-reference file for process variable names and column names of the data file.
 \begin{verbatim}
 &list_control_quantities
          STRING filename = NULL
 &end
 \end{verbatim}
-   \item {\verb+filename+} --- Required. Name of file. Columns defined are \verb+ControlName+,
+    \item {\verb+filename+} --- Required. Name of file. Columns defined are \verb+ControlName+,
                 \verb+SymbolicName+, and \verb+ControlUnits+.
-\end{itemize}
+  \end{itemize}
 
 \begin{latexonly}
 \newpage\begin{center}{\Large \verb+system_call+}\end{center}
 \end{latexonly}
 \begin{htmlonly}
-\item {\Large \verb+system_call+}
+  \item {\Large \verb+system_call+}
 \end{htmlonly}
-\begin{itemize}
-   \item function: specifies a system call (usually a script) to be executed repeatedly during the experiment.
+  \begin{itemize}
+    \item function: specifies a system call (usually a script) to be executed repeatedly during the experiment.
 \begin{verbatim}
 &system_call
         STRING command = NULL
@@ -506,72 +506,72 @@ have default values in general are string variables.
         STRING counter_format = "%ld"
         long call_before_setting = 0
         long call_before_measuring = 1
-        STRING counter_column_name = NULL 
-&end       
+        STRING counter_column_name = NULL
+&end
 \end{verbatim}
-   \item {\verb+command+} --- Required. Name of shell command or script to execute.
-   \item {\verb+index_number+} --- Required. Counter number with which the command will be associated. The command is executed
+    \item {\verb+command+} --- Required. Name of shell command or script to execute.
+    \item {\verb+index_number+} --- Required. Counter number with which the command will be associated. The command is executed
                 when this counter is advanced or rolled over.
-   \item {\verb+index_number+} --- Optional. Number of times the command is executed for 
+    \item {\verb+index_number+} --- Optional. Number of times the command is executed for
                 the associated counter. This field is used only when the value of {\verb+index_number+} above defines a new counter.
-   \item {\verb+post_command_pause+} --- Optional. Number of seconds to pause after the completion of the command.
-   \item {\verb+pre_command_pause+} --- Optional. Number of seconds to pause before executing the command.
-   \item {\verb+append_counter+} --- Optional. If non-zero, the counter value is appended to the command when the
+    \item {\verb+post_command_pause+} --- Optional. Number of seconds to pause after the completion of the command.
+    \item {\verb+pre_command_pause+} --- Optional. Number of seconds to pause before executing the command.
+    \item {\verb+append_counter+} --- Optional. If non-zero, the counter value is appended to the command when the
                 system call is made.
-   \item {\verb+counter_format+} --- Optional. Format for the counter if the counter value is appended to the command.
-   \item {\verb+call_before_setting+}, {\verb+call_before_measuring+}, --- Optional.
+    \item {\verb+counter_format+} --- Optional. Format for the counter if the counter value is appended to the command.
+    \item {\verb+call_before_setting+}, {\verb+call_before_measuring+}, --- Optional.
                 At a counter advance or rollover
                 the command can be executed in one of three ways:
-                \begin{itemize}
-                   \item  before both variable changes and measurements: \\
+    \begin{itemize}
+      \item  before both variable changes and measurements: \\
                         {\verb+call_before_setting+}=1, {\verb+call_before_measuring+}=1
-                   \item  after variable changes and before measurements:\\
+      \item  after variable changes and before measurements:\\
                         {\verb+call_before_setting+}=0, {\verb+call_before_measuring+}=1
-                   \item  after both variable changes and measurements:\\
+      \item  after both variable changes and measurements:\\
                         {\verb+call_before_setting+}=0, {\verb+call_before_measuring+}=0
-                \end{itemize}
+    \end{itemize}
                 If multiple measurements are made for averaging, the command is not executed between measurements.
-   \item {\verb+counter_column_name+} --- Optional. If non-null, a column in the output file with this name is defined.
+    \item {\verb+counter_column_name+} --- Optional. If non-null, a column in the output file with this name is defined.
                 The values written to this column are the number of times the command had been called minus one. This
                 value doesn't rollover with its associated counter.
-\end{itemize}
+  \end{itemize}
 
 %\begin{htmlonly}
 %\end{itemize}
 %\end{htmlonly}
 
 \newpage
-\item \textbf{Rootname file:} \par
+  \item \textbf{Rootname file:} \par
         SDDS file defining the rootnames of the process variables with column:
-                \begin{itemize}
-           \item  {\verb+Rootname+} --- Required string column to generate measurement process variables.
-                \end{itemize}
+  \begin{itemize}
+    \item  {\verb+Rootname+} --- Required string column to generate measurement process variables.
+  \end{itemize}
 
-\item \textbf{Suffix file:} \par
+  \item \textbf{Suffix file:} \par
         SDDS file defining the suffixes and measurement parameters with columns:
-                \begin{itemize}
-           \item {\verb+Suffix+} --- Required string column of suffix names to be appended to the \verb+Rootname+
+  \begin{itemize}
+    \item {\verb+Suffix+} --- Required string column of suffix names to be appended to the \verb+Rootname+
                          values in the rootname file to generate measurement process variables.
-           \item {\verb+ColumnNameSuffix+} --- Optional string column of names of suffix column appearing in output data file.
-           \item {\verb+NumberToAverage+} --- Optional long column of number of measurements to average.
-           \item {\verb+IncludeStDev+} --- Optional character column. If value is 
-                        ``y'' then the standard deviation (a measure of the distribution of 
+    \item {\verb+ColumnNameSuffix+} --- Optional string column of names of suffix column appearing in output data file.
+    \item {\verb+NumberToAverage+} --- Optional long column of number of measurements to average.
+    \item {\verb+IncludeStDev+} --- Optional character column. If value is
+                        ``y'' then the standard deviation (a measure of the distribution of
                         measurements) is calculated and included
                         in the output file. If ``n'' then the standard deviation is not calculated.
-           \item {\verb+IncludeSigma+} --- Optional character column. If value is ``y'' then the sigma (uncertainty on the mean value) 
+    \item {\verb+IncludeSigma+} --- Optional character column. If value is ``y'' then the sigma (uncertainty on the mean value)
                         is calculated and included
                         in the output file. If ``n'' then the sigma is not calculated.
-           \item {\verb+LowerLimit+} and {\verb+UpperLimit+} --- Optional double columns.
+    \item {\verb+LowerLimit+} and {\verb+UpperLimit+} --- Optional double columns.
                          Must have both or neither. Defines a range of validity for the
                         individual measurements. If the number of invalid measurements (reset to 0 at each
                         measurement step) equals or exceeds the value
                         of {\verb+allowed_limit_errors+} (default of 1) in command {\verb+execute+}, then the program aborts.
                         The average values written to the output file excludes measurements outside this range.
-                \end{itemize}
+  \end{itemize}
 
-\item \textbf{Output file:}\par
+  \item \textbf{Output file:}\par
 The output file contains one data page for each variable step.
-The names of the defined columns are those string data of the {\verb+Suffix+} or {\verb+ColumnNameSuffix+} 
+The names of the defined columns are those string data of the {\verb+Suffix+} or {\verb+ColumnNameSuffix+}
 columns from the suffix file.
 A column is created for each standard deviation or sigma calculation requested for a measurement.
 The standard deviation columns are named \verb+StDev<columnName>+, and
@@ -579,51 +579,51 @@ the sigma columns are named \verb+StDev<columnName>+, where \verb+<columnName>+ 
 by an actual column name.
 
 Some additional columns are defined:
-\begin{itemize}
-   \item {\verb+Rootname+} --- String column for the rootname of the PVs.
-   \item {\verb+Index+} --- Long columns for the index of the row.
-   \item {\tt Time} --- Double parameter of time since start of epoch. This time data can be used by
+  \begin{itemize}
+    \item {\verb+Rootname+} --- String column for the rootname of the PVs.
+    \item {\verb+Index+} --- Long columns for the index of the row.
+    \item {\tt Time} --- Double parameter of time since start of epoch. This time data can be used by
         the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
-   \item {\tt ElapsedTime} --- Double parameter of elapsed time of readback since the start of the experiment.
-\end{itemize}
+    \item {\tt ElapsedTime} --- Double parameter of elapsed time of readback since the start of the experiment.
+  \end{itemize}
 
 The variable values appear as parameters in each data page.
 
 Many time parameters are defined:
-\begin{itemize}
-   \item {\verb+Step+} --- Long parameter for the step number.
-   \item {\tt Time} --- Double parameter of time since start of epoch. This time data can be used by
+  \begin{itemize}
+    \item {\verb+Step+} --- Long parameter for the step number.
+    \item {\tt Time} --- Double parameter of time since start of epoch. This time data can be used by
         the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
-   \item {\tt ElapsedTime} --- Double parameter of elapsed time of readback since the start of the experiment.
-   \item {\tt TimeOfDay} --- Double parameter of system time in units of hours. 
+    \item {\tt ElapsedTime} --- Double parameter of elapsed time of readback since the start of the experiment.
+    \item {\tt TimeOfDay} --- Double parameter of system time in units of hours.
                 The time does not wrap around at 24 hours.
-   \item {\tt TimeStamp} --- String parameter of time stamp for file.
-\end{itemize}
+    \item {\tt TimeStamp} --- String parameter of time stamp for file.
+  \end{itemize}
 
 \end{itemize}
 
 \item \textbf{switches:}
-   \begin{itemize}
-   \item {\verb+-suffixFile=<filename>+} --- SDDS file defining the suffixes and measurement parameters. If not specified
+\begin{itemize}
+  \item {\verb+-suffixFile=<filename>+} --- SDDS file defining the suffixes and measurement parameters. If not specified
                on the command line, then the namelist command {\verb+suffix_list+} is required in the input file.
-   \item {\verb+-rootnameFile=<filename>+} --- SDDS file defining the rootnames of the process variables. If not specified
+  \item {\verb+-rootnameFile=<filename>+} --- SDDS file defining the rootnames of the process variables. If not specified
                on the command line, then the namelist command {\verb+rootname_list+} is required in the input file.
-    \item {\verb+-echoinput+} --- echos input file to stdout.
-    \item {\verb+-dryrun+} --- the ``variable'' process variables are left untouched during the execution. The ``measurement''
+  \item {\verb+-echoinput+} --- echos input file to stdout.
+  \item {\verb+-dryrun+} --- the ``variable'' process variables are left untouched during the execution. The ``measurement''
                 process variables are still read. The pauses and system calls are still in effect.
-    \item {\verb+-summarize+} --- gives a summary of the experiment before executing it.
-    \item {\verb+-verbose[=very]+} --- prints out information during the execution such as notification of
+  \item {\verb+-summarize+} --- gives a summary of the experiment before executing it.
+  \item {\verb+-verbose[=very]+} --- prints out information during the execution such as notification of
                 setting and reading process variables.  The option \verb+very+ prints out the average measurement values.
-    \item {\verb+-pendIOtime=<seconds>+} --- sets the CA pend\_io timeout value.
-    \item {\verb+-describeInput+} --- Prints out the list of namelist commands and fields of the input file.
-   \end{itemize}
+  \item {\verb+-pendIOtime=<seconds>+} --- sets the CA pend\_io timeout value.
+  \item {\verb+-describeInput+} --- Prints out the list of namelist commands and fields of the input file.
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddsexperiment}
-    \end{itemize}
-\item \textbf{author:} M. Borland, ANL 
+  \item \progref{sddsexperiment}
+\end{itemize}
+\item \textbf{author:} M. Borland, ANL
 \end{sddsprog}

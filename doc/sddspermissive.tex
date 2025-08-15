@@ -26,7 +26,7 @@ sddspermissive <inputfile>\
 
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:}\par
+  \item \textbf{input file:}\par
 An SDDS file with required columns \verb+ControlName+, \verb+Description+,
 \verb+MinimumValue+, and \verb+MaximumValue+.  An optional \verb+Provider+
 column selects the protocol.  Each page may also define parameters
@@ -37,19 +37,19 @@ is ignored.
 
 \item \textbf{switches:}
 \begin{itemize}
-\item {\tt -executionTime=<seconds>} --- total time to run before exiting.
-\item {\tt -runControlPV=string=<pv>[,pingTimeout=<value>][,pingInterval=<value>]} --- run
+  \item {\tt -executionTime=<seconds>} --- total time to run before exiting.
+  \item {\tt -runControlPV=string=<pv>[,pingTimeout=<value>][,pingInterval=<value>]} --- run
   control record to set when limits are violated.
-\item {\tt -runControlDescription=string=<text>} --- description placed in the run
+  \item {\tt -runControlDescription=string=<text>} --- description placed in the run
   control record (default: \verb+sddspermissive session+).
-\item {\tt -verbose} --- enable progress messages.
-\item {\tt -pendIOTime=<seconds>} --- maximum time to wait for Channel Access operations.
+  \item {\tt -verbose} --- enable progress messages.
+  \item {\tt -pendIOTime=<seconds>} --- maximum time to wait for Channel Access operations.
 \end{itemize}
 
 \item \textbf{see also:}
 \begin{itemize}
-\item \progref{sddscontrollaw}
-\item \progref{sddspvtest}
+  \item \progref{sddscontrollaw}
+  \item \progref{sddspvtest}
 \end{itemize}
 
 \item \textbf{author:} R. Soliday, ANL

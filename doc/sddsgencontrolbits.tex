@@ -26,8 +26,8 @@ explained in further detail in \cite{Norum2007}.
 \label{fig:acquisitionControlRam}
 \end{figure}
 
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 
 The contents of the file {\tt controlRAM} is converted to control bits
 file {\tt RAMcontrolBits}.
@@ -71,7 +71,7 @@ PlaneSwitch},{\tt Accumulator}, and {\tt Sample}) by default the BPM
 in position 0 (from receiver positions 0,1,2,3). The column {\tt
 Accumulator} is referred to in \cite{Norum2007} as simply ``Plane''.
 
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \small
 \begin{verbatim}
 sddsgencontrolbits <inputRAMFile> <outputFile>
@@ -95,35 +95,35 @@ Optionally writes to a RAM acquisition control waveform.
 Each usage represent one of three ways to supply input data:
 1) input file of RAM data,
 2) RAM or scope readback waveform PV, or
-3) RAM configuration parameters 
+3) RAM configuration parameters
 such as preset bunch pattern and others.
-<inputRAMFile>      file containing the values of a RAM waveform record. The data 
+<inputRAMFile>      file containing the values of a RAM waveform record. The data
                     is an array of unsigned long integer.
 
--RAMWaveformPV      RAM waveform PV name. 
--scopeWaveformPV    digital scope waveform PV name. 
--RAMArrayLength     the length of control RAM waveform PV needed for generating control bits from 
+-RAMWaveformPV      RAM waveform PV name.
+-scopeWaveformPV    digital scope waveform PV name.
+-RAMArrayLength     the length of control RAM waveform PV needed for generating control bits from
                     bunch pattern.
--scopeArrayLength   the length of digital scope waveform PV needed for generating control bits from 
+-scopeArrayLength   the length of digital scope waveform PV needed for generating control bits from
                     bunch pattern.
--turnsPerWrap       number of turns in each wrap; 
-                    "Simulated" scope readback control bits can normally be generated 
-                    from RAM long integer data. However for the inverse generation the quantity turnsPerWrap 
+-turnsPerWrap       number of turns in each wrap;
+                    "Simulated" scope readback control bits can normally be generated
+                    from RAM long integer data. However for the inverse generation the quantity turnsPerWrap
                     is required. This option is required for the -scopeWaveformPV input method.
 
 -presetRAMconfiguration  specifies a particular configuration from the file of RAM configuration presets.
-                    A preset configuration consists of Label, PlaneMode, CommutationMode, 
-                    SampleMode, BunchPattern, SamplesPerBunch, TurnMarkerOffset, and TransitionDeadTime. 
-                    The preset string value must match one of the values of Label of the preset file. 
-                    The default file is /home/helios/oagData/sr/BPMcontrolRAM/presetPatterns. 
-                    If this option is provided, then the planeMode, commutationMode and sampleMode 
-                    options will be overridden. 
--planeMode          the plane switch mode with values x, y, xy1, or xy2, which stands for 
-                    x plane, y plane, switch x/y per turn, or switch x/y every two turns. 
-                    (each turn has 324 time slots.) 
--commutationMode    commutation switch mode with possible values of a, b, ab1, and ab2, 
-                    which stands for 0 degree, 180 degrees, switch between 0 and 180 every turn, 
-                    or switch  between 0 and 180 every two turns. 
+                    A preset configuration consists of Label, PlaneMode, CommutationMode,
+                    SampleMode, BunchPattern, SamplesPerBunch, TurnMarkerOffset, and TransitionDeadTime.
+                    The preset string value must match one of the values of Label of the preset file.
+                    The default file is /home/helios/oagData/sr/BPMcontrolRAM/presetPatterns.
+                    If this option is provided, then the planeMode, commutationMode and sampleMode
+                    options will be overridden.
+-planeMode          the plane switch mode with values x, y, xy1, or xy2, which stands for
+                    x plane, y plane, switch x/y per turn, or switch x/y every two turns.
+                    (each turn has 324 time slots.)
+-commutationMode    commutation switch mode with possible values of a, b, ab1, and ab2,
+                    which stands for 0 degree, 180 degrees, switch between 0 and 180 every turn,
+                    or switch  between 0 and 180 every two turns.
 -sampleMode         sample mode with values continuous, single or pattern.
                     If "pattern" is selected, then the value of suboption bunchPattern must be given
                     and must match up with a bunch pattern defined in the preset bunch pattern file.
@@ -141,16 +141,16 @@ such as preset bunch pattern and others.
                     (which is normally set at 2048 by PV S42B:scope:gtr:numberPTS).
 
 The output options are the same in the three usages.
-<outputFile>        file of the separated control bits of a RAM waveform record. 
-                    Columns are Index, PlaneSwitch, CommutationSwitch, Sample, 
-                    TurnMarker, P0Marker, WrapMarker, all short integers except for Index, 
+<outputFile>        file of the separated control bits of a RAM waveform record.
+                    Columns are Index, PlaneSwitch, CommutationSwitch, Sample,
+                    TurnMarker, P0Marker, WrapMarker, all short integers except for Index,
                     which is long integer.
-                    The digital scope readback waveform record is simulated and is 
-                    included as the second data page. 
--setRAMWaveformPV   if provided, the control RAM long integer data will be written to this PV. 
-                    Note that when used with -RAMWaveformPV input with the same PVs, 
-                    the same values are read and written to the same PV. 
--controlRAMFile     if provided, the control RAM long integer data will be written to this file. 
+                    The digital scope readback waveform record is simulated and is
+                    included as the second data page.
+-setRAMWaveformPV   if provided, the control RAM long integer data will be written to this PV.
+                    Note that when used with -RAMWaveformPV input with the same PVs,
+                    the same values are read and written to the same PV.
+-controlRAMFile     if provided, the control RAM long integer data will be written to this file.
 -comment            provide comments for saving the control RAM into controlRAMFile .
 -receiver           provide the receiver number to select from the control RAM when
                     creating the control bits file, which has room for only one set
@@ -162,15 +162,15 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
 
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:} \par
+  \item \textbf{input file:} \par
   RAM waveform record containing unsigned long integer values.
-\item \textbf{output file:} \par
+  \item \textbf{output file:} \par
   Control bits separated into individual columns; includes simulated scope readback page.
-\item \textbf{bunch pattern file:} \par
+  \item \textbf{bunch pattern file:} \par
   Definitions of preset bunch patterns for pattern-based sampling modes.
 
-\item \textbf{switches:}
-    \begin{itemize}
+  \item \textbf{switches:}
+  \begin{itemize}
     \item {\tt -RAMWaveformPV} --- RAM waveform PV name.
     \item {\tt -scopeWaveformPV} --- digital scope waveform PV name.
     \item {\tt -planeMode} --- plane switch mode for receivers.
@@ -191,13 +191,13 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
     \item {\tt -controlRAMFile} --- write control RAM data to this file.
     \item {\tt -comment} --- comment string saved with control RAM data.
     \item {\tt -receiver} --- select receiver when creating control bits (obsolete).
-    \end{itemize}
+  \end{itemize}
 \end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddsexperiment}
-    \end{itemize}
+  \item \progref{sddsexperiment}
+\end{itemize}
 \item \textbf{author:} L. Emery, H. Shang, R. Soliday, ANL
 \end{sddsprog}

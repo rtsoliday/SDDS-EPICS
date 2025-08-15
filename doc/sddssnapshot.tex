@@ -10,8 +10,8 @@ All data in the input file (even those not needed by the program) are transferre
 \verb+sddssnapshot+ is more for data collection as opposed to backup and restore.
 
 \item \textbf{examples:}
-% 
-The state of the APS storage ring is saved by writing 
+%
+The state of the APS storage ring is saved by writing
 values of process variables listed in SR.req
 to the snapshot file SR.snp:
 \begin{verbatim}
@@ -29,7 +29,7 @@ S1A:Q2:CurrentAO
 ...
 \end{verbatim}
 
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddssnapshot [-pipe[=input][,output]] [<input>] [<output>]
 [-pendIOtime=<seconds>] [-unitsOfData=<string>] [-nameOfData=<string>]
@@ -41,48 +41,48 @@ SIGUSR1 is received.  Exits when SIGUSR2 is received.
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:}\par
+  \item \textbf{input file:}\par
 The input file is an SDDS file with at least one column:
-\begin{itemize}
-        \item {\tt ControlName} --- Required string column for the process variable or device name.
-\end{itemize}
+  \begin{itemize}
+    \item {\tt ControlName} --- Required string column for the process variable or device name.
+  \end{itemize}
 
-\item \textbf{output file:}\par
+  \item \textbf{output file:}\par
 The output file contains all columns of the input file including those
 not needed by the program plus a column named on the command line option {\tt -nameOfData}.
-This column is defined as a double type and contains the readback values. 
+This column is defined as a double type and contains the readback values.
 Optionally the units of that readback column may be specified on the command line.
 Of course this option is useful only if all the process variables have the same units, as in
 the case of recording orbit values from all bpms.
 If the {\tt -average} option is requested, then an additional double column is created with the name
 of the readback column with the ``StDev'' appended to it.
 
-\item \textbf{pid file:}\par
+  \item \textbf{pid file:}\par
 A process id file is created with option {\verb+serverMode=<pidFile>+}. This file contains a single
 number which is the pid number of the running {\verb+sddssnapshot+} process.
 \end{itemize}
 \item \textbf{switches:}
-    \begin{itemize}
+\begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-        \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-        \item {\tt -pendIOtime=<seconds>} --- Sets the maximum time to wait for channel access operations to complete.
-        \item {\tt -nameOfData=<string>} --- Column name to be given to the data collected. Default name is ``Value''.
-        \item {\tt -unitsOfData=<string>} --- Optional. Name given to the units field of the column definition
+  \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
+  \item {\tt -pendIOtime=<seconds>} --- Sets the maximum time to wait for channel access operations to complete.
+  \item {\tt -nameOfData=<string>} --- Column name to be given to the data collected. Default name is ``Value''.
+  \item {\tt -unitsOfData=<string>} --- Optional. Name given to the units field of the column definition
                         of the data to be collected. Default value is the null string.
-        \item {\tt -serverMode=<pidFile>} --- Optional. Enables the server mode. The file specified will be created and contain
+  \item {\tt -serverMode=<pidFile>} --- Optional. Enables the server mode. The file specified will be created and contain
                 the process number of the present \verb+sddssnapshot+ process. This file is the mechanism
                 through which the user will know to which process should the SIGUSR1 be sent.
                 To activate one snapshot write, the user can type
                 the command ``\verb+kill -SIGUSR1 `cat <pidFile>+`''.
-        \item {\tt -average=<number>,<intervalInSec> } --- Optional. One can specify the number of readings to
+  \item {\tt -average=<number>,<intervalInSec> } --- Optional. One can specify the number of readings to
                 average and the number of seconds interval between readings.
-    \end{itemize}
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddsmonitor}
-    \item \progref{sddscasr}
-    \end{itemize}
-\item \textbf{author:} M. Borland, ANL 
+  \item \progref{sddsmonitor}
+  \item \progref{sddscasr}
+\end{itemize}
+\item \textbf{author:} M. Borland, ANL
 \end{sddsprog}

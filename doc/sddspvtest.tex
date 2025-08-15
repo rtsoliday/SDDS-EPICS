@@ -4,8 +4,8 @@
 \verb+sddspvtest+ tests the process variable given by the inputfile are out-of-range
 or not and sets the number of out-of-range process variables to a control PV.
 
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 \begin{verbatim}
 sddspvtest linac.sdds -time=20 -runControlPV={string=shang:ControlLawRC,pingTimeout=4}\
   -runControlDescription=string=hi
@@ -21,16 +21,16 @@ SDDS1
 ! page number 1
 linac
                   10
-soliday:PM1:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM1:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM2:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM2:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM3:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM3:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM4:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM4:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM5:X:positionM  1.000000000000000e+00 -1.000000000000000e+00 
-soliday:PM5:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00 
+soliday:PM1:X:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM1:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM2:X:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM2:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM3:X:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM3:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM4:X:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM4:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM5:X:positionM  1.000000000000000e+00 -1.000000000000000e+00
+soliday:PM5:Y:positionM  1.000000000000000e+00 -1.000000000000000e+00
 .......
 
 \end{verbatim}
@@ -49,7 +49,7 @@ usage: sddspvtest <inputFile> [-pvOutput=<pvName>[
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:} \par
+  \item \textbf{input file:} \par
 The variable input file is an SDDS file with one string column: ControlName, which is required
 and gives the list of control correctors (process variables or knobs). It also contains two
 double columns: MaximumValue and MinimumValue, which are also required. Optional columns
@@ -58,31 +58,31 @@ ChangeLimit values are used with the \verb|-exitCondition| option.
 \end{itemize}
 
 \item \textbf{switches:}
-    \begin{itemize}
+\begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-        \item {\tt -pvOutput} --- optional. The output PV name for storing the testing results
+  \item {\tt -pvOutput} --- optional. The output PV name for storing the testing results
                of PVs in the input. Qualifiers \verb|passValue| and \verb|failValue| set
                the values written for pass or fail. If it is not given, the number of
                failed tests is printed.
-        \item {\tt -time} --- required. Total time for testing process variables.
+  \item {\tt -time} --- required. Total time for testing process variables.
                Valid time units are seconds, minutes, hours, or days.
-        \item {\tt -interval} --- optional. Desired time interval for testing; units are the
+  \item {\tt -interval} --- optional. Desired time interval for testing; units are the
                same as for \verb|-time|.
-        \item {\tt -monitor} --- monitor all PVs regardless of the Monitor column.
-        \item {\tt -exitCondition} --- program exit criterion: \verb|allPass|, \verb|anyFail|,
+  \item {\tt -monitor} --- monitor all PVs regardless of the Monitor column.
+  \item {\tt -exitCondition} --- program exit criterion: \verb|allPass|, \verb|anyFail|,
                \verb|converged=<cycles>|, or \verb|changed|.
-        \item {\tt -runControlPV} --- specifies the runControl PV record. \verb|string| or
+  \item {\tt -runControlPV} --- specifies the runControl PV record. \verb|string| or
                \verb|parameter| is required; \verb|pingInterval| and \verb|pingTimeout|
                are optional.
-        \item {\tt -runControlDescription} --- specifies a string or parameter value used
+  \item {\tt -runControlDescription} --- specifies a string or parameter value used
                for a runControl PV description record.
-        \item {\tt -verbose} --- print out messages.
-        \item {\tt -pendIOtime} --- sets the maximum time to wait for return of each value.
-    \end{itemize}
+  \item {\tt -verbose} --- print out messages.
+  \item {\tt -pendIOtime} --- sets the maximum time to wait for return of each value.
+\end{itemize}
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddscontrollaw}
-    \end{itemize}
+  \item \progref{sddscontrollaw}
+\end{itemize}
 \item \textbf{author:} H. Shang, ANL
 \end{sddsprog}

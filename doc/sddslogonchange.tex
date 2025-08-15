@@ -2,8 +2,8 @@
 \begin{sddsprog}{sddslogonchange}
 \item \textbf{description:}
 \verb+sddslogonchange+ records only the values of process variables that change. This reduces the output file size if process variables do not change often.
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 Process variable setpoints from the storage ring are monitored
 with the command below.
 \begin{verbatim}
@@ -22,23 +22,23 @@ S1A:H2:CurrentAI.AOFF 0.0 ""
 S1A:H3:CurrentAI.AOFF 0.0 ""
 ...
 \end{verbatim}
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
-usage: sddslogonchange <input> <output> 
+usage: sddslogonchange <input> <output>
   [-timeDuration=<realValue>[,<time-units>]]
-  [-append[=recover]] 
+  [-append[=recover]]
   [-eraseFile]
   [-generations[=digits=<integer>][,delimiter=<string>]]
   [-dailyFiles]
-  [-pendEventTime=<seconds>] 
-  [-durations] 
+  [-pendEventTime=<seconds>]
+  [-durations]
   [-connectTimeout=<seconds>]
-  [-explicit[=only]] 
-  [-verbose] 
+  [-explicit[=only]]
+  [-verbose]
   [-comment=<parameterName>,<text>]
   [-requireChange[=severity][,status][,both]]
   [-inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]]
-  [-includeTimeOfDay] 
+  [-includeTimeOfDay]
   [-offsetTimeOfDay]
   [-logInitialValues]
   [-logAlarms]
@@ -53,100 +53,100 @@ column of <input> to an SDDS file <output>.
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:}\par
+  \item \textbf{input file:}\par
 The input file is an SDDS file with only one data column required:
-\begin{itemize}
-        \item {\tt ControlName} --- Required string column for the names of the process variables or devices to be monitored.
-        \item {\tt ReadbackName} --- Optional string column.
-        \item {\tt ReadbackUnits} --- Optional string column.
-        \item {\tt Description} --- Optional string column.
-        \item {\tt RelatedControlName} --- Optional string column.
-        \item {\tt Tolerance} --- Optional numeric column which contains a tolerance value to avoid logging small changes.
-\end{itemize}
+  \begin{itemize}
+    \item {\tt ControlName} --- Required string column for the names of the process variables or devices to be monitored.
+    \item {\tt ReadbackName} --- Optional string column.
+    \item {\tt ReadbackUnits} --- Optional string column.
+    \item {\tt Description} --- Optional string column.
+    \item {\tt RelatedControlName} --- Optional string column.
+    \item {\tt Tolerance} --- Optional numeric column which contains a tolerance value to avoid logging small changes.
+  \end{itemize}
 
-\item \textbf{output file:}\par
+  \item \textbf{output file:}\par
 The output file contains parameters, arrays, and columns.
-\begin{itemize}
-        \item {\bf Parameters}
-        \item {\tt InputFile} --- sddslogonchange input file.
-        \item {\tt TimeStamp} --- Time stamp for file.
-        \item {\tt PageTimeStamp} --- Time stamp for page.
-        \item {\tt StartTime} --- Start time.
-        \item {\tt YearStartTime}
-        \item {\tt StartYear}
-        \item {\tt StartJulianDay}
-        \item {\tt StartMonth}
-        \item {\tt StartDayOfMonth}
-        \item {\tt StartHour}
-\end{itemize}
+  \begin{itemize}
+    \item {\bf Parameters}
+    \item {\tt InputFile} --- sddslogonchange input file.
+    \item {\tt TimeStamp} --- Time stamp for file.
+    \item {\tt PageTimeStamp} --- Time stamp for page.
+    \item {\tt StartTime} --- Start time.
+    \item {\tt YearStartTime}
+    \item {\tt StartYear}
+    \item {\tt StartJulianDay}
+    \item {\tt StartMonth}
+    \item {\tt StartDayOfMonth}
+    \item {\tt StartHour}
+  \end{itemize}
 \begin{verbatim}
 
 \end{verbatim}
-\begin{itemize}
-        \item {\bf Arrays}
-        \item {\tt ControlName} --- Control names of process variables
-        \item {\tt ReadbackName} --- Optional readback names of process variables
-        \item {\tt ReadbackUnits} --- Optional units of process variables
-        \item {\tt AlarmStatusString} --- Optional
-        \item {\tt AlarmSeverityString} --- Optional
-        \item {\tt DescriptionString} --- Optional
-        \item {\tt RelatedControlName} --- Optional
-\end{itemize}
+  \begin{itemize}
+    \item {\bf Arrays}
+    \item {\tt ControlName} --- Control names of process variables
+    \item {\tt ReadbackName} --- Optional readback names of process variables
+    \item {\tt ReadbackUnits} --- Optional units of process variables
+    \item {\tt AlarmStatusString} --- Optional
+    \item {\tt AlarmSeverityString} --- Optional
+    \item {\tt DescriptionString} --- Optional
+    \item {\tt RelatedControlName} --- Optional
+  \end{itemize}
 \begin{verbatim}
 
 \end{verbatim}
-\begin{itemize}
-        \item {\bf Columns}
-        \item {\tt ControlNameIndex} --- Index of the ControlName array.
-        \item {\tt Value} --- Value of the process variable.
-        \item {\tt Time} --- Time stamp of the change in value.
-        \item {\tt PreviousRow} --- Previous row with an identical ControlNameIndex value.
-        \item {\tt AlarmStatusIndex} --- Optional
-        \item {\tt AlarmSeverityIndex} --- Optional
-        \item {\tt Duration} --- Optional
-        \item {\tt RelatedValueString} --- Optional
-        \item {\tt ControlName} --- Optional
-        \item {\tt AlarmStatus} --- Optional
-        \item {\tt AlarmSeverity} --- Optional
-        \item {\tt Description} --- Optional
-        \item {\tt RelatedControlName} --- Optional
+  \begin{itemize}
+    \item {\bf Columns}
+    \item {\tt ControlNameIndex} --- Index of the ControlName array.
+    \item {\tt Value} --- Value of the process variable.
+    \item {\tt Time} --- Time stamp of the change in value.
+    \item {\tt PreviousRow} --- Previous row with an identical ControlNameIndex value.
+    \item {\tt AlarmStatusIndex} --- Optional
+    \item {\tt AlarmSeverityIndex} --- Optional
+    \item {\tt Duration} --- Optional
+    \item {\tt RelatedValueString} --- Optional
+    \item {\tt ControlName} --- Optional
+    \item {\tt AlarmStatus} --- Optional
+    \item {\tt AlarmSeverity} --- Optional
+    \item {\tt Description} --- Optional
+    \item {\tt RelatedControlName} --- Optional
 
-\end{itemize}
+  \end{itemize}
 
 \end{itemize}
 
 \item \textbf{switches:}
-    \begin{itemize}
+\begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-        \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.  The default time units are seconds; you may also specify days, hours, or minutes.
-        \item {\tt -offsetTimeOfDay} --- Adjusts the starting TimeOfDay value so that it corresponds to the day for which the bulk of the data is taken.  Hence, a 26 hour job started at 11pm would have initial time of day of -1 hour and final time of day of 25 hours.
-        \item {\tt -append[=recover]} --- Specifies appending to the file <output> if it exists already. If the recover qualifier is given, recovery of a corrupted file is attempted using sddsconvert, at the risk of loss of some of the data already in the file.
-        \item {\tt -eraseFile} --- Specifies erasing the file <output> if it exists already.
-        \item {\tt -generations[=digits=<integer>][,delimiter=<string>]} --- Specifies use of file generations.  The output is sent to the file <output>-<N>, where <N> is the smallest positive integer such that the file does not already exist.   By default, four digits are used for formatting <N>, so that the first generation number is 0001.
-        \item {\tt -dailyFiles} --- The output is sent to the file <output>-YYYY-JJJ-MMDD.<N>, where YYYY=year, JJJ=Julian day, and MMDD=month+day.  A new file is started after midnight.
-        \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time, in seconds.  The default is 10.
-        \item {\tt -durations} --- Specifies including state duration and previous row reference data in output.
-        \item {\tt -connectTimeout=<seconds>} --- Specifies maximum time in seconds to wait for a connection before issuing an error message. 60 is the default.
-        \item {\tt -explicit[=only]} --- Specifies that explicit columns with control name, alarm status, and alarm severity strings be output in addition to the integer codes.  If the "only" qualifier is given, the integer codes are omitted from the output.
-        \item {\tt -verbose} --- Specifies printing of possibly useful data to the standard output.
-        \item {\tt -comment=<parameterName>,<text>} --- Gives the parameter name for a comment to be placed in the SDDS output file, along with the text to be placed in the file.
-        \item {\tt -requireChange[=severity][,status][,both]} --- Specifies that either severity, status, or both must change before an event is logged.  The default behavior is to log an event whenever a callback occurs, which means either severity or status has changed.
-        \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- Checks this PV periodically.  If nonzero, then data collection is aborted.
-        \item {\tt -includeTimeOfDay} --- Includes time-of-day information in the output.
-        \item {\tt -logInitialValues} --- Logs the initial value of each process variable.
-        \item {\tt -logAlarms} --- Logs alarm events even if the value doesn't change.
-        \item {\tt -watchInput} --- Watches the input file and exits if it changes or is removed.
-        \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Specifies a run control PV name and optional ping timeout.
-        \item {\tt -runControlDescription=string=<string>} --- Specifies a run control PV description record.
-        \item {\tt -sddslogger} --- Writes the output file in \verb+sddslogger+ column format.
-        \item {\tt -noToleranceMinLimit} --- Disables the default minimum change limit when logging values.
-    \end{itemize}
+  \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.  The default time units are seconds; you may also specify days, hours, or minutes.
+  \item {\tt -offsetTimeOfDay} --- Adjusts the starting TimeOfDay value so that it corresponds to the day for which the bulk of the data is taken.  Hence, a 26 hour job started at 11pm would have initial time of day of -1 hour and final time of day of 25 hours.
+  \item {\tt -append[=recover]} --- Specifies appending to the file <output> if it exists already. If the recover qualifier is given, recovery of a corrupted file is attempted using sddsconvert, at the risk of loss of some of the data already in the file.
+  \item {\tt -eraseFile} --- Specifies erasing the file <output> if it exists already.
+  \item {\tt -generations[=digits=<integer>][,delimiter=<string>]} --- Specifies use of file generations.  The output is sent to the file <output>-<N>, where <N> is the smallest positive integer such that the file does not already exist.   By default, four digits are used for formatting <N>, so that the first generation number is 0001.
+  \item {\tt -dailyFiles} --- The output is sent to the file <output>-YYYY-JJJ-MMDD.<N>, where YYYY=year, JJJ=Julian day, and MMDD=month+day.  A new file is started after midnight.
+  \item {\tt -pendEventTime=<seconds>} --- Specifies the CA pend event time, in seconds.  The default is 10.
+  \item {\tt -durations} --- Specifies including state duration and previous row reference data in output.
+  \item {\tt -connectTimeout=<seconds>} --- Specifies maximum time in seconds to wait for a connection before issuing an error message. 60 is the default.
+  \item {\tt -explicit[=only]} --- Specifies that explicit columns with control name, alarm status, and alarm severity strings be output in addition to the integer codes.  If the "only" qualifier is given, the integer codes are omitted from the output.
+  \item {\tt -verbose} --- Specifies printing of possibly useful data to the standard output.
+  \item {\tt -comment=<parameterName>,<text>} --- Gives the parameter name for a comment to be placed in the SDDS output file, along with the text to be placed in the file.
+  \item {\tt -requireChange[=severity][,status][,both]} --- Specifies that either severity, status, or both must change before an event is logged.  The default behavior is to log an event whenever a callback occurs, which means either severity or status has changed.
+  \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} --- Checks this PV periodically.  If nonzero, then data collection is aborted.
+  \item {\tt -includeTimeOfDay} --- Includes time-of-day information in the output.
+  \item {\tt -logInitialValues} --- Logs the initial value of each process variable.
+  \item {\tt -logAlarms} --- Logs alarm events even if the value doesn't change.
+  \item {\tt -watchInput} --- Watches the input file and exits if it changes or is removed.
+  \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Specifies a run control PV name and optional ping timeout.
+  \item {\tt -runControlDescription=string=<string>} --- Specifies a run control PV description record.
+  \item {\tt -sddslogger} --- Writes the output file in \verb+sddslogger+ column format.
+  \item {\tt -noToleranceMinLimit} --- Disables the default minimum change limit when logging values.
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddslogger}
-    \item \progref{sddssnapshot}
-    \end{itemize}
-\item \textbf{author:} R. Soliday, ANL 
+  \item \progref{sddslogger}
+  \item \progref{sddssnapshot}
+\end{itemize}
+\item \textbf{author:} R. Soliday, ANL
 \end{sddsprog}

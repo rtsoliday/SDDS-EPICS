@@ -16,8 +16,8 @@ output file as small as possible.  The scalar PVs are not checked for
 changes though. In the future an option that allows logging of duplicate
 vector PVs may be implemented.
 
-\item \textbf{examples:} 
-% 
+\item \textbf{examples:}
+%
 The pressures readbacks of storage ring vacuum gauges are monitored with the command below.
 \begin{verbatim}
 sddsvmonitor SRvac.vmon SRvac.vsdds -time=24,hours -interval=1,minute
@@ -43,7 +43,7 @@ VGC1.PRES
 There is only one element in the suffix list of this example. The output file will contain columns
 \verb+Rootname+ and \verb+VGC1.PRES+.
 
-\item \textbf{synopsis:} 
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsvmonitor [<inputfile> | -rootnames=<file> -suffixes=<file>]
     <outputfile> [{-erase | -append[=recover] | -generations[=digits=<integer>][,delimiter=<string>]}]
@@ -59,34 +59,34 @@ Writes values of process variables to a binary SDDS file.
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-\item \textbf{input file:}\par
+  \item \textbf{input file:}\par
 The input file is an SDDS file with one data column and one parameter:
-\begin{itemize}
-        \item {\tt ListData} --- Required string column for the root part or the suffix part 
+  \begin{itemize}
+    \item {\tt ListData} --- Required string column for the root part or the suffix part
                 of the process variable names.
-        \item {\tt ListType} --- Required string parameter for the name
+    \item {\tt ListType} --- Required string parameter for the name
                 part type. The only values recognized by sddsvmonitor are ``\verb+rootnames+'' and ``\verb+suffixes+''.
-\end{itemize}
+  \end{itemize}
 The list of process variables is formed by combining all the rootnames and suffixes.
 
-\item \textbf{rootname and suffix files:}\par
+  \item \textbf{rootname and suffix files:}\par
 An alternative to specifying the rootnames and suffixes with the above input file is
 to specify the list of rootnames and suffixes with two separate files, as shown in the usage message
 above.
 The string data in rootname file must be in column \verb+Rootname+. The string data in suffix file
-must be in column \verb+Suffix+. 
+must be in column \verb+Suffix+.
 
-\item \textbf{scalar PV input file:}\par
+  \item \textbf{scalar PV input file:}\par
 An optional input file for scalar PVs (i.e. regular PVs) can be specified. The required columns are:
-\begin{itemize}
-        \item {\tt ControlName} --- Required string column for the names of the scalar process variables
+  \begin{itemize}
+    \item {\tt ControlName} --- Required string column for the names of the scalar process variables
                 to be monitored.
-        \item {\tt ReadbackName} --- Required string column for the names of the parameter in the 
+    \item {\tt ReadbackName} --- Required string column for the names of the parameter in the
                 output file in which the values of the scalar process variables are written.
-\end{itemize}
+  \end{itemize}
 
 
-\item \textbf{conditions file:} \par
+  \item \textbf{conditions file:} \par
 The conditions file is an optional input specified on the command line which lists
 conditions that must be satisfied at each time steps before the data can be logged.
 
@@ -94,62 +94,62 @@ The file is like the main input file, but has numerical columns \verb+LowerLimit
 The minimal column set is \verb+ControlName+, which contain the PV names, and the two limits columns above.
 Depending on command line options, when any or all PV readback from this file
 is outstide the range defined by the corresponding data from \verb+LowerLimit+ and \verb+UpperLimit+,
-none of the data of the input file PVs are recorded. 
+none of the data of the input file PVs are recorded.
 When this situations occurs for a long period of time, the size of the output file doesn't
 grow, and it may appear that the monitoring process has somehow stopped.
 It is possible to check the program activity with the \verb+touch+ sub-option
 which causes the monitoring program to touch the output file at every step.
 
-\item \textbf{output file:}\par
+  \item \textbf{output file:}\par
 The output file contains one data column for each suffix named in the input file. By default,
 the data type is float (single precision). Other columns are:
-\begin{itemize}
-        \item {\tt Index} --- Long column for index of rootname.
-        \item {\tt Rootname} --- String column for rootnames from the input file.
-\end{itemize}
+  \begin{itemize}
+    \item {\tt Index} --- Long column for index of rootname.
+    \item {\tt Rootname} --- String column for rootnames from the input file.
+  \end{itemize}
 Each reading step produces a new page in the output file.
-Time and other miscellaneous parameters are defined: 
-\begin{itemize}
-        \item {\tt Time} --- Double column for time of readback since the start of epoch. This time data can be used by
+Time and other miscellaneous parameters are defined:
+  \begin{itemize}
+    \item {\tt Time} --- Double column for time of readback since the start of epoch. This time data can be used by
         the plotting program {\verb+sddsplot+} to make the best choice of time unit conversions
         for time axis labeling.
-        \item {\tt TimeOfDay} --- Float column for system time in units of hours. The time does not wrap around at 24 hours.
-        \item {\tt DayOfMonth} --- Float column for system time in units of days. The day does not wrap around at the month boundary.
-        \item {\tt Step} --- Long column for step number.
-        \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step. 
-\end{itemize}
+    \item {\tt TimeOfDay} --- Float column for system time in units of hours. The time does not wrap around at 24 hours.
+    \item {\tt DayOfMonth} --- Float column for system time in units of days. The day does not wrap around at the month boundary.
+    \item {\tt Step} --- Long column for step number.
+    \item {\tt CAerrors} --- Long column for number of channel access errors at each reading step.
+  \end{itemize}
 
 For each scalar PV defined in the \verb+scalars+ command line option a parameter of type double is defined.
 
 Many time-related parameters which don't change values throughout the file are defined:
-\begin{itemize}
-        \item {\tt TimeStamp} --- String column for time stamp for file.
-        \item {\tt PageTimeStamp} --- String column for time stamp for each page. When data
+  \begin{itemize}
+    \item {\tt TimeStamp} --- String column for time stamp for file.
+    \item {\tt PageTimeStamp} --- String column for time stamp for each page. When data
                 is appended to an existing file, the new data is written to a new
                 page. The {\tt PageTimeStamp} value for the new page is the creation
-                date of the new page. The {\tt TimeStamp} value for the new page is the creation 
+                date of the new page. The {\tt TimeStamp} value for the new page is the creation
                 date of the very first page.
-        \item {\tt StartTime} --- Double column for start time from {\tt C} time call cast to type double.
-        \item {\tt YearStartTime} --- Double column for start time of present year from {\tt C} 
+    \item {\tt StartTime} --- Double column for start time from {\tt C} time call cast to type double.
+    \item {\tt YearStartTime} --- Double column for start time of present year from {\tt C}
                 time call cast to type double.
-        \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
-        \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
-        \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
-        \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
-        \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
-\end{itemize}
+    \item {\verb+StartYear+} --- Short parameter for the year when the file was started.
+    \item {\verb+StartJulianDay+} --- Short parameter for the day when the file was started.
+    \item {\verb+StartMonth+} --- Short parameter for the month when the file was started.
+    \item {\verb+StartDayOfMonth+} --- Short parameter for the day of month when the file was started.
+    \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
+  \end{itemize}
 \end{itemize}
 
 \item \textbf{switches:}
-    \begin{itemize}
+\begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
-        \item {\tt -rootnames=<file>} --- Specifies input file for rootnames. String values
+  \item {\tt -rootnames=<file>} --- Specifies input file for rootnames. String values
                 must be in column \verb+Rootname+.
-        \item {\tt -suffixes=<file>} --- Specifies input file for suffixes. String values
+  \item {\tt -suffixes=<file>} --- Specifies input file for suffixes. String values
                 must be in column \verb+Suffix+.
-        \item {\tt -scalars=<filename>} ---  Specifies input file for scalar PV names. The values
+  \item {\tt -scalars=<filename>} ---  Specifies input file for scalar PV names. The values
                 are logged as parameters.
-        \item {\verb+-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]+} ---
+  \item {\verb+-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]+} ---
                 Names an SDDS file containing PVs to read and limits on each PV that must
                 be satisfied for data to be taken and logged.  The file is like the main
                 input file, but has numerical columns \verb+LowerLimit+ and \verb+UpperLimit+.
@@ -163,57 +163,57 @@ Many time-related parameters which don't change values throughout the file are d
                 present, then the value of \verb+Step+ in the output file is not
                 incremented until the conditions pass, and data is written to the output file.
 
-        \item {\tt -erase} --- If the output file already exists, the it will be overwritten
+  \item {\tt -erase} --- If the output file already exists, the it will be overwritten
                 by sddsvmonitor.
-        \item {\tt -append[=recover]} --- If the output file already exists, then append the new readings.
+  \item {\tt -append[=recover]} --- If the output file already exists, then append the new readings.
                 The output file must have previously been generated by \verb+sddsvmonitor+ using the same
                 information in the input files.
                 The {\verb+recover+} option allows an attempt
                 to recover the data using \verb+sddsconvert+ if the input file is somehow corrupted.
-        \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
+  \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
                 The output is sent to the file \verb+<SDDSoutputfile>-<N>+, where \verb+<N>+ is
                    the smallest positive integer such that the file does not already
                    exist.   By default, four digits are used for formatting \verb+<N>+, so that
                    the first generation number is 0001.
-        \item {\tt -interval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
+  \item {\tt -interval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
                 interval is implemented with a call to usleep between calls to the control system.
                 Because the calls to the control system make take up a significant amount of time, the average
-                effective time interval may sometimes be longer specified. 
-        \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
-        \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
+                effective time interval may sometimes be longer specified.
+  \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
+  \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
                 seconds, minutes, hours, and days. The program calculates the number of steps by dividing this time
                 by the interval. The completion time may be longer, because the time interval in not guaranteed.
-        \item {\tt -enforceTimeLimit} --- Enforces the total monitoring time given by \verb+-time+ even if
+  \item {\tt -enforceTimeLimit} --- Enforces the total monitoring time given by \verb+-time+ even if
                 the expected number of steps has not been taken.
-        \item {\tt -offsetTimeOfDay} --- Adjusts the starting \verb+TimeOfDay+ value so that it corresponds
+  \item {\tt -offsetTimeOfDay} --- Adjusts the starting \verb+TimeOfDay+ value so that it corresponds
                 to the day on which most data are taken.
-        \item {\tt -verbose} --- Prints out a message when data is taken.
-        \item {\verb+-singleShot{=noprompt|stdout}+} --- A single read is prompted at the terminal
+  \item {\tt -verbose} --- Prints out a message when data is taken.
+  \item {\verb+-singleShot{=noprompt|stdout}+} --- A single read is prompted at the terminal
                 and initiated by a \verb+<cr>+ key press. The time interval is disabled.
                 With \verb+noprompt+ present, no prompt is written to the terminal, but a \verb+<cr>+
                 is still expected. Using \verb+stdout+ directs the prompt to standard output.
                 Typing ``q'' or ``Q'' terminates the monitoring.
-        \item {\tt -precision=\{single|double\}} --- Sets the data precision for PV values in the output file.
-        \item {\tt -oncaerror=\{useZero|skipPage|exit\}} --- Selects action taken when a channel access error occurs.
+  \item {\tt -precision=\{single|double\}} --- Sets the data precision for PV values in the output file.
+  \item {\tt -oncaerror=\{useZero|skipPage|exit\}} --- Selects action taken when a channel access error occurs.
                 The default is using zero (\verb+useZero+) for the value of the process variable
                 with the channel access error, and resuming execution. The second option (\verb+skipPage+) is to
                 simply throw away all the data for that read step, and resume execution.
                 The third option is to exit the program.
-        \item {\tt -PVlist=<filename>} --- Specifies a file in which to write
+  \item {\tt -PVlist=<filename>} --- Specifies a file in which to write
                 the names of all PVs monitored.
-        \item {\verb+-logDuplicates[=countThreshold=<number>]+} --- Specifies that data should be
+  \item {\verb+-logDuplicates[=countThreshold=<number>]+} --- Specifies that data should be
                 logged even if it is exactly the same as the last data.
-        \item {\verb+-comment=<parameterName>,<text>+} ---
+  \item {\verb+-comment=<parameterName>,<text>+} ---
                 Gives the parameter name for a comment to be placed in the SDDS output file,
                 along with the text to be placed in the file.
-    \end{itemize}
+\end{itemize}
 
 \item \textbf{see also:}
-    \begin{itemize}
+\begin{itemize}
 % replacing <prog> with the program to be referenced:
-    \item \progref{sddsvmonitor}
-    \item \progref{sddswmonitor}
-    \item \progref{sddssnapshot}
-    \end{itemize}
-\item \textbf{author:} M. Borland and L. Emery, ANL 
+  \item \progref{sddsvmonitor}
+  \item \progref{sddswmonitor}
+  \item \progref{sddssnapshot}
+\end{itemize}
+\item \textbf{author:} M. Borland and L. Emery, ANL
 \end{sddsprog}

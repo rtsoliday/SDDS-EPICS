@@ -24,32 +24,32 @@ cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
 [-provider={ca|pva}] [-info] [-printErrors] pvname [...]
 }\end{flushleft}
 \item \textbf{switches:}
-  \begin{itemize}
-    \item {\tt -list} --- Build PV names from components or explicit names.
-    \item {\tt -range} --- Append integer ranges to PV prefixes.
-    \item {\tt -floatformat} --- Set printf-style format for floating point numbers.
-    \item {\tt -charArray} --- Print character arrays as strings.
-    \item {\tt -delimiter} --- String used to separate values.
-    \item {\tt -labeled} --- Prepend PV names to values.
-    \item {\tt -noQuotes} --- Suppress quotes around string values.
-    \item {\tt -embrace} --- Surround output with given start and end strings.
-    \item {\tt -cavputForm} --- Format output suitable for input to \verb+cavput+.
-    \item {\tt -statistics} --- Compute statistics over repeated readings.
-    \item {\tt -pendIoTime} --- Maximum time to wait for connections.
-    \item {\tt -dryRun} --- List PV names without fetching values.
-    \item {\tt -repeat} --- Take multiple readings with optional pause.
-    \item {\tt -numerical} --- Use numerical values for enumerations.
-    \item {\tt -errorValue} --- Substitute a value if a read fails.
-    \item {\tt -excludeErrors} --- Omit values if a read fails.
-    \item {\tt -despike} --- Remove outliers using neighbors/passes settings.
-    \item {\tt -provider} --- Select Channel Access (ca) or PVAccess (pva).
-    \item {\tt -info} --- Show connection and data type information.
-    \item {\tt -printErrors} --- Print errors without aborting.
-  \end{itemize}
+\begin{itemize}
+  \item {\tt -list} --- Build PV names from components or explicit names.
+  \item {\tt -range} --- Append integer ranges to PV prefixes.
+  \item {\tt -floatformat} --- Set printf-style format for floating point numbers.
+  \item {\tt -charArray} --- Print character arrays as strings.
+  \item {\tt -delimiter} --- String used to separate values.
+  \item {\tt -labeled} --- Prepend PV names to values.
+  \item {\tt -noQuotes} --- Suppress quotes around string values.
+  \item {\tt -embrace} --- Surround output with given start and end strings.
+  \item {\tt -cavputForm} --- Format output suitable for input to \verb+cavput+.
+  \item {\tt -statistics} --- Compute statistics over repeated readings.
+  \item {\tt -pendIoTime} --- Maximum time to wait for connections.
+  \item {\tt -dryRun} --- List PV names without fetching values.
+  \item {\tt -repeat} --- Take multiple readings with optional pause.
+  \item {\tt -numerical} --- Use numerical values for enumerations.
+  \item {\tt -errorValue} --- Substitute a value if a read fails.
+  \item {\tt -excludeErrors} --- Omit values if a read fails.
+  \item {\tt -despike} --- Remove outliers using neighbors/passes settings.
+  \item {\tt -provider} --- Select Channel Access (ca) or PVAccess (pva).
+  \item {\tt -info} --- Show connection and data type information.
+  \item {\tt -printErrors} --- Print errors without aborting.
+\end{itemize}
 \item \textbf{see also:}
-  \begin{itemize}
-    \item \progref{cavput}
-    \item \progref{cawait}
-  \end{itemize}
+\begin{itemize}
+  \item \progref{cavput}
+  \item \progref{cawait}
+\end{itemize}
 \item \textbf{author:} M. Borland and R. Soliday, ANL/APS
 \end{sddsprog}

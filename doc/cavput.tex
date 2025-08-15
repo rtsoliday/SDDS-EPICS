@@ -1,7 +1,7 @@
 \begin{sddsprog}{cavput}
-  \item \textbf{description:}
+\item \textbf{description:}
     cavput sends values to EPICS process variables using Channel Access or PVAccess. It supports vector puts, delta mode, ramping, and numerical or char array data modes, making it useful for scripting accelerator operations.
-  \item \textbf{examples:}
+\item \textbf{examples:}
     Set all storage ring quadrupoles to zero.
     \begin{flushleft}{\tt
     cavput -list=S -range=begin=1,end=40,format=\%ld\\
@@ -12,7 +12,7 @@
     cavput -list=S:bpm -range=begin=1,end=40,format=\%ld -list=:SlowBh:\\
       -list=MI=0,sizeAO=4080,modeBO=1,enableBO=1
     }\end{flushleft}
-  \item \textbf{synopsis:}
+\item \textbf{synopsis:}
     \begin{flushleft}{\tt
     cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\\\relax
       [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\\\relax
@@ -20,18 +20,18 @@
       [-numerical] [-charArray] [-blunderAhead[=silently]]\\\relax
       [-provider=\{ca|pva\}]
     }\end{flushleft}
-  \item \textbf{switches:}
-    \begin{itemize}
-      \item {\tt -list} --- Specify PV name components with optional values.
-      \item {\tt -range} --- Generate PV names from a range.
-      \item {\tt -pendIoTime} --- Maximum time to wait for connections and return values (default 1.0~s).
-      \item {\tt -dryRun} --- Show PV names and values without sending to IOCs.
-      \item {\tt -deltaMode} --- Treat values as deltas from current PV values; optional factor.
-      \item {\tt -ramp} --- Ramp to the value in steps with an optional pause.
-      \item {\tt -numerical} --- Force conversion to numeric mode.
-      \item {\tt -charArray} --- Use string mode for char array PVs.
-      \item {\tt -blunderAhead} --- Continue puts even if some PVs fail to connect; \verb|silently| suppresses errors.
-      \item {\tt -provider} --- Select Channel Access ({\tt ca}) or PVAccess ({\tt pva}).
-    \end{itemize}
-  \item \textbf{author:} M. Borland and R. Soliday, ANL/APS.
+\item \textbf{switches:}
+\begin{itemize}
+  \item {\tt -list} --- Specify PV name components with optional values.
+  \item {\tt -range} --- Generate PV names from a range.
+  \item {\tt -pendIoTime} --- Maximum time to wait for connections and return values (default 1.0~s).
+  \item {\tt -dryRun} --- Show PV names and values without sending to IOCs.
+  \item {\tt -deltaMode} --- Treat values as deltas from current PV values; optional factor.
+  \item {\tt -ramp} --- Ramp to the value in steps with an optional pause.
+  \item {\tt -numerical} --- Force conversion to numeric mode.
+  \item {\tt -charArray} --- Use string mode for char array PVs.
+  \item {\tt -blunderAhead} --- Continue puts even if some PVs fail to connect; \verb|silently| suppresses errors.
+  \item {\tt -provider} --- Select Channel Access ({\tt ca}) or PVAccess ({\tt pva}).
+\end{itemize}
+\item \textbf{author:} M. Borland and R. Soliday, ANL/APS.
 \end{sddsprog}
