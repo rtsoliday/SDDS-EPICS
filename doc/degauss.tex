@@ -1,11 +1,5 @@
 % Template for making SDDS Toolkit manual entries.
-\begin{latexonly}
-\newpage
-\end{latexonly}
-\subsection{degauss}
-\label{degauss}
-
-\begin{itemize}
+\begin{sddsprog}{degauss}
 \item {\bf description:}
 \verb+degauss+ reads an SDDS specification file listing magnets and degaussing parameters.
 It configures the corresponding subroutine records and, unless otherwise requested, initiates
@@ -29,4 +23,4 @@ To configure magnets without starting degaussing and later query their state:
     \item {\tt -p\,|\,-pend\,|\,-pendIoTime <seconds>} --- Maximum time to wait for Channel Access I/O.
   \end{itemize}
 \item {\bf author:} C. Saunders, J. Anderson, R. Soliday, H. Shang, ANL
-\end{itemize}
+\end{sddsprog}

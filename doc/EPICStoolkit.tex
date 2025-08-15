@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-\usepackage{latexsym,hyperref}
+\usepackage{latexsym,hyperref,sddstoolkit}
 \usepackage[dvips]{graphicx}
 
 %%% PROGREF
@@ -10,11 +10,7 @@
 %
 % Hyperlink to a program's documentation using modern hyperref syntax.
 % Renders text like `program()` and links to \label{program} in the manual.
-\newcommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
 
-\newenvironment{htmlonly}{}{}
-\newenvironment{latexonly}{}{}
-\providecommand{\htmladdnormallink}[2]{\href{#2}{#1}}
 
 \pagestyle{plain}
 \begin{latexonly}

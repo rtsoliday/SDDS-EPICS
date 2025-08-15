@@ -1,17 +1,7 @@
 %
 % Template for making SDDS Toolkit manual entries.
 %
-\begin{latexonly}
-\newpage
-\end{latexonly}
-
-%
-% Substitute the program name for sddsimagemonitor
-%
-\subsection{sddsimagemonitor}
-\label{sddsimagemonitor}
-
-\begin{itemize}
+\begin{sddsprog}{sddsimagemonitor}
 \item {\bf description:}
 \verb+sddsimagemonitor+ reads EPICS image process variables and writes the image
   data to an SDDS file at regular intervals. Image PVs may be supplied from an
@@ -85,4 +75,4 @@ usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
   \item \progref{sddswmonitor}
   \end{itemize}
 \item {\bf author:} M. Borland, L. Emery, H. Shang, R. Soliday, ANL
-\end{itemize}
+\end{sddsprog}
