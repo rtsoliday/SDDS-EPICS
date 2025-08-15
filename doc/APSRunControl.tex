@@ -1,30 +1,6 @@
 \documentclass[11pt]{article}
+\input{common-preamble}
 \usepackage{latexsym,graphicx,hyperref}
-
-%%% PROGREF
-% created by R. Soliday
-% inserted here 4/29/05 11:33:04: 
-% latex2html perl script can't recognize this when this
-% definition is in the style file.
-%
-% Hyperlink helper matching EPICStoolkit.tex definition.
-\newcommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
-
-% Provide a no-op latexonly environment so html.sty is not required.
-\newenvironment{latexonly}{}{}
-
-\pagestyle{plain}
-\begin{latexonly}
-\tolerance=10000
-\end{latexonly}
-\newenvironment{req}{\begin{equation}\mathrm{}}{\end{equation}}
-\setlength{\topmargin}{0.15 in}
-\setlength{\oddsidemargin}{0 in}
-\setlength{\evensidemargin}{0 in} % not applicable anyway
-\setlength{\textwidth}{6.5 in}
-\setlength{\headheight}{-0.5 in} % for 11pt font size
-%\setlength{\footheight}{0 in}
-\setlength{\textheight}{9 in}
 
 \begin{document}
 

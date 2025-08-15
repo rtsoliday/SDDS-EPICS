@@ -12,11 +12,13 @@
 
 % Provide no-op environments for compatibility when html/latex distinctions are unnecessary
 \newenvironment{htmlonly}{}{}
-\newenvironment{latexonly}{}{}
+\makeatletter
+\@ifundefined{latexonly}{\newenvironment{latexonly}{}{} }{}
+\makeatother
 \providecommand{\htmladdnormallink}[2]{\href{#2}{#1}}
 
 % Program reference macro: hyperlink to a program label and typeset as program()
-\newcommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
+\providecommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
 
 % Environment for individual program documentation sections
 \newenvironment{sddsprog}[1]{%%
