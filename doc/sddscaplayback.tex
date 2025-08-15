@@ -2,20 +2,20 @@
 % Documentation for sddscaplayback
 %
 \begin{sddsprog}{sddscaplayback}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddscaplayback+ reads waveform data from a multi-page SDDS file and writes the values to
 EPICS process variables at a fixed interval. Each page in the input file represents a set of
 numerical values for a single PV, which may be sent either as absolute values or as differences
 from the current value.
 
-\item {\bf examples:}
+\item \textbf{examples:}
 The following command plays back the waveforms in \verb+orbit.sdds+ once with a half-second
 interval between pages.
 \begin{flushleft}{\tt
 sddscaplayback orbit.sdds -interval=0.5 -mode=absolute -repetitions=1
 }\end{flushleft}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{flushleft}{\tt
 sddscaplayback <inputFile> -interval=<seconds> [-repetitions=<number>]\
 -mode=\{absolute|differential\} [-triggerPV=<string>] [-controlNameParameter=<string>]\
@@ -25,12 +25,12 @@ sddscaplayback <inputFile> -interval=<seconds> [-repetitions=<number>]\
 [-runControlDescription=string=<string>]
 }\end{flushleft}
 
-\item {\bf files:}
+\item \textbf{files:}
 The input file is an SDDS file containing a string parameter \verb+ControlName+ for the PV name
 and a numerical column \verb+Value+ (or the column specified by \verb+-dataColumn+) for the
 waveform data. Each page corresponds to a different PV.
 
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
   \item {\tt -interval=<seconds>} --- Interval between sending pages.
   \item {\tt -repetitions=<number>} --- Number of times to loop through pages; default is infinite.
@@ -48,12 +48,12 @@ waveform data. Each page corresponds to a different PV.
   \item {\tt -runControlDescription=string=<string>} --- Description used with run control.
   \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
   \item \progref{sddslogger}
   \item \progref{sddscaramp}
   \item \progref{sddssnapshot}
   \end{itemize}
 
-\item {\bf author: M. Borland, ANL}
+\item \textbf{author:} M. Borland, ANL
 \end{sddsprog}

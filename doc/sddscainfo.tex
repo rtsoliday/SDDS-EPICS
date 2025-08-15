@@ -2,12 +2,12 @@
 % Documentation for sddscainfo
 %
 \begin{sddsprog}{sddscainfo}
-\item {\bf description:}
+\item \textbf{description:}
   \verb+sddscainfo+ reads a list of process variable (PV) names from an SDDS file,
   queries the control system for metadata, and writes the results to an SDDS output file.
   The program can also create input files for \progref{sddspvalogger} or \progref{sddspvasaverestore}.
 
-\item {\bf examples:}
+\item \textbf{examples:}
   Gather connection information for the PVs listed in \verb+pvList.sdds+ and write the results to \verb+pvInfo.sdds+.
   \begin{flushleft}{\tt
 sddscainfo pvList.sdds pvInfo.sdds
@@ -21,7 +21,7 @@ sddscainfo pvList.sdds pvInfo.sdds -makeLoggerInput
 sddscainfo pvList.sdds pvInfo.sdds -makeSCRInput
   }\end{flushleft}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
   \begin{flushleft}{\tt
 sddscainfo [<inputfile>] [<outputfile>]\
 [-pipe=[input][,output]]\
@@ -31,7 +31,7 @@ sddscainfo [<inputfile>] [<outputfile>]\
 [-pendIOTime=<seconds>]
   }\end{flushleft}
 
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
   \item {\tt -pipe[=input][,output]} --- read from standard input and/or write to standard output.
   \item {\tt -makeLoggerInput[=withStorageType]} --- write an input file for \progref{sddspvalogger}; append \verb|withStorageType| to include the storage type.
@@ -40,5 +40,5 @@ sddscainfo [<inputfile>] [<outputfile>]\
   \item {\tt -pendIOTime=<seconds>} --- time to wait for Channel Access operations (default 0.5 s).
   \end{itemize}
 
-\item {\bf author: R. Soliday, ANL}
+\item \textbf{author:} R. Soliday, ANL
 \end{sddsprog}

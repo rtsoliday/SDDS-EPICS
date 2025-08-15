@@ -2,16 +2,16 @@
 % cavget documentation.
 %
 \begin{sddsprog}{cavget}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+cavget+ retrieves values of one or more EPICS process variables using Channel Access or PVAccess.
 It supports formatting, repeated acquisition and statistical analysis for scripting and data collection.
-\item {\bf examples:}
+\item \textbf{examples:}
 \begin{flushleft}{\tt
 cavget -list=my:pv\\
 cavget -repeat=number=10,pause=1 -labeled -list=quadrupole:current\\
 cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds -list=cavit:readback
 }\end{flushleft}
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{flushleft}{\tt
 cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\
@@ -23,7 +23,7 @@ cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
 [-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]\
 [-provider={ca|pva}] [-info] [-printErrors] pvname [...]
 }\end{flushleft}
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
     \item {\tt -list} --- Build PV names from components or explicit names.
     \item {\tt -range} --- Append integer ranges to PV prefixes.
@@ -46,10 +46,10 @@ cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
     \item {\tt -info} --- Show connection and data type information.
     \item {\tt -printErrors} --- Print errors without aborting.
   \end{itemize}
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
     \item \progref{cavput}
     \item \progref{cawait}
   \end{itemize}
-\item {\bf author: M. Borland and R. Soliday, ANL/APS}
+\item \textbf{author:} M. Borland and R. Soliday, ANL/APS
 \end{sddsprog}

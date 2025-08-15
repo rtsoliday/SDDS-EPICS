@@ -1,20 +1,20 @@
 % Template for SDDS Toolkit manual entry.
 \begin{sddsprog}{sddspvaglitchlogger}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddspvaglitchlogger+ monitors EPICS PV Access process variables and
 logs values whenever configured trigger or glitch conditions occur.  An input
 SDDS file lists the PVs to read and optional trigger parameters; a separate
 trigger file may be provided to define the triggers.  Data are written to
 files in the given directory or using a supplied rootname.
 
-\item {\bf example:}
+\item \textbf{example:}
 The following command monitors PVs listed in \verb+pvlist.sdds+ for one day
 with a one minute sample interval.
 \begin{verbatim}
 sddspvaglitchlogger pvlist.sdds logs -sampleInterval=60 -time=24,hours
 \end{verbatim}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddspvaglitchlogger <input> <outputDirectory>|<outputRootname>
        [-triggerFile=<filename>] [-lockFile=<filename>[,verbose]]
@@ -29,22 +29,22 @@ usage: sddspvaglitchlogger <input> <outputDirectory>|<outputRootname>
        [-runControlDescription=string=<string>]
 \end{verbatim}
 
-\item {\bf files:}
+\item \textbf{files:}
   \begin{itemize}
-  \item {\bf input file:}\par
+  \item \textbf{input file:}\par
     SDDS file defining the PVs to log. Required columns include
     {\tt ControlName}, {\tt ReadbackName}, {\tt ReadbackUnits},
     {\tt Provider}, {\tt ExpectNumeric}, {\tt ExpectFieldType} and
     {\tt ExpectElements}. When no trigger file is supplied, parameters such as
     {\tt OutputRootname}, {\tt TriggerControlName}, and optional threshold and
     alarm values appear in the file.
-  \item {\bf trigger file:}\par
+  \item \textbf{trigger file:}\par
     Optional SDDS file containing trigger definitions. Columns mirror the
     trigger-related parameters and may include {\tt GlitchScript} to specify a
     command executed when a trigger fires.
   \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
     \item {\tt -sampleInterval=<real>[,<units>]} --- interval between readings.
     \item {\tt -time=<real>[,<units>]} --- total logging time.
@@ -63,12 +63,12 @@ usage: sddspvaglitchlogger <input> <outputDirectory>|<outputRootname>
     \item {\tt -verbose} --- print messages while running.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
     \item \progref{sddsglitchlogger}
     \item \progref{sddsmonitor}
     \end{itemize}
 
-\item {\bf author:} H. Shang, ANL
+\item \textbf{author:} H. Shang, ANL
 \end{sddsprog}
 

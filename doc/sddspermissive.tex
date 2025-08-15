@@ -1,12 +1,12 @@
 % sddspermissive: enforce permissive ranges and set run-control alarms.
 %
 \begin{sddsprog}{sddspermissive}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddspermissive+ monitors process variables and compares each value with
 permissive ranges read from an SDDS file.  If a PV leaves its allowed range,
 this program sets the message field and minor alarm of a run control PV.
 
-\item {\bf examples:}
+\item \textbf{examples:}
 The following command checks the PVs listed in \verb+permissive.sdds+ for one
 minute and updates the run control record \verb+myApp:Permissive+.
 \begin{flushleft}{\tt
@@ -15,7 +15,7 @@ sddspermissive permissive.sdds -executionTime=60\\
   -runControlDescription=string=\"vacuum permissive\" -verbose
 }\end{flushleft}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{flushleft}{\tt
 sddspermissive <inputfile>\
 [-executionTime=<seconds>]\
@@ -24,9 +24,9 @@ sddspermissive <inputfile>\
 [-verbose] [-pendIOTime=<seconds>]
 }\end{flushleft}
 
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 An SDDS file with required columns \verb+ControlName+, \verb+Description+,
 \verb+MinimumValue+, and \verb+MaximumValue+.  An optional \verb+Provider+
 column selects the protocol.  Each page may also define parameters
@@ -35,7 +35,7 @@ and \verb+MaskProvider+; when the mask PV lies within the mask range the page
 is ignored.
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
 \begin{itemize}
 \item {\tt -executionTime=<seconds>} --- total time to run before exiting.
 \item {\tt -runControlPV=string=<pv>[,pingTimeout=<value>][,pingInterval=<value>]} --- run
@@ -46,11 +46,11 @@ is ignored.
 \item {\tt -pendIOTime=<seconds>} --- maximum time to wait for Channel Access operations.
 \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
 \begin{itemize}
 \item \progref{sddscontrollaw}
 \item \progref{sddspvtest}
 \end{itemize}
 
-\item {\bf author: R. Soliday, ANL}
+\item \textbf{author:} R. Soliday, ANL
 \end{sddsprog}

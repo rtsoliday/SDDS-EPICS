@@ -1,10 +1,10 @@
 % sddsexperiment: vary PVs and record measurements with optional statistics.
 \begin{sddsprog}{sddsexperiment}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsexperiment+ varies process variables and measures process variables, with optional statistical analysis.
 An input file of namelist commands gives the specific instructions. 
 The results are recorded in one or more SDDS files.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The strength of a beamline horizontal corrector (LTP:H1) is varied while the readbacks at a horizontal beam position
 monitor (LTP:PH1) are recorded. The output file is LTP:H1.sdds.
@@ -32,16 +32,16 @@ where the contents of the file \verb+LTP:H1.exp+ are
 \end{verbatim}
 
 where the line starting with a ``!'' is a comment.
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddsexperiment <inputfile> [<outputfile-rootname|outputfilename>]
 [-echoinput] [-dryrun] [-summarize] [-verbose] [-pendIOtime=<seconds>]
 [-describeInput] [-macro=<tag>=<value>,[...]] [-comment=<string value>] [-scalars=<filename>]
 \end{verbatim}
 
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file consists of namelist commands that set up and execute the experiment. The functions of the commands
 are described below.
 \begin{itemize}
@@ -500,7 +500,7 @@ The only variables that don't have default values in general are string variable
 \end{itemize}
 
 \newpage
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 The output file contains one data column for each measurement and control process variable.
 The names of these data columns are taken from the \verb+column_name+ field of the
 respective \verb+measurement+ and \verb+variable+ commands. The data are written
@@ -516,7 +516,7 @@ In addition, some time columns and parameters are defined:
         \item {\tt TimeStamp} --- String parameter of time stamp for file.
 \end{itemize}
 
-\item {\bf control quantities list file:}\par
+\item \textbf{control quantities list file:}\par
         This file contains process variable names, readback column names, and units as string data. 
         This data can be used for cross-referencing. The columns defined in this file are:
 \begin{itemize}
@@ -530,7 +530,7 @@ In addition, some time columns and parameters are defined:
 \end{itemize}
 
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
     \item {\verb+-echoinput+} --- echos input file to stdout.
     \item {\verb+-dryrun+} --- the ``variable'' process variables are left untouched during the execution. The ``measurement''
@@ -545,10 +545,10 @@ In addition, some time columns and parameters are defined:
     \item {\verb+-scalars=<filename>+} --- reads additional scalar process variables from the specified file.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsvexperiment}
     \end{itemize}
-\item {\bf author: M. Borland, L. Emery, H. Shang and R. Soliday ANL} 
+\item \textbf{author:} M. Borland, L. Emery, H. Shang and R. Soliday ANL 
 \end{sddsprog}

@@ -1,12 +1,12 @@
 % cawait.tex documentation for cawait utility
 % template similar to others
 \begin{sddsprog}{cawait}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+cawait+ monitors one or more EPICS process variables and waits until
 user-specified conditions are met. Logical operations allow combining
 conditions, and optional commands or subprocesses may be invoked when
 events occur.
-\item {\bf examples:}
+\item \textbf{examples:}
 Wait for beam current to rise above 5~mA and echo a message:
 \begin{flushleft}{\tt
 cawait -waitFor=SR:current,above=5 -onEvent="echo beam reached 5"
@@ -15,7 +15,7 @@ Require two PVs to satisfy conditions simultaneously:
 \begin{flushleft}{\tt
 cawait -waitFor=SR:state,equalTo=1 -and -waitFor=SR:mode,equalTo=2
 }\end{flushleft}
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{flushleft}{\tt
 cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
  -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]\
@@ -31,7 +31,7 @@ cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
  [-noWarnings]\
  [-provider=\{ca|pva\}]
 }\end{flushleft}
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
   \item {\tt -interval} --- seconds between checks (default 0.1~s).
   \item {\tt -timeLimit} --- maximum time to wait for the condition.
@@ -46,6 +46,6 @@ cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
   \item {\tt -noWarnings} --- suppress timeout warnings.
   \item {\tt -provider} --- choose channel access ({\tt ca}) or PVAccess ({\tt pva}) provider.
   \end{itemize}
-\item {\bf author:} M. Borland, R. Soliday, ANL/APS.
+\item \textbf{author:} M. Borland, R. Soliday, ANL/APS.
 \end{sddsprog}
 

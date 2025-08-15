@@ -1,13 +1,13 @@
 % sddsvexperiment: vary PVs and log measurements using rootname/suffix lists.
 \begin{sddsprog}{sddsvexperiment}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsvexperiment+ varies process variables and measures process variables, with optional averaging.
 An input file of namelist commands gives the specific instructions.
 The results are recorded in one or more SDDS files. This command differs from
 \verb+sddsexperiment+ in that the measurement process variables are specified in two lists.  The first
 list gives PV ``rootnames''.  The second list gives suffixes to apply to each of 
 the rootnames.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The strength of a storage ring horizontal corrector (S1A:H1) is varied while the readbacks at all horizontal beam position
 monitors are recorded. The output file is S1A:H1.sdds.
@@ -70,7 +70,7 @@ SDDS1
 :ms:y   10
 \end{verbatim}
 
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddsvexperiment <inputFile> <outputFile>
 [-suffixFile=<filename>] [-rootnameFile=<filename>]
@@ -78,12 +78,12 @@ usage: sddsvexperiment <inputFile> <outputFile>
 [-pendIOtime=<seconds>]
 [-describeInput]
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % input file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file consists of namelist commands that set up and execute the experiment. The functions of the commands
 are described below.
 \begin{itemize}
@@ -541,13 +541,13 @@ have default values in general are string variables.
 %\end{htmlonly}
 
 \newpage
-\item {\bf Rootname file:} \par
+\item \textbf{Rootname file:} \par
         SDDS file defining the rootnames of the process variables with column:
                 \begin{itemize}
            \item  {\verb+Rootname+} --- Required string column to generate measurement process variables.
                 \end{itemize}
 
-\item {\bf Suffix file:} \par
+\item \textbf{Suffix file:} \par
         SDDS file defining the suffixes and measurement parameters with columns:
                 \begin{itemize}
            \item {\verb+Suffix+} --- Required string column of suffix names to be appended to the \verb+Rootname+
@@ -569,7 +569,7 @@ have default values in general are string variables.
                         The average values written to the output file excludes measurements outside this range.
                 \end{itemize}
 
-\item {\bf Output file:}\par
+\item \textbf{Output file:}\par
 The output file contains one data page for each variable step.
 The names of the defined columns are those string data of the {\verb+Suffix+} or {\verb+ColumnNameSuffix+} 
 columns from the suffix file.
@@ -604,7 +604,7 @@ Many time parameters are defined:
 
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
    \begin{itemize}
    \item {\verb+-suffixFile=<filename>+} --- SDDS file defining the suffixes and measurement parameters. If not specified
                on the command line, then the namelist command {\verb+suffix_list+} is required in the input file.
@@ -620,10 +620,10 @@ Many time parameters are defined:
     \item {\verb+-describeInput+} --- Prints out the list of namelist commands and fields of the input file.
    \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsexperiment}
     \end{itemize}
-\item {\bf author: M. Borland, ANL} 
+\item \textbf{author:} M. Borland, ANL 
 \end{sddsprog}

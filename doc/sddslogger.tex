@@ -1,9 +1,9 @@
 % sddslogger: log PV values at intervals defined in an input file.
 \begin{sddsprog}{sddslogger}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddslogger+ reads values of process variables and writes them to a file at a specified time interval.
 One or more input files defines the process variables to be monitored.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The pressure readbacks of storage ring ion pumps and the stored current are monitored
 with the command below.
@@ -31,7 +31,7 @@ VM:01:2IP2.VAL pv Torr VM:01:2IP2
 VM:01:2IP3.VAL pv Torr VM:01:2IP3 
 ...
 \end{verbatim}
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddslogger <SDDSinputfile1> <SDDSoutputfile1> <SDDSinputfile2> <SDDSoutputfile2>...
     [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | -dailyFiles | -monthlyFiles]
@@ -45,9 +45,9 @@ usage: sddslogger <SDDSinputfile1> <SDDSoutputfile1> <SDDSinputfile2> <SDDSoutpu
     [-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]]
 Writes values of process variables or devices to a binary SDDS file.
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file(s):}\par
+\item \textbf{input file(s):}\par
 The input files are SDDS files with a few data columns required:
 \begin{itemize}
         \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
@@ -69,7 +69,7 @@ The input files are SDDS files with a few data columns required:
 	        number.
 \end{itemize}
 
-\item {\bf conditions file:} \par
+\item \textbf{conditions file:} \par
 The conditions file is an optional input file specified on the command line which lists
 conditions that must be satisfied at each time step before the data can be logged.
 
@@ -83,7 +83,7 @@ change, and it may appear that the monitoring process has somehow stopped.
 It is possible to check the program activity with the \verb+touch+ sub-option
 which causes the logging program to touch the output file at every step.
 
-\item {\bf output file(s):}\par
+\item \textbf{output file(s):}\par
 The output files contains one data column for each process variable named in the corresponding input file. By default,
 the data type is float (single precision).
 Time columns and other miscellaneous columns are defined: 
@@ -117,7 +117,7 @@ Many time-related parameters are defined in the output file:
 \end{itemize}
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
         \item {\verb+-generations[=digits=<integer>][,delimiter=<string>]+} ---
@@ -173,7 +173,7 @@ Many time-related parameters are defined in the output file:
                 incremented until the conditions pass, and data is written to the output file.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsmonitor}
@@ -181,5 +181,5 @@ Many time-related parameters are defined in the output file:
     \item \progref{sddswmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-\item {\bf author: R. Soliday, M. Borland, H. Shang ANL} 
+\item \textbf{author:} R. Soliday, M. Borland, H. Shang ANL 
 \end{sddsprog}

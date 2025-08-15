@@ -1,6 +1,6 @@
 % sdds2dfeedforward: apply two-dimensional feedforward tables to actuators.
 \begin{sddsprog}{sdds2dfeedforward}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sdds2dfeedforward+ performs two-dimensional feedforward on process variables.
 It sets one or more actuators according to a predetermined function of two readback
 values.  The user supplies tables giving the actuator value as a function of two
@@ -10,7 +10,7 @@ readbacks.  Each table is provided as an SDDS page containing the columns
 corresponding process variables.  Optional parameters include
 \verb+ReadbackChangeThreshold+ and \verb+ActuatorChangeLimit+.
 
-\item {\bf examples:}
+\item \textbf{examples:}
 A basic invocation reads an SDDS table and applies it every ten seconds:
 \begin{flushleft}{\tt
 sdds2dfeedforward ID1Compensation.sdds -interval=10
@@ -24,7 +24,7 @@ Readback1Name = ID1:X \quad Readback2Name = ID1:Y \quad ActuatorName = S1B:H1:Cu
        100.000      50.000          1.000\\
         50.000     100.000         10.000\\
 }\end{flushleft}
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{flushleft}{\tt
 sdds2dfeedforward <inputfile>\
        [-controlLog=<rootname>]\
@@ -38,15 +38,15 @@ sdds2dfeedforward <inputfile>\
        [-CASecurityTest]\
        [-pendIOtime=<seconds>] [-infiniteLoop]
 }\end{flushleft}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-  \item {\bf input file:} An SDDS file with parameters \verb+Readback1Name+,
+  \item \textbf{input file:} An SDDS file with parameters \verb+Readback1Name+,
   \verb+Readback2Name+, and \verb+ActuatorName+.  Optional parameters include
   \verb+ReadbackChangeThreshold+ and \verb+ActuatorChangeLimit+.  Required
   columns are \verb+Readback1Value+, \verb+Readback2Value+, and
   \verb+ActuatorValue+.
 \end{itemize}
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
         \item {\tt interval=<real-value>} --- Interval in seconds between corrections.
         \item {\tt steps=<integer-value>} --- Number of iterations before exiting.
@@ -72,9 +72,9 @@ sdds2dfeedforward <inputfile>\
         \item {\tt controlLog=<rootname>} --- Log input and output data to an
                SDDS file using the given root name.
     \end{itemize}
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
     \item \progref{sddsfeedforward}
   \end{itemize}
-\item {\bf author: M. Borland, ANL}
+\item \textbf{author:} M. Borland, ANL
 \end{sddsprog}

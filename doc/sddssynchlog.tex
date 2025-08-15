@@ -1,11 +1,11 @@
 % sddssynchlog: synchronously log PVs enforcing aligned timestamps.
 \begin{sddsprog}{sddssynchlog}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddssynchlog+ Reads values of process variables synchronously
 and writes them to an output file.  Synchronism is imposed by
 requiring that all PVs generated callbacks occur within the number of
 seconds given by the -synchInterval argument.
-\item {\bf example 1:} 
+\item \textbf{example 1:} 
 % 
 
 The linac bpms and MV200 PVs are synchronously monitored using the
@@ -48,7 +48,7 @@ LI:VD1:y:raw:cal:sigmaM pv Pixels LVid:yRawSigma
 ...
 
 \end{verbatim}
-\item {\bf example 2:} 
+\item \textbf{example 2:} 
 % 
 
 The scalar linac bpm and MV200 PVs are synchronously monitored along
@@ -82,7 +82,7 @@ PAD:K211:3:CH1_RAW_WF PAD:K211:3:CH1_RAW_WF
 PAD:K211:3:CH2_RAW_WF PAD:K211:3:CH2_RAW_WF 
 ...
 \end{verbatim}
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 sddssynchlog <input> <output> [-slowData=<input>]
 [-waveformData=<filename>] -samples=<number> [-timeLimit=<value>[,<units>]]
@@ -96,9 +96,9 @@ column of <input> to an SDDS file <output>.  Synchronism is imposed by
 requiring that all PVs generated callbacks within the number of seconds
 given by the -synchInterval argument.
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with a few data columns required:
 \begin{itemize}
         \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
@@ -114,7 +114,7 @@ The input file is an SDDS file with a few data columns required:
                 values of the readback in the output file.
 \end{itemize}
 
-\item {\bf waveformData file:} \par The waveformData file is an
+\item \textbf{waveformData file:} \par The waveformData file is an
 optional input file specified on the command line which lists waveform
 PVs to be synchronously logged along with the scalar PVs in the input
 file.
@@ -127,7 +127,7 @@ file.
                 to be acquired.  It can be less than the maximum number of waveform elements.
 \end{itemize}
 
-\item {\bf slowData file:} \par The slowData file is an optional input
+\item \textbf{slowData file:} \par The slowData file is an optional input
 file specified on the command line which lists scalar PVs to be slow
 (read non-synchronously) logged along with the synchronously logged
 scalar or waveform PVs in the input and waveform PV files.  This feature is
@@ -135,7 +135,7 @@ convenient if one wishes to log PVs for system information purposes instead of
 correlation analysis (such as beam current, vacuum pressure etc.).  This file has
 the same columns as the input file.
 
-\item {\bf output file:}\par The output file contains one data column
+\item \textbf{output file:}\par The output file contains one data column
 for each process variables named in the input file if no waveformData
 file is specified. By default, the data type is float (single
 precision).  If an optional waveformData file is specified, the
@@ -170,7 +170,7 @@ Many time-related parameters are defined in the output file:
         \item {\verb+StartHour+} --- Short parameter for the hour when the file was started.
 \end{itemize}
 \end{itemize}
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
         \item {\tt -samples} --- Specifies the number of samples to attempt.  If synchronism problems
                 are encountered, fewer samples will appear in the output.
@@ -203,12 +203,12 @@ Many time-related parameters are defined in the output file:
         \item {\tt -interval} --- Specifies the waiting time between two synchlog steps.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddsvmonitor}
     \end{itemize}
-\item {\bf author: M. Borland, ANL} 
+\item \textbf{author:} M. Borland, ANL 
 \end{sddsprog}

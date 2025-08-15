@@ -1,13 +1,13 @@
 % SDDS Toolkit manual entry for sddspvalogger
 \begin{sddsprog}{sddspvalogger}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddspvalogger+ connects to process variables over the EPICS7 PVA and CA protocols and logs the values to an SDDS file. The program supports conditional logging, data strobes, generation-based file rotation, and optional glitch capture.
-\item {\bf example:}
+\item \textbf{example:}
 \begin{flushleft}{\tt
 sddspvalogger pvlist.sdds data.sdds -sampleInterval=1,seconds -steps=10\\
 }\end{flushleft}
 where {\tt pvlist.sdds} defines the PVs to monitor and {\tt data.sdds} receives the logged values.
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddspvalogger <inputfile> <outputfile>
   [-pendIOtime=<value>]
@@ -40,11 +40,11 @@ Glitch Logger Options:
   [-holdoffTime=<seconds>]
   [-autoHoldoff]
 \end{verbatim}
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
   \item \progref{sddslogger}
   \item \progref{sddsglitchlogger}
   \item \progref{sddspvtest}
   \end{itemize}
-\item {\bf author:} R. Soliday, H. Shang, ANL/APS.
+\item \textbf{author:} R. Soliday, H. Shang, ANL/APS.
 \end{sddsprog}

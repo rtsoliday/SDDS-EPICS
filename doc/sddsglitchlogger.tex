@@ -1,10 +1,10 @@
 % sddsglitchlogger: log PV values when triggers occur.
 \begin{sddsprog}{sddsglitchlogger}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsglitchlogger+ reads values of process variables and writes them to a file at a specified time interval when a trigger occurs.
 An input file defines the process variables to be monitored and/or the trigger parameters.
 An trigger file defines the the process variables that act as triggers.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The position readbacks of PMs in linac are monitored with the command below.
 \begin{verbatim}
@@ -35,7 +35,7 @@ soliday:PM1:Y:positionM  soliday:PM1:Y:positionM  mm
 soliday:PM2:X:positionM  soliday:PM2:X:positionM  mm
 ...
 \end{verbatim}
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddsglitchlogger <input> <outputDirectory>|<outputRootname> [-triggerFile=<filename>]
         [-lockFile=<filename>[,verbose]] [-sampleInterval=<secs>] [-time=<real-value>[,<time-units>]
@@ -48,9 +48,9 @@ usage: sddsglitchlogger <input> <outputDirectory>|<outputRootname> [-triggerFile
         [-runControlDescription=string=<string>]
 Writes values of process variables or devices to a binary SDDS file.
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with a few data columns required:
 \begin{itemize}
         \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
@@ -105,7 +105,7 @@ parameters:
         \item {\tt 0}   The pre-glitch baseline is retained. 
 \end{itemize}
 \end{itemize}
-\item {\bf trigger file:}\par
+\item \textbf{trigger file:}\par
 The trigger file is an SDDS file with following columns, the meaning of these columns are the same as
 the parameters defined in input file, which are replaced by a trigger file:
 \begin{itemize}
@@ -120,7 +120,7 @@ the parameters defined in input file, which are replaced by a trigger file:
         \item {\tt GlitchBaselineSamples} --- Optional long column.
         \item {\tt GlitchBaselineAutoReset} --- Optional short column
 \end{itemize}
-\item {\bf conditions file:} \par
+\item \textbf{conditions file:} \par
 The conditions file is an optional input file specified on the command line which lists
 conditions that must be satisfied at each time step before the data can be logged.
 
@@ -134,7 +134,7 @@ grow, and it may appear that the monitoring process has somehow stopped.
 It is possible to check the program activity with the \verb+touch+ sub-option
 which causes the monitoring program to touch the output file at every step.
 
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 If trigger file is not given, the output file name is:
    outputDirectory/OutputRootname-string
    here, there may be many output files depends how many pages and how many different OutputRootnames 
@@ -176,7 +176,7 @@ Many time-related parameters are defined in the output file:
 \end{itemize}
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
 
         \item {\tt -triggerFile} --- specifies the name of trigger file.
@@ -223,10 +223,10 @@ Many time-related parameters are defined in the output file:
                 incremented until the conditions pass, and data is written to the output file.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsmonitor}
     \end{itemize}
-\item {\bf author: Hairong Shang, ANL} 
+\item \textbf{author:} Hairong Shang, ANL 
 \end{sddsprog}

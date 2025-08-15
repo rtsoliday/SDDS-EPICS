@@ -1,23 +1,23 @@
 % standardize: manage magnet power supply standardization.
 \begin{sddsprog}{standardize}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+standardize+ standardizes magnet power supplies using parameters from an SDDS specification file.
 It can configure the required subroutine records and optionally start, stop, or query the standardization process.
 
-\item {\bf examples:}
+\item \textbf{examples:}
   \begin{flushleft}{\tt
     standardize -query magnets.sdds\\
     standardize -configure magnets.sdds\\
     standardize -pendIoTime 20 magnets.sdds
   }\end{flushleft}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
   \begin{flushleft}{\tt
     standardize [-query|-configure|-stop]\\
     \phantom{standardize }[-pendIoTime <seconds>] [--] <spec-file>
   }\end{flushleft}
 
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
   \item {\tt -query} --- Print the standardization state of devices in the specification file.
   \item {\tt -configure} --- Configure records for standardization without initiating.
@@ -25,15 +25,15 @@ It can configure the required subroutine records and optionally start, stop, or 
   \item {\tt -pendIoTime <seconds>} --- Maximum time to wait for Channel Access I/O.
   \end{itemize}
 
-\item {\bf files:}
+\item \textbf{files:}
   \begin{itemize}
-  \item {\bf spec-file:} SDDS file listing each device with ranges, timing, cycle count, final setpoint, and approach direction for standardization.
+  \item \textbf{spec-file:} SDDS file listing each device with ranges, timing, cycle count, final setpoint, and approach direction for standardization.
   \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
   \item \progref{degauss}
   \end{itemize}
 
-\item {\bf author:} C. Saunders, J. Anderson, R. Soliday, H. Shang, ANL/APS.
+\item \textbf{author:} C. Saunders, J. Anderson, R. Soliday, H. Shang, ANL/APS.
 \end{sddsprog}

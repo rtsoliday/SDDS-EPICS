@@ -1,7 +1,7 @@
 \begin{sddsprog}{cavput}
-  \item {\bf description:}
+  \item \textbf{description:}
     cavput sends values to EPICS process variables using Channel Access or PVAccess. It supports vector puts, delta mode, ramping, and numerical or char array data modes, making it useful for scripting accelerator operations.
-  \item {\bf examples:}
+  \item \textbf{examples:}
     Set all storage ring quadrupoles to zero.
     \begin{flushleft}{\tt
     cavput -list=S -range=begin=1,end=40,format=\%ld\\
@@ -12,7 +12,7 @@
     cavput -list=S:bpm -range=begin=1,end=40,format=\%ld -list=:SlowBh:\\
       -list=MI=0,sizeAO=4080,modeBO=1,enableBO=1
     }\end{flushleft}
-  \item {\bf synopsis:}
+  \item \textbf{synopsis:}
     \begin{flushleft}{\tt
     cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\\\relax
       [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\\\relax
@@ -20,7 +20,7 @@
       [-numerical] [-charArray] [-blunderAhead[=silently]]\\\relax
       [-provider=\{ca|pva\}]
     }\end{flushleft}
-  \item {\bf switches:}
+  \item \textbf{switches:}
     \begin{itemize}
       \item {\tt -list} --- Specify PV name components with optional values.
       \item {\tt -range} --- Generate PV names from a range.
@@ -33,5 +33,5 @@
       \item {\tt -blunderAhead} --- Continue puts even if some PVs fail to connect; \verb|silently| suppresses errors.
       \item {\tt -provider} --- Select Channel Access ({\tt ca}) or PVAccess ({\tt pva}).
     \end{itemize}
-  \item {\bf author:} M. Borland and R. Soliday, ANL/APS.
+  \item \textbf{author:} M. Borland and R. Soliday, ANL/APS.
 \end{sddsprog}

@@ -1,9 +1,9 @@
 % sddsmonitor: log PV values at specified intervals.
 \begin{sddsprog}{sddsmonitor}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsmonitor+ reads values of process variables and writes them to a file at a specified time interval.
 An input file defines the process variables to be monitored.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The pressure readbacks of storage ring ion pumps and the stored current are monitored
 with the command below.
@@ -32,7 +32,7 @@ VM:01:2IP2.VAL pv Torr VM:01:2IP2
 VM:01:2IP3.VAL pv Torr VM:01:2IP3 
 ...
 \end{verbatim}
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 sddsmonitor <SDDSinputfile> <SDDSoutputfile>
   [-erase | -append[=recover][,toPage] | -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | -dailyFiles]
@@ -51,9 +51,9 @@ sddsmonitor <SDDSinputfile> <SDDSoutputfile>
   [-runControlPV=string=<string>,pingTimeout=<value>]
   [-runControlDescription=string=<string>]
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with a few data columns required:
 \begin{itemize}
         \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
@@ -69,7 +69,7 @@ The input file is an SDDS file with a few data columns required:
                 values of the readback in the output file.
 \end{itemize}
 
-\item {\bf conditions file:} \par
+\item \textbf{conditions file:} \par
 The conditions file is an optional input file specified on the command line which lists
 conditions that must be satisfied at each time step before the data can be logged.
 
@@ -83,7 +83,7 @@ grow, and it may appear that the monitoring process has somehow stopped.
 It is possible to check the program activity with the \verb+touch+ sub-option
 which causes the monitoring program to touch the output file at every step.
 
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 The output file contains one data column for each process variables named in the input file. By default,
 the data type is float (single precision).
 Time columns and other miscellaneous columns are defined: 
@@ -117,7 +117,7 @@ Many time-related parameters are defined in the output file:
 \end{itemize}
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
         \item {\tt -erase} --- If the output file already exists, then it will be overwritten
                 by \verb+sddsmonitor+.
@@ -214,12 +214,12 @@ Many time-related parameters are defined in the output file:
         \item {\tt -runControlDescription=string=<string>} --- Specifies a runControl PV description record.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsvmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-\item {\bf author: L. Emery and M. Borland, ANL} 
+\item \textbf{author:} L. Emery and M. Borland, ANL 
 \end{sddsprog}

@@ -1,6 +1,6 @@
 % sddsgencontrolbits: create BPM acquisition control bits or send RAM data.
 \begin{sddsprog}{sddsgencontrolbits}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsgencontrolbits+ creates a file of BPM acquisition control
 bits from unsigned-long RAM data or from command line
 parameters. There is an option to send the RAM data to EPICS,
@@ -26,7 +26,7 @@ explained in further detail in \cite{Norum2007}.
 \label{fig:acquisitionControlRam}
 \end{figure}
 
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 
 The contents of the file {\tt controlRAM} is converted to control bits
@@ -71,7 +71,7 @@ PlaneSwitch},{\tt Accumulator}, and {\tt Sample}) by default the BPM
 in position 0 (from receiver positions 0,1,2,3). The column {\tt
 Accumulator} is referred to in \cite{Norum2007} as simply ``Plane''.
 
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \small
 \begin{verbatim}
 sddsgencontrolbits <inputRAMFile> <outputFile>
@@ -160,16 +160,16 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
 \end{verbatim}
 \normalsize
 
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:} \par
+\item \textbf{input file:} \par
   RAM waveform record containing unsigned long integer values.
-\item {\bf output file:} \par
+\item \textbf{output file:} \par
   Control bits separated into individual columns; includes simulated scope readback page.
-\item {\bf bunch pattern file:} \par
+\item \textbf{bunch pattern file:} \par
   Definitions of preset bunch patterns for pattern-based sampling modes.
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
     \item {\tt -RAMWaveformPV} --- RAM waveform PV name.
     \item {\tt -scopeWaveformPV} --- digital scope waveform PV name.
@@ -194,10 +194,10 @@ Program by H. Shang, ANL (EPICS 3.14.8.2, Mar 26 2007).
     \end{itemize}
 \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsexperiment}
     \end{itemize}
-\item {\bf author: L. Emery, H. Shang, R. Soliday, ANL}
+\item \textbf{author:} L. Emery, H. Shang, R. Soliday, ANL
 \end{sddsprog}

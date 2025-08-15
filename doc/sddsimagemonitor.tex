@@ -1,14 +1,14 @@
 % sddsimagemonitor: log EPICS image PVs to SDDS files.
 %
 \begin{sddsprog}{sddsimagemonitor}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsimagemonitor+ reads EPICS image process variables and writes the image
   data to an SDDS file at regular intervals. Image PVs may be supplied from an
   input file or directly on the command line. Optional scalar PVs can be logged as
   parameters, and data may be conditioned on other PV values. Two-dimensional
   images produce one page per acquisition, while multi-plane data result in one
   page per plane.
-\item {\bf example:}
+\item \textbf{example:}
 The following command logs a set of camera images once per minute.
 \begin{verbatim}
 sddsimagemonitor cam.mon cam.sdds -interval=1,minute -steps=10
@@ -20,7 +20,7 @@ SDDS1
 &data mode=ascii no_row_counts=1 &end
 AR:SLM1:image1
 \end{verbatim}
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
     [{-erase | -generations[=digits=<integer>][,delimiter=<string>]} [-pendIOtime=<seconds>]
@@ -36,7 +36,7 @@ usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
     [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
     [-singleColumn] [-logOnChange] [-device=<name>] [-retakeStep]
 \end{verbatim}
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
   \item {\verb+-PVnames=<name>[,<name>]+} --- specifies image PV names to read.
   \item {\verb+-scalars=<filename>+} --- logs scalar PVs as parameters in the output file.
@@ -67,11 +67,11 @@ usage: sddsimagemonitor [<inputfile> | -PVnames=<name>[,<name>]] <outputfile>
   \item {\verb+-device=<name>+} --- selects the device type (e.g., areadector or FLID).
   \item {\tt -retakeStep} --- repeats a step if timestamps or scalar values do not change.
   \end{itemize}
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
   \item \progref{sddsmonitor}
   \item \progref{sddsvmonitor}
   \item \progref{sddswmonitor}
   \end{itemize}
-\item {\bf author:} M. Borland, L. Emery, H. Shang, R. Soliday, ANL
+\item \textbf{author:} M. Borland, L. Emery, H. Shang, R. Soliday, ANL
 \end{sddsprog}

@@ -1,6 +1,6 @@
 % sddswmonitor: monitor waveform PVs at intervals.
 \begin{sddsprog}{sddswmonitor}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddswmonitor+ reads values of waveform process variables 
 and writes them to a file at a specified time interval.
 An input file defines the process variables to be monitored.
@@ -12,7 +12,7 @@ output file as small as possible.  The scalar PVs are not checked for
 changes though. In the future an option that allows logging of duplicate
 waveform PVs may be implemented.
 
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The history of a beam position monitor readback is collected with this command:
 \begin{verbatim}
@@ -38,7 +38,7 @@ SDDS1
 S1A:P1:bh:x_wf S1A:P1:x
 S1A:P1:bh:y_wf S1A:P1:y
 \end{verbatim}
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddswmonitor {<inputfile> | -PVnames=<name>[,<name>]} <outputfile>
     [{-erase | -generations[=digits=<integer>][,delimiter=<string>]}]
@@ -60,9 +60,9 @@ usage: sddswmonitor {<inputfile> | -PVnames=<name>[,<name>]} <outputfile>
     [-rms] [-bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV]]
 Writes values of waveform process variables to a binary SDDS file.
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with two required columns and one required parameter:
 \begin{itemize}
         \item {\verb+WaveformLength+} --- Required long parameter for the length of the waveform PV's. All
@@ -71,7 +71,7 @@ The input file is an SDDS file with two required columns and one required parame
         \item {\verb+WaveformName+} --- Required string column for the names of the data columns in the output file.
 \end{itemize}
 
-\item {\bf scalar PV input file:}\par
+\item \textbf{scalar PV input file:}\par
 An optional input file for scalar PVs (i.e. regular PVs) can be specified. The required columns are:
 \begin{itemize}
         \item {\tt ControlName} --- Required string column for the names of the scalar process variables
@@ -80,7 +80,7 @@ An optional input file for scalar PVs (i.e. regular PVs) can be specified. The r
                 output file in which the values of the scalar process variables are written.
 \end{itemize}
 
-\item {\bf conditions file:} \par
+\item \textbf{conditions file:} \par
 The conditions file is an optional input file specified on the command line which lists
 conditions that must be satisfied at each time step before the data can be logged.
 
@@ -94,7 +94,7 @@ grow, and it may appear that the monitoring process has somehow stopped.
 It is possible to check the program activity with the \verb+touch+ sub-option
 which causes the monitoring program to touch the output file at every step.
 
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 The output file contains one data column for each waveform process variable named in the input file. The names
 of the data columns are given by the values of {\verb+WaveformName+} in the input file. The units are obtained
 internally from the EPICS database. An additional long column \verb+Index+ is created that give the index
@@ -132,7 +132,7 @@ Many additional parameters which don't change values throughout the file are def
 \end{itemize}
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
     \item {\verb+-PVnames=<name>[,<name>]+} ---
           specifies a list of PV names to read. If the waveforms are of different
@@ -202,12 +202,12 @@ Many additional parameters which don't change values throughout the file are def
           waveform is not stored for this calculation.
   \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsmonitor}
     \item \progref{sddsvmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-\item {\bf author: M. Borland and L. Emery, ANL} 
+\item \textbf{author:} M. Borland and L. Emery, ANL 
 \end{sddsprog}

@@ -1,10 +1,10 @@
 % sddscaramp: ramp process variables between current and target states.
 \begin{sddsprog}{sddscaramp}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddscaramp+ performs ramping of process variables between
 the present state and the states in one or more SDDS files.
 
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The following example shows how one would use \verb+sddscaramp+ to
 ramp 50\% of the way to a new steering configuration, using 10
@@ -15,14 +15,14 @@ sddscaramp -rampTo=steering.snap,steps=10,pause=1,percentage=50
 The file \verb+steering.snap+ contains corrector magnet power supply
 settings, such as might be saved to an SDDS file using the
 \verb+sddssnapshot+ program.
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 sddscaramp
   -rampTo=<filename>,steps=<number>,pause=<seconds>[,percentage=<value>][,differential=<factor>]
   [-rampTo ...] [-controlNameColumn=<string>] [-dataColumn=<columnName>]
   [-pendIOtime=<seconds>] [-resendFinal] [-verbose]
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 
 The input files are SDDS files.  There must be a string column named
 {\tt ControlName}, {\tt Device}, or {\tt DeviceName} that contains the
@@ -46,7 +46,7 @@ incorrectly restored values.  For reliable results, the use of {\tt
 IsNumerical} with string data is required.  If the data is in a
 numerical column to begin with, of course, there is no ambiguity.
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
         \item {\tt -rampTo={\em filename},steps={\em
         number},pause={\em seconds},[percentage={\em value}][,differential={\em factor}]} ---
@@ -71,12 +71,12 @@ numerical column to begin with, of course, there is no ambiguity.
         printed out as the ramping proceeds.
       \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddssnapshot}
     \item \progref{sddscasr}
     \end{itemize}
-\item {\bf author: M. Borland (ANL)}
-\item {\bf programmers: R. Soliday, M. Borland (ANL)}
+\item \textbf{author:} M. Borland (ANL)
+\item \textbf{programmers:} R. Soliday, M. Borland (ANL)
 \end{sddsprog}

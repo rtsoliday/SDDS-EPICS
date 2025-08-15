@@ -1,8 +1,8 @@
 % sddsalarmlog: log changes of alarm status for specified process variables.
 \begin{sddsprog}{sddsalarmlog}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsalarmlog+ logs changes of alarm status for process variables named in an input file.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The status of the positron accumulator ring process variables are logged
 for a one day duration.
@@ -12,7 +12,7 @@ sddsalarmlog PAR.along PAR.along.sdds -timeDuration=1,day
 where the file \verb+PAR.along+ is the input file containing the names of the
 process variables, and the file \verb+PAR.along.sdds+ is the output file.
 
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddsalarmlog <input> <output>
 -timeDuration=<realValue>[,<time-units>] [-offsetTimeOfDay]
@@ -27,13 +27,13 @@ usage: sddsalarmlog <input> <output>
 [-runControlDescription=string=<string>]
 \end{verbatim}
 
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with the required string column {\tt ControlName}
 which contains the names of the process variables whose status is to be monitored.
 
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 The output file contains information on the process variable alarm status
 change, such as the time of occurrence, the alarm designation, the severity of the alarm, and the
 row location of the previous alarm status change.
@@ -111,7 +111,7 @@ These parameters are defined:
 \end{itemize} % end of itemized files
 
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
       \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.
         The default time units are seconds; one may also specify days, hours, or minutes.
@@ -139,9 +139,9 @@ These parameters are defined:
       \item {\tt -runControlDescription=string=<string>} --- Specifies a run control PV description record.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
 
 % replacing <prog> with the program to be referenced:
 
-\item {\bf author: M. Borland, ANL} 
+\item \textbf{author:} M. Borland, ANL 
 \end{sddsprog}

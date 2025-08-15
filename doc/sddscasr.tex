@@ -1,11 +1,11 @@
 % sddscasr: save and restore PV configurations with enhanced features.
 \begin{sddsprog}{sddscasr}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddscasr+ is an alternative version of casave and carestore. sddscasr is
 more efficient and has more features than casave/carestore. It can save
 and restore configurations in one program.
 
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 Save a snapshot of APS storage ring:
 \begin{verbatim}
@@ -24,7 +24,7 @@ sddscasr var1 out1 -runControlPV=string=oag:ControlLawRC
 -casavePV=oag:casave -logFile=logFile &
 \end{verbatim}
 
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddscasr <inputFile> <outputRoot> [-verbose]
     [-daemon] [-dailyFiles] [-semaphore=<filename>] [-save] [-restore[=verify]] [-logFile=<filename>]
@@ -35,14 +35,14 @@ usage: sddscasr <inputFile> <outputRoot> [-verbose]
     [-pipe=[input|output]] [-waveform=[rootname=<string>][,extension=<string>][,directory=<string>][,onefile][,saveWaveformFile[,fullname]]]
     [-numerical] [-description=<string>|pv=<pvname>]
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:} \par
+\item \textbf{input file:} \par
 The input file is an SDDS file with a string column. For saving snapshot, the input file
 contains at least one string column - ControlName. For restoring snapshot, the input file
 contains at least two string columns - ControlName and ValueString, where ValueString is the
 value of the PVs to be restored.
-\item {\bf output file:} \par
+\item \textbf{output file:} \par
 The output file only exists for saving snapshot. The output file contains everything in the input
 file, except that the ValueString column (if the input file has ValueString column) is update. And
 three more columns are created if they do not exist in the input file and their values are updated.
@@ -54,7 +54,7 @@ corresponding PV or n if no error occurs.
 \end{itemize}
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
   \item {\tt inputFile} --- input file name (SDDS file).
   \item {\tt outputRoot} --- output file or root if -dailyFiles option is specified.
@@ -85,11 +85,11 @@ corresponding PV or n if no error occurs.
   \item {\tt verbose} --- print out messages.
   \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddssnapshot}
     \item \progref{sddscaramp}
     \end{itemize}
-\item {\bf author: H. Shang, ANL}
+\item \textbf{author:} H. Shang, ANL
 \end{sddsprog}

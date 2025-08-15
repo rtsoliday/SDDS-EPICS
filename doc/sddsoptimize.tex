@@ -1,9 +1,9 @@
 % sddsoptimize: optimize readback RMS by varying setpoints.
 \begin{sddsprog}{sddsoptimize}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsoptimize+ optimizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.   
 
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The trajectory of the booster BPMs is controlled with this command:
 \begin{flushleft}{\tt
@@ -77,7 +77,7 @@ oag:B1C2H:KickAO -0.93188756664225914
 
 \end{verbatim}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{flushleft}{\tt
 sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]\
 [-restartFile=<file>] [-pendIOtime=<seconds>] [-conditioning=<script>]\
@@ -91,16 +91,16 @@ sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]\
 [-runControlDescription={string=<string>|parameter=<string>}]
 }\end{flushleft}
 Perform optimization on APS control system process variables using simplex, 1dscan, or RCDS methods.
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf variable input file:} \par
+\item \textbf{variable input file:} \par
 The variable input file is an SDDS file with one string column: ControlName, which is required
 and gives the list of control correctors (process variables or knobs). It also contains three
 double columns: LowerLimit, UpperLimit, IntialChange and InitialValue. InitialValue column
 is optional. Others are required. InitialChange column specifies the initial changes to the correctors.
 Variable input file has one parameter --PauseBetweenReadings(double), which sets the waiting time in
 seconds between two settings of the correctors.
-\item {\bf measurement file:} \par This file specifies the measurement to be optimized. 
+\item \textbf{measurement file:} \par This file specifies the measurement to be optimized. 
 It has four columns:
 \begin{itemize}
         \item {\tt ControlName} --- Required string column. Gives the list of process variables
@@ -117,7 +117,7 @@ It has three parameters:
 
 \end{itemize}
 
-\item {\bf knob file:} \par
+\item \textbf{knob file:} \par
 To make \verb+sddsoptimize+ more robust, one can implement optimizaion on knobs,
 that are composed of set point process variables. The process variables that a knob contains are
 given in knob file, which contain following parameters and columns:
@@ -141,7 +141,7 @@ given in knob file, which contain following parameters and columns:
                 The content of each page is from the combined file specified in filename parameter.
 \end{itemize}
 
-\item {\bf output log file:} \par
+\item \textbf{output log file:} \par
 The output file contains one data column for each process variables defined in the variable 
 input file. By default, the data type is double. One row is written at every evaluation.
 Also two more columns and two parameters are defined: 
@@ -154,7 +154,7 @@ Also two more columns and two parameters are defined:
 
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
         \item {\tt -varFile=<file>} --- Required; defines control correctors or knobs.
@@ -179,10 +179,10 @@ Also two more columns and two parameters are defined:
         \item {\tt -runControlDescription} --- Specifies a runControl PV description record.
         \item {\tt -testValues=file=<file>[,limit=<count>]} --- Enforce temporary feedback limits.
   \end{itemize}
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsexperiment}
     \end{itemize}
-\item {\bf author: H. Shang, ANL}
+\item \textbf{author:} H. Shang, ANL
 \end{sddsprog}

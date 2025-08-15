@@ -1,15 +1,15 @@
 % sddswget: read waveform PVs into an SDDS file.
 \begin{sddsprog}{sddswget}
-\item {\bf description:}
+\item \textbf{description:}
   \verb+sddswget+ reads waveform process variables and writes the values to a binary SDDS file.  Waveform PV names may come from an SDDS input file or from the command line.  Each output page contains a single waveform with time stamps.
 
-\item {\bf examples:}
+\item \textbf{examples:}
   The following command fetches two waveform PVs and stores them in an SDDS file:
   \begin{flushleft}{\tt
   sddswget -PVnames=rf:wave1,rf:wave2 waveforms.sdds
   }\end{flushleft}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
   \begin{flushleft}{\tt
   sddswget\\\relax
       [<inputfile> [-inputStyle={wget|wmonitor|automatic}] | -PVnames=<name>[,<name>]]\
@@ -17,10 +17,10 @@
       [-provider={ca|pva}]\
   }\end{flushleft}
 
-\item {\bf files:}
+\item \textbf{files:}
   The output file contains parameters \verb+Time+, \verb+TimeStamp+, and \verb+WaveformPV+ along with columns \verb+Index+ and the waveform data.
 
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
     \item {\tt -PVnames=<name>[,<name>]} --- list waveform PVs on the command line.
     \item {\tt -inputStyle={wget|wmonitor|automatic}} --- choose how PV names are read from the input file.  Wmonitor style expects a \verb+WaveformPV+ column; wget style uses a \verb+WaveformPV+ parameter.
@@ -29,11 +29,11 @@
     \item {\tt -provider={ca|pva}} --- select EPICS Channel Access (default) or PVAccess.
   \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
     \item \progref{sddswmonitor}
     \item \progref{sddswput}
   \end{itemize}
 
-\item {\bf author: M. Borland, ANL/APS}
+\item \textbf{author:} M. Borland, ANL/APS
 \end{sddsprog}

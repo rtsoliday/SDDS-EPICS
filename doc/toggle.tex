@@ -1,11 +1,11 @@
 % toggle: alternate between two sets of PV values.
 \begin{sddsprog}{toggle}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+toggle+ alternates between two sets of process variable values stored in 
 snapshot files and/or
 process variables specified on the command line.
 Time intervals and the values of the process variables upon termination can be specified.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 Two states of the APS storage ring injection magnets are restored for 10 seconds each by writing
 values of process variables listed in the snapshot files SRin.snp1 and SRin.snp2:
@@ -14,7 +14,7 @@ toggle SRin.snp1 SRin.snp2 -interval=10,10
 \end{verbatim}
 In this case the magnets return to the initial state upon termination.
 
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: toggle [snapshotfile1 [snapshotfile2]]
        [-controlName=PVname,value1[,value2] ...]
@@ -26,9 +26,9 @@ usage: toggle [snapshotfile1 [snapshotfile2]]
        [-verbose] [-warning]
 \end{verbatim}
 
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input files:}\par
+\item \textbf{input files:}\par
 The input files are valid snapshot files as described in \progref{sddscasr}. At least three
 columns must be defined:
 \begin{itemize}
@@ -45,7 +45,7 @@ Optional columns are:
 \end{itemize}
         Both files must have the same set of PV names.
 \end{itemize}
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
         \item {\tt -controlName=<PVname>,<value1>[,<value2>]} --- Optional. Specifies a PV to be
@@ -67,10 +67,10 @@ Optional columns are:
         \item {\tt -warning} --- Optionally prints warning messages.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddscasr}
     \end{itemize}
-\item {\bf author: L. Emery, ANL} 
+\item \textbf{author:} L. Emery, ANL 
 \end{sddsprog}

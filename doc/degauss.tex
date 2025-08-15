@@ -1,26 +1,26 @@
 % degauss: configure and trigger magnet degaussing cycles.
 \begin{sddsprog}{degauss}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+degauss+ reads an SDDS specification file listing magnets and degaussing parameters.
 It configures the corresponding subroutine records and, unless otherwise requested, initiates
 magnet degaussing cycles for each device.
-\item {\bf examples:}
+\item \textbf{examples:}
 To configure magnets without starting degaussing and later query their state:
 \begin{flushleft}{\tt
   degauss -configure booster.sdds\\
   degauss -query booster.sdds
 }\end{flushleft}
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
   \begin{flushleft}{\tt
     degauss [-q|-query|-c|-configure|-s|-stop]\\
     \phantom{degauss }[-p|-pend|-pendIoTime <seconds>] [--] <spec-file>
   }\end{flushleft}
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
     \item {\tt -q\,|\,-query} --- Print degaussing state of devices in {\tt spec-file}.
     \item {\tt -c\,|\,-configure} --- Configure records for degaussing but do not start.
     \item {\tt -s\,|\,-stop} --- Halt degaussing of devices in {\tt spec-file}.
     \item {\tt -p\,|\,-pend\,|\,-pendIoTime <seconds>} --- Maximum time to wait for Channel Access I/O.
   \end{itemize}
-\item {\bf author:} C. Saunders, J. Anderson, R. Soliday, H. Shang, ANL
+\item \textbf{author:} C. Saunders, J. Anderson, R. Soliday, H. Shang, ANL
 \end{sddsprog}

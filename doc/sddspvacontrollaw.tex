@@ -1,16 +1,16 @@
 % sddspvacontrollaw: perform PV Access feedback using an inverse response matrix.
 %
 \begin{sddsprog}{sddspvacontrollaw}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddspvacontrollaw+ performs feedback on process variables using PV Access. The
 input file defines an inverse response matrix: each column names a readback PV and a
 string column lists the actuator PVs. The program adjusts actuators to regulate the
 readbacks to zero or to given offsets, optionally logging data and applying limits.
 
-\item {\bf example:}
+\item \textbf{example:}
 \begin{flushleft}{\tt sddspvacontrollaw sddspvacontrollaw.inv -searchPath=/home/controls -interval=1 -steps=10 -gain=0.75 -runControlPV=string=shang:ControlLawRC -verbose}\end{flushleft}
 
-\item {\bf synopsis:}
+\item \textbf{synopsis:}
 \begin{flushleft}{\tt
 sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>] [<outputfile>]\
 [-gain={<real-value>|PVname=<name>}] [-interval={<real-value>|PVname=<name>}] [-steps=<integer>]\
@@ -26,15 +26,15 @@ sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>
 [-CASecurityTest] [-waveforms=<filename>,<type>] [-verbose] [-dryRun]}
 \end{flushleft}
 
-\item {\bf files:}
+\item \textbf{files:}
   \begin{itemize}
-  \item {\bf input file:} \par
+  \item \textbf{input file:} \par
     An SDDS file containing the inverse response matrix. A string column lists actuator PV names and one column for each readback PV provides the matrix elements.
-  \item {\bf output file:} \par
+  \item \textbf{output file:} \par
     If given, records readback and actuator values at each correction step.
   \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
   \begin{itemize}
   \item {\tt -searchPath} --- directory path used to locate input files.
   \item {\tt -actuatorColumn} --- string column in the input file naming actuators.
@@ -58,10 +58,10 @@ sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>
   \item {\tt -dryRun} --- compute corrections without writing to actuators.
   \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
   \begin{itemize}
   \item \progref{sddscontrollaw}
   \end{itemize}
 
-\item {\bf author: L. Emery, H. Shang, R. Soliday, ANL}
+\item \textbf{author:} L. Emery, H. Shang, R. Soliday, ANL
 \end{sddsprog}

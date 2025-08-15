@@ -1,8 +1,8 @@
 % sddslogonchange: log PV values only when they change.
 \begin{sddsprog}{sddslogonchange}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddslogonchange+ records only the values of process variables that change. This reduces the output file size if process variables do not change often.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 Process variable setpoints from the storage ring are monitored
 with the command below.
@@ -22,7 +22,7 @@ S1A:H2:CurrentAI.AOFF 0.0 ""
 S1A:H3:CurrentAI.AOFF 0.0 ""
 ...
 \end{verbatim}
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddslogonchange <input> <output> 
   [-timeDuration=<realValue>[,<time-units>]]
@@ -51,9 +51,9 @@ usage: sddslogonchange <input> <output>
 Logs data for the process variables named in the ControlName
 column of <input> to an SDDS file <output>.
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with only one data column required:
 \begin{itemize}
         \item {\tt ControlName} --- Required string column for the names of the process variables or devices to be monitored.
@@ -64,7 +64,7 @@ The input file is an SDDS file with only one data column required:
         \item {\tt Tolerance} --- Optional numeric column which contains a tolerance value to avoid logging small changes.
 \end{itemize}
 
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 The output file contains parameters, arrays, and columns.
 \begin{itemize}
         \item {\bf Parameters}
@@ -115,7 +115,7 @@ The output file contains parameters, arrays, and columns.
 
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
         \item {\tt -timeDuration=<realValue>[,<time-units>]} --- Specifies time duration for logging.  The default time units are seconds; you may also specify days, hours, or minutes.
@@ -142,11 +142,11 @@ The output file contains parameters, arrays, and columns.
         \item {\tt -noToleranceMinLimit} --- Disables the default minimum change limit when logging values.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddslogger}
     \item \progref{sddssnapshot}
     \end{itemize}
-\item {\bf author: R. Soliday, ANL} 
+\item \textbf{author:} R. Soliday, ANL 
 \end{sddsprog}

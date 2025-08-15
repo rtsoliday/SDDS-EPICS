@@ -1,11 +1,11 @@
 % sddsstatmon: collect statistics for PVs and log results.
 \begin{sddsprog}{sddsstatmon}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsstatmon+ reads EPICS process variables, collects statistics,
 and writes these statistics to an output file.
 The statistics are the mean, standard deviation, minimum, maximum, and sigma.
 An input file defines the process variables to be monitored.
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 Statistics of the pressure readbacks of storage ring ion pumps and the stored current 
 for groups of 60 data points taken at 1 second interval are collected
@@ -35,7 +35,7 @@ VM:01:2IP2.VAL pv Torr VM:01:2IP2
 VM:01:2IP3.VAL pv Torr VM:01:2IP3 
 ...
 \end{verbatim}
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddsstatmon <input> <output>
     [-erase | -generations[=digits=<integer>][,delimiter=<string>] | -append[=recover][,toPage]]
@@ -55,9 +55,9 @@ usage: sddsstatmon <input> <output>
     [-inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]]
     Writes values of process variables or devices to a binary SDDS file.
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with a few data columns required:
 \begin{itemize}
         \item {\tt ControlName} or {\tt Device} --- Required string column for the names of the process variables
@@ -73,7 +73,7 @@ The input file is an SDDS file with a few data columns required:
                 values of the readback in the output file.
 \end{itemize}
 
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 The output file contains one column per statistic per process variable monitored.
 The five statistics are the mean, standard deviation, minimum value,
 maximum value, and sigma. The corresponding column names are {\tt <name>Mean}, {\tt <name>StDev},
@@ -113,7 +113,7 @@ Many time-related parameters are defined in the output file:
 \end{itemize} % end of itemized files
 
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
         \item {\tt -erase} --- If the output file already exists, it will be overwritten.
         \item {\tt -append[=recover][,toPage]} --- Append data to an existing output file. With \verb+recover+, attempt to salvage a corrupted file; \verb+toPage+ appends rows to the last page.
@@ -141,12 +141,12 @@ Many time-related parameters are defined in the output file:
         \item {\tt -ezcaTiming=<timeout>,<retries>} --- Set EZCA timeout and retry values (obsolete).
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsvmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-\item {\bf author: M. Borland, ANL} 
+\item \textbf{author:} M. Borland, ANL 
 \end{sddsprog}

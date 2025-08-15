@@ -1,6 +1,6 @@
 % sddsvmonitor: monitor PVs defined by rootname and suffix lists.
 \begin{sddsprog}{sddsvmonitor}
-\item {\bf description:}
+\item \textbf{description:}
 \verb+sddsvmonitor+ reads values of process variables and writes them to a file at a specified time interval.
 This command differs from \verb+sddsmonitor+ in that the monitored
 process variables names are specified in two lists.  The first list
@@ -16,7 +16,7 @@ output file as small as possible.  The scalar PVs are not checked for
 changes though. In the future an option that allows logging of duplicate
 vector PVs may be implemented.
 
-\item {\bf example:} 
+\item \textbf{example:} 
 % 
 The pressures readbacks of storage ring vacuum gauges are monitored with the command below.
 \begin{verbatim}
@@ -43,7 +43,7 @@ VGC1.PRES
 There is only one element in the suffix list of this example. The output file will contain columns
 \verb+Rootname+ and \verb+VGC1.PRES+.
 
-\item {\bf synopsis:} 
+\item \textbf{synopsis:} 
 \begin{verbatim}
 usage: sddsvmonitor [<inputfile> | -rootnames=<file> -suffixes=<file>]
     <outputfile> [{-erase | -append[=recover] | -generations[=digits=<integer>][,delimiter=<string>]}]
@@ -57,9 +57,9 @@ usage: sddsvmonitor [<inputfile> | -rootnames=<file> -suffixes=<file>]
     [-comment=<parameterName>,<text>]
 Writes values of process variables to a binary SDDS file.
 \end{verbatim}
-\item {\bf files:}
+\item \textbf{files:}
 \begin{itemize}
-\item {\bf input file:}\par
+\item \textbf{input file:}\par
 The input file is an SDDS file with one data column and one parameter:
 \begin{itemize}
         \item {\tt ListData} --- Required string column for the root part or the suffix part 
@@ -69,14 +69,14 @@ The input file is an SDDS file with one data column and one parameter:
 \end{itemize}
 The list of process variables is formed by combining all the rootnames and suffixes.
 
-\item {\bf rootname and suffix files:}\par
+\item \textbf{rootname and suffix files:}\par
 An alternative to specifying the rootnames and suffixes with the above input file is
 to specify the list of rootnames and suffixes with two separate files, as shown in the usage message
 above.
 The string data in rootname file must be in column \verb+Rootname+. The string data in suffix file
 must be in column \verb+Suffix+. 
 
-\item {\bf scalar PV input file:}\par
+\item \textbf{scalar PV input file:}\par
 An optional input file for scalar PVs (i.e. regular PVs) can be specified. The required columns are:
 \begin{itemize}
         \item {\tt ControlName} --- Required string column for the names of the scalar process variables
@@ -86,7 +86,7 @@ An optional input file for scalar PVs (i.e. regular PVs) can be specified. The r
 \end{itemize}
 
 
-\item {\bf conditions file:} \par
+\item \textbf{conditions file:} \par
 The conditions file is an optional input specified on the command line which lists
 conditions that must be satisfied at each time steps before the data can be logged.
 
@@ -100,7 +100,7 @@ grow, and it may appear that the monitoring process has somehow stopped.
 It is possible to check the program activity with the \verb+touch+ sub-option
 which causes the monitoring program to touch the output file at every step.
 
-\item {\bf output file:}\par
+\item \textbf{output file:}\par
 The output file contains one data column for each suffix named in the input file. By default,
 the data type is float (single precision). Other columns are:
 \begin{itemize}
@@ -140,7 +140,7 @@ Many time-related parameters which don't change values throughout the file are d
 \end{itemize}
 \end{itemize}
 
-\item {\bf switches:}
+\item \textbf{switches:}
     \begin{itemize}
 %   \item {\tt -pipe[=input][,output]} --- The standard SDDS Toolkit pipe option.
         \item {\tt -rootnames=<file>} --- Specifies input file for rootnames. String values
@@ -208,12 +208,12 @@ Many time-related parameters which don't change values throughout the file are d
                 along with the text to be placed in the file.
     \end{itemize}
 
-\item {\bf see also:}
+\item \textbf{see also:}
     \begin{itemize}
 % replacing <prog> with the program to be referenced:
     \item \progref{sddsvmonitor}
     \item \progref{sddswmonitor}
     \item \progref{sddssnapshot}
     \end{itemize}
-\item {\bf author: M. Borland and L. Emery, ANL} 
+\item \textbf{author:} M. Borland and L. Emery, ANL 
 \end{sddsprog}
