@@ -17,7 +17,7 @@ cawait -waitFor=SR:state,equalTo=1 -and -waitFor=SR:mode,equalTo=2
 }\end{flushleft}
 \item \textbf{synopsis:}
 \begin{flushleft}{\tt
-cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
+usage: cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
  -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]\
  [{-and | -or | -not}]\
  [-repeat[=<number>]]\
@@ -46,6 +46,6 @@ cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
   \item {\tt -noWarnings} --- suppress timeout warnings.
   \item {\tt -provider} --- choose channel access ({\tt ca}) or PVAccess ({\tt pva}) provider.
 \end{itemize}
-\item \textbf{author:} M. Borland, R. Soliday, ANL/APS.
+\item \textbf{author:} Michael Borland, Robert Soliday, ANL/APS.
 \end{sddsprog}
 
