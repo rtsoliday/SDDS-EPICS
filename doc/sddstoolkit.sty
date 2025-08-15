@@ -1,0 +1,21 @@
+% sddstoolkit.sty - common macros for SDDS EPICS toolkit documentation
+\ProvidesPackage{sddstoolkit}
+
+% Provide no-op environments for compatibility when html/latex distinctions are unnecessary
+\newenvironment{htmlonly}{}{}
+\newenvironment{latexonly}{}{}
+\providecommand{\htmladdnormallink}[2]{\href{#2}{#1}}
+
+% Program reference macro: hyperlink to a program label and typeset as program()
+\newcommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
+
+% Environment for individual program documentation sections
+\newenvironment{sddsprog}[1]{%%
+  \begin{latexonly}\newpage\end{latexonly}%
+  \subsection{#1}\label{#1}%
+  \begin{itemize}%
+}{%%
+  \end{itemize}%
+}
+
+\endinput
