@@ -27,15 +27,15 @@ sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>
 \end{flushleft}
 
 \item \textbf{files:}
-  \begin{itemize}
+\begin{itemize}
   \item \textbf{input file:} \par
     An SDDS file containing the inverse response matrix. A string column lists actuator PV names and one column for each readback PV provides the matrix elements.
   \item \textbf{output file:} \par
     If given, records readback and actuator values at each correction step.
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{switches:}
-  \begin{itemize}
+\begin{itemize}
   \item {\tt -searchPath} --- directory path used to locate input files.
   \item {\tt -actuatorColumn} --- string column in the input file naming actuators.
   \item {\tt -gain} --- scalar or PV specifying overall feedback gain.
@@ -56,12 +56,12 @@ sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>
   \item {\tt -waveforms} --- specify waveform PVs to read or write in addition to scalars.
   \item {\tt -verbose} --- print extra information.
   \item {\tt -dryRun} --- compute corrections without writing to actuators.
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{see also:}
-  \begin{itemize}
+\begin{itemize}
   \item \progref{sddscontrollaw}
-  \end{itemize}
+\end{itemize}
 
 \item \textbf{author:} L. Emery, H. Shang, R. Soliday, ANL
 \end{sddsprog}
