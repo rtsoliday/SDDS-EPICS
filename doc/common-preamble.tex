@@ -1,0 +1,24 @@
+% Shared preamble for stand-alone SDDS EPICS documents
+% Defines common macros and margin settings.
+
+% Hyperlink helper for program references
+\newcommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
+
+% Provide a no-op latexonly environment so html.sty is not required.
+\newenvironment{latexonly}{}{}
+
+% Equation environment used for requirements
+\newenvironment{req}{\begin{equation}\mathrm{}}{\end{equation}}
+
+% Consistent page layout
+\pagestyle{plain}
+\begin{latexonly}
+  \tolerance=10000
+\end{latexonly}
+\setlength{\topmargin}{0.15 in}
+\setlength{\oddsidemargin}{0 in}
+\setlength{\evensidemargin}{0 in} % not applicable anyway
+\setlength{\textwidth}{6.5 in}
+\setlength{\headheight}{-0.5 in} % for 11pt font size
+%\setlength{\footheight}{0 in}
+\setlength{\textheight}{9 in}
