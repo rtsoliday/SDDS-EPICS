@@ -4,7 +4,6 @@
 \verb+sddsoptimize+ optimizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.
 
 \item \textbf{examples:}
-%
 The trajectory of the booster BPMs is controlled with this command:
 \begin{flushleft}{\tt
 sddsoptimize -measFile=booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12\\
@@ -181,7 +180,6 @@ Also two more columns and two parameters are defined:
 \end{itemize}
 \item \textbf{see also:}
 \begin{itemize}
-% replacing <prog> with the program to be referenced:
   \item \progref{sddsexperiment}
 \end{itemize}
 \item \textbf{author:} H. Shang, ANL
