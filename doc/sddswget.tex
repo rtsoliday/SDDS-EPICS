@@ -5,17 +5,19 @@
 
 \item \textbf{examples:}
   The following command fetches two waveform PVs and stores them in an SDDS file:
-  \begin{flushleft}{\tt
+  \begin{verbatim}
   sddswget -PVnames=rf:wave1,rf:wave2 waveforms.sdds
-  }\end{flushleft}
+  
+\end{verbatim}
 
 \item \textbf{synopsis:}
-  \begin{flushleft}{\tt
+  \begin{verbatim}
 usage: sddswget\\\relax
       [<inputfile> [-inputStyle={wget|wmonitor|automatic}] | -PVnames=<name>[,<name>]]\
       <outputfile> [-pendIOtime=<seconds>] [-pipe[=input][,output]]\
       [-provider={ca|pva}]\
-  }\end{flushleft}
+  
+\end{verbatim}
 
 \item \textbf{files:}
   The output file contains parameters \verb+Time+, \verb+TimeStamp+, and \verb+WaveformPV+ along with columns \verb+Index+ and the waveform data.

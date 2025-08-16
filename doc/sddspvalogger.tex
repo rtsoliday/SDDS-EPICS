@@ -3,9 +3,9 @@
 \item \textbf{description:}
 \verb+sddspvalogger+ connects to process variables over the EPICS7 PVA and CA protocols and logs the values to an SDDS file. The program supports conditional logging, data strobes, generation-based file rotation, and optional glitch capture.
 \item \textbf{examples:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 sddspvalogger pvlist.sdds data.sdds -sampleInterval=1,seconds -steps=10\\
-}\end{flushleft}
+\end{verbatim}
 where {\tt pvlist.sdds} defines the PVs to monitor and {\tt data.sdds} receives the logged values.
 \item \textbf{synopsis:}
 \begin{verbatim}

@@ -8,10 +8,12 @@ string column lists the actuator PVs. The program adjusts actuators to regulate 
 readbacks to zero or to given offsets, optionally logging data and applying limits.
 
 \item \textbf{examples:}
-\begin{flushleft}{\tt sddspvacontrollaw sddspvacontrollaw.inv -searchPath=/home/controls -interval=1 -steps=10 -gain=0.75 -runControlPV=string=shang:ControlLawRC -verbose}\end{flushleft}
+\begin{verbatim}
+sddspvacontrollaw sddspvacontrollaw.inv -searchPath=/home/controls -interval=1 -steps=10 -gain=0.75 -runControlPV=string=shang:ControlLawRC -verbose
+\end{verbatim}
 
 \item \textbf{synopsis:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 usage: sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<string>] [<outputfile>]\
 [-gain={<real-value>|PVname=<name>}] [-interval={<real-value>|PVname=<name>}] [-steps=<integer>]\
 [-updateInterval=<integer>] [-average={<number>|PVname=<name>}[,interval=<seconds>]]\
@@ -23,8 +25,8 @@ usage: sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<
 [-runControlPV={string=<string>|parameter=<string>}[,pingTimeout=<value>]]\
 [-runControlDescription={string=<string>|parameter=<string>}] [-controlLogFile=<file>]\
 [-glitchLogFile=file=<string>[,readbackRmsThreshold=<value>][,controlRmsThreshold=<value>][,rows=<integer>]]\
-[-CASecurityTest] [-waveforms=<filename>,<type>] [-verbose] [-dryRun]}
-\end{flushleft}
+[-CASecurityTest] [-waveforms=<filename>,<type>] [-verbose] [-dryRun]
+\end{verbatim}
 
 \item \textbf{files:}
 \begin{itemize}

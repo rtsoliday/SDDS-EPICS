@@ -3,23 +3,26 @@
     cavput sends values to EPICS process variables using Channel Access or PVAccess. It supports vector puts, delta mode, ramping, and numerical or char array data modes, making it useful for scripting accelerator operations.
 \item \textbf{examples:}
     Set all storage ring quadrupoles to zero.
-    \begin{flushleft}{\tt
+    \begin{verbatim}
     cavput -list=S -range=begin=1,end=40,format=\%ld\\
       -list=AQ,BQ -range=begin=1,end=5 -list=:CurrentAI=0
-    }\end{flushleft}
+    
+\end{verbatim}
     Configure slow beam history for S1A BPMs and 4080 samples.
-    \begin{flushleft}{\tt
+    \begin{verbatim}
     cavput -list=S:bpm -range=begin=1,end=40,format=\%ld -list=:SlowBh:\\
       -list=MI=0,sizeAO=4080,modeBO=1,enableBO=1
-    }\end{flushleft}
+    
+\end{verbatim}
 \item \textbf{synopsis:}
-    \begin{flushleft}{\tt
+    \begin{verbatim}
 usage: cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\\\relax
       [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\\\relax
       [-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>]\\\relax
       [-numerical] [-charArray] [-blunderAhead[=silently]]\\\relax
       [-provider=\{ca|pva\}]
-    }\end{flushleft}
+    
+\end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
   \item {\tt -list} --- Specify PV name components with optional values.

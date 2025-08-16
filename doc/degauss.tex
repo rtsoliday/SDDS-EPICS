@@ -6,15 +6,16 @@ It configures the corresponding subroutine records and, unless otherwise request
 magnet degaussing cycles for each device.
 \item \textbf{examples:}
 To configure magnets without starting degaussing and later query their state:
-\begin{flushleft}{\tt
+\begin{verbatim}
   degauss -configure booster.sdds\\
   degauss -query booster.sdds
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{synopsis:}
-  \begin{flushleft}{\tt
+  \begin{verbatim}
     usage: degauss [-q|-query|-c|-configure|-s|-stop]\\
     \phantom{degauss }[-p|-pend|-pendIoTime <seconds>] [--] <spec-file>
-  }\end{flushleft}
+  
+\end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
   \item {\tt -q\,|\,-query} --- Print degaussing state of devices in {\tt spec-file}.

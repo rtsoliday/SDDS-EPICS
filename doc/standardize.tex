@@ -5,17 +5,19 @@
 It can configure the required subroutine records and optionally start, stop, or query the standardization process.
 
 \item \textbf{examples:}
-  \begin{flushleft}{\tt
+  \begin{verbatim}
     standardize -query magnets.sdds\\
     standardize -configure magnets.sdds\\
     standardize -pendIoTime 20 magnets.sdds
-  }\end{flushleft}
+  
+\end{verbatim}
 
 \item \textbf{synopsis:}
-  \begin{flushleft}{\tt
+  \begin{verbatim}
 usage: standardize [-query|-configure|-stop]\\
     \phantom{standardize }[-pendIoTime <seconds>] [--] <spec-file>
-  }\end{flushleft}
+  
+\end{verbatim}
 
 \item \textbf{switches:}
 \begin{itemize}

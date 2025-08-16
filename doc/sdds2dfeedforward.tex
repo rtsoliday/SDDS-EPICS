@@ -12,20 +12,20 @@ corresponding process variables.  Optional parameters include
 
 \item \textbf{examples:}
 A basic invocation reads an SDDS table and applies it every ten seconds:
-\begin{flushleft}{\tt
+\begin{verbatim}
 sdds2dfeedforward ID1Compensation.sdds -interval=10
-}\end{flushleft}
+\end{verbatim}
 where \verb+ID1Compensation.sdds+ might contain
-\begin{flushleft}{\tt
+\begin{verbatim}
 Readback1Name = ID1:X \quad Readback2Name = ID1:Y \quad ActuatorName = S1B:H1:CurrentAO\\
  Readback1Value  Readback2Value  ActuatorValue\\
 ------------------------------\\
        150.000       0.000          0.000\\
        100.000      50.000          1.000\\
         50.000     100.000         10.000\\
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{synopsis:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 usage: sdds2dfeedforward <inputfile>\
        [-controlLog=<rootname>]\
        [-interval=<real-value>] [-steps=<integer-value>]\
@@ -37,7 +37,7 @@ usage: sdds2dfeedforward <inputfile>\
        [-runControlDescription=<string>]\
        [-CASecurityTest]\
        [-pendIOtime=<seconds>] [-infiniteLoop]
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
   \item \textbf{input file:} An SDDS file with parameters \verb+Readback1Name+,

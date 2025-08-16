@@ -6,13 +6,13 @@
 \verb+cavget+ retrieves values of one or more EPICS process variables using Channel Access or PVAccess.
 It supports formatting, repeated acquisition and statistical analysis for scripting and data collection.
 \item \textbf{examples:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 cavget -list=my:pv\\
 cavget -repeat=number=10,pause=1 -labeled -list=quadrupole:current\\
 cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds -list=cavit:readback
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{synopsis:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\
 [-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]\
@@ -22,7 +22,7 @@ usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
 [-numerical] [-errorValue=<string>] [-excludeErrors]\
 [-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]\
 [-provider={ca|pva}] [-info] [-printErrors] pvname [...]
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
   \item {\tt -list} --- Build PV names from components or explicit names.

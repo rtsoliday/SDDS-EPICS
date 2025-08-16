@@ -5,10 +5,10 @@
 
 \item \textbf{examples:}
 The trajectory of the booster BPMs is controlled with this command:
-\begin{flushleft}{\tt
+\begin{verbatim}
 sddsoptimize -measFile=booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12\\
 \quad -knobFiles=booster.cokn -verbose
-}\end{flushleft}
+\end{verbatim}
 where the contents of the file \verb+booster.h.moni+ are
 \begin{verbatim}
 SDDS1
@@ -77,7 +77,7 @@ oag:B1C2H:KickAO -0.93188756664225914
 \end{verbatim}
 
 \item \textbf{synopsis:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 usage: sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]\
 [-restartFile=<file>] [-pendIOtime=<seconds>] [-conditioning=<script>]\
 -varFile=<file> -knobFiles=<file1>[,<file2>...]\
@@ -88,7 +88,7 @@ usage: sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>
 [-target=<value>] [-testValues=file=<file>[,limit=<count>]]\
 [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]\
 [-runControlDescription={string=<string>|parameter=<string>}]
-}\end{flushleft}
+\end{verbatim}
 Perform optimization on APS control system process variables using simplex, 1dscan, or RCDS methods.
 \item \textbf{files:}
 \begin{itemize}

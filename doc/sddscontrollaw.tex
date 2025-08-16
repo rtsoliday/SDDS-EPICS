@@ -291,18 +291,21 @@ where $x_0$ is the vector of initial values of measurement PVs (i.e. values befo
 \end{itemize}
 
 \item \textbf{examples:}
-     \begin{flushleft}{\tt \bf
+     \begin{verbatim}
         sddscontrollaw sddscontrollaw.inv2 -searchPath=/home/oxygen/OAG/sddsEpicsTests -interval=1 -steps=10 -gain=.75 \\
          -controlQuantityDefinition=sddscontrollaw.cqdf -testValues=sddscontrollaw.test -despike -average=3,interval=.1 -verbose
-     }\end{flushleft}
+     
+\end{verbatim}
 
-      \begin{flushleft}{\tt \bf
+      \begin{verbatim}
      sddscontrollaw sddscontrollaw.inv -searchPath=/home/oxygen/OAG/sddsEpicsTests  -interval=1 -steps=15 -gain=1.2 -holdPresentValues -verbose
-      }\end{flushleft}
+      
+\end{verbatim}
 
-     \begin{flushleft}{\tt \bf
+     \begin{verbatim}
      sddscontrollaw sddscontrollaw.inv -searchPath=/home/oxygen/OAG/sddsEpicsTests  -interval=1 -steps=15 -gain=1.1 -offsets=sddscontrollaw.offsets -verbose
-     }\end{flushleft}
+     
+\end{verbatim}
 
 \item \textbf{see also:}
 

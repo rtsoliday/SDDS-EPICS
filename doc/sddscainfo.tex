@@ -9,27 +9,31 @@
 
 \item \textbf{examples:}
   Gather connection information for the PVs listed in \verb+pvList.sdds+ and write the results to \verb+pvInfo.sdds+.
-  \begin{flushleft}{\tt
+  \begin{verbatim}
 sddscainfo pvList.sdds pvInfo.sdds
-  }\end{flushleft}
+  
+\end{verbatim}
   Create a metadata file and a corresponding input for \progref{sddspvalogger}.
-  \begin{flushleft}{\tt
+  \begin{verbatim}
 sddscainfo pvList.sdds pvInfo.sdds -makeLoggerInput
-  }\end{flushleft}
+  
+\end{verbatim}
   Create a metadata file and a corresponding input for \progref{sddspvasaverestore}.
-  \begin{flushleft}{\tt
+  \begin{verbatim}
 sddscainfo pvList.sdds pvInfo.sdds -makeSCRInput
-  }\end{flushleft}
+  
+\end{verbatim}
 
 \item \textbf{synopsis:}
-  \begin{flushleft}{\tt
+  \begin{verbatim}
 usage: sddscainfo [<inputfile>] [<outputfile>]\
 [-pipe=[input][,output]]\
 [-makeLoggerInput[=withStorageType]]\
 [-makeSCRInput]\
 [-verbose]\
 [-pendIOTime=<seconds>]
-  }\end{flushleft}
+  
+\end{verbatim}
 
 \item \textbf{files:}
 \begin{itemize}

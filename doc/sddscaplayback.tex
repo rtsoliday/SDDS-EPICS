@@ -11,19 +11,19 @@ from the current value.
 \item \textbf{examples:}
 The following command plays back the waveforms in \verb+orbit.sdds+ once with a half-second
 interval between pages.
-\begin{flushleft}{\tt
+\begin{verbatim}
 sddscaplayback orbit.sdds -interval=0.5 -mode=absolute -repetitions=1
-}\end{flushleft}
+\end{verbatim}
 
 \item \textbf{synopsis:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 usage: sddscaplayback <inputFile> -interval=<seconds> [-repetitions=<number>]\
 -mode=\{absolute|differential\} [-triggerPV=<string>] [-controlNameParameter=<string>]\
 [-dataColumn=<columnName>] [-offset=<integer>] [-timeOffset=<seconds>]\
 [-factor=<value>] [-restore] [-verbose] [-pendIOtime=<seconds>]\
 [-runControlPV=string=<string>,pingTimeout=<value>]\
 [-runControlDescription=string=<string>]
-}\end{flushleft}
+\end{verbatim}
 
 \item \textbf{files:}
 The input file is an SDDS file containing a string parameter \verb+ControlName+ for the PV name

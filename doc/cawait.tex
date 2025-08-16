@@ -8,15 +8,15 @@ conditions, and optional commands or subprocesses may be invoked when
 events occur.
 \item \textbf{examples:}
 Wait for beam current to rise above 5~mA and echo a message:
-\begin{flushleft}{\tt
+\begin{verbatim}
 cawait -waitFor=SR:current,above=5 -onEvent="echo beam reached 5"
-}\end{flushleft}
+\end{verbatim}
 Require two PVs to satisfy conditions simultaneously:
-\begin{flushleft}{\tt
+\begin{verbatim}
 cawait -waitFor=SR:state,equalTo=1 -and -waitFor=SR:mode,equalTo=2
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{synopsis:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 usage: cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]\
  -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]\
  [{-and | -or | -not}]\
@@ -30,7 +30,7 @@ usage: cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<sec
  [-pendIOTime=<seconds>]\
  [-noWarnings]\
  [-provider=\{ca|pva\}]
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
   \item {\tt -interval} --- seconds between checks (default 0.1~s).

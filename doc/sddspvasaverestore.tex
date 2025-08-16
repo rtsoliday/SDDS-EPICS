@@ -5,11 +5,11 @@
   values to an output file or sets the PVs to values from the input file. Options allow daemon
   operation, run control integration, trigger PVs, and waveform handling.
 \item \textbf{examples:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 sddspvasaverestore pvlist.sdds snapshots/sr -save -dailyFiles -logFile=save.log\\
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{synopsis:}
-\begin{flushleft}{\tt
+\begin{verbatim}
 usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]\
   [-save] [-restore[=verify]]\
   [-daemon]\
@@ -23,7 +23,7 @@ usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]\
   [-numerical]\
   [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]\
   [-runControlDescription={string=<string>|parameter=<string>}]
-}\end{flushleft}
+\end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
   \item \textbf{input file:} SDDS file listing PVs to save or restore, including columns \verb|ControlName| and \verb|ValueString| for restoring.
