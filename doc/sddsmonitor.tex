@@ -34,14 +34,23 @@ VM:01:2IP3.VAL pv Torr VM:01:2IP3
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsmonitor <SDDSinputfile> <SDDSoutputfile>
-  [-erase | -append[=recover][,toPage] | -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | -dailyFiles]
+  [-erase | 
+    -append[=recover][,toPage] | 
+    -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | 
+    -dailyFiles]
   [-steps=<integer-value> | -time=<real-value>[,<time-units>]]
   [-interval=<real-value>[,<time-units>]] [-enforceTimeLimit] [-offsetTimeOfDay] [-watchInput]
-  [-updateinterval=<integer-value>] [-verbose] [-singleshot[=noprompt|stdout]] [-precision={single|double}]
-  [-oncaerror={usezero|skiprow|exit}] [-pendIOtime=<value>] [-ezcaTiming[=<timeout>,<retries>]] [-noezca]
-  [-glitch=<controlname>[,message=<string>]{,delta=<value>|,fraction=<value>}[,before=<number>][,after=<number>][,{baseline=<number>|filterFraction=<value>}][,sign={+|-}][,noReset][,{autoHoldoff|holdoff=<seconds>}]]
-  [-trigger=<controlName>,level=<value>[,message=<string>][,slope={+|-}][,before=<number>][,after=<number>][,autoArm][,{autoHoldoff|holdoff=<seconds>}]]
-  [-alarmTrigger=<controlName>[,status=<statusNames>][,notStatus=<statusNames>][,severity=<sevNames>][,notSeverity=<sevNames>][,{autoHoldoff|holdoff=<seconds>}]]
+  [-updateinterval=<integer-value>] [-verbose] [-singleshot[=noprompt|stdout]] 
+  [-precision={single|double}]
+  [-oncaerror={usezero|skiprow|exit}] [-pendIOtime=<value>] [-ezcaTiming[=<timeout>,<retries>]] 
+  [-noezca]
+  [-glitch=<controlname>[,message=<string>]{,delta=<value>|,fraction=<value>}[,before=<number>]
+    [,after=<number>][,{baseline=<number>|filterFraction=<value>}][,sign={+|-}][,noReset]
+    [,{autoHoldoff|holdoff=<seconds>}]]
+  [-trigger=<controlName>,level=<value>[,message=<string>][,slope={+|-}][,before=<number>]
+    [,after=<number>][,autoArm][,{autoHoldoff|holdoff=<seconds>}]]
+  [-alarmTrigger=<controlName>[,status=<statusNames>][,notStatus=<statusNames>]
+    [,severity=<sevNames>][,notSeverity=<sevNames>][,{autoHoldoff|holdoff=<seconds>}]]
   [-circularBuffer=[before=<number>,][after=<number>]] [-holdoffTime=<seconds>] [-autoHoldoff]
   [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]
   [-comment=<parameterName>,<text>] [-getUnits={force|ifBlank|ifNoneGiven}]
@@ -161,7 +170,8 @@ Many time-related parameters are defined in the output file:
   \item {\tt -ezcaTiming[=<timeout>,<retries>]} --- Sets EZCA timeout and retry parameters.
   \item {\tt -noezca} --- Obsolete.
   \item {\tt -glitch=<controlname>[,message=<string>]{,delta=<value>|,fraction=<value>} \newline
-[,before=<number>][,after=<number>][,{baseline=<number>|filterFraction=<value>}][,sign={+|-}][,noReset][,{autoHoldoff|holdoff=<seconds>}]} ---
+      [,before=<number>][,after=<number>][,{baseline=<number>|filterFraction=<value>}] \newline
+      [,sign={+|-}][,noReset][,{autoHoldoff|holdoff=<seconds>}]} ---
                 Writes a buffer of PV readback values whenever the glitch PV (\verb+<controlname>+) or
                 device changes by some value. If \verb+<controlname>+ is a device, then the \verb+message+ field
                 should be specified. A glitch is triggered if the control
@@ -176,7 +186,8 @@ Many time-related parameters are defined in the output file:
                 except buffered data is recorded when the named PV exceeds
                 the given \verb+level+ with the given \verb+slope+. This is analogous to an oscilloscope
                 trigger.
-  \item {\tt -alarmTrigger=<controlName>[,status=<statusNames>][,notStatus=<statusNames>][,severity=<sevNames>][,notSeverity=<sevNames>][,{autoHoldoff|holdoff=<seconds>}]} ---
+  \item {\tt -alarmTrigger=<controlName>[,status=<statusNames>][,notStatus=<statusNames>] \newline
+                  [,severity=<sevNames>][,notSeverity=<sevNames>][,{autoHoldoff|holdoff=<seconds>}]} ---
                 Uses alarm callbacks to trigger saving of data when the given channel enters one
                 of the specified alarm states.
   \item {\tt -circularBuffer=[before=<number>,][after=<number>]} --- Sets how many samples to keep before and after

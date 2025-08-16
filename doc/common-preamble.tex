@@ -16,9 +16,15 @@
   \tolerance=10000
 \end{latexonly}
 \setlength{\topmargin}{0.15 in}
-\setlength{\oddsidemargin}{0 in}
-\setlength{\evensidemargin}{0 in} % not applicable anyway
-\setlength{\textwidth}{6.5 in}
+% Use slightly wider text blocks so long verbatim lines do not overflow.
+\setlength{\oddsidemargin}{-0.5 in}
+\setlength{\evensidemargin}{-0.5 in} % not applicable anyway
+\setlength{\textwidth}{7.5 in}
 \setlength{\headheight}{-0.5 in} % for 11pt font size
 %\setlength{\footheight}{0 in}
 \setlength{\textheight}{9 in}
+
+% Reduce font size for verbatim sections to help fit long lines on the page.
+\makeatletter
+\def\verbatim@font{\small\ttfamily}
+\makeatother

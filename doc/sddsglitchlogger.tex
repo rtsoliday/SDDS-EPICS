@@ -95,10 +95,10 @@ parameters:
                 It defines number of samples to average to get the baseline value for glitch determination.
                 A glitch occurs when newReading is different from the baseline by more than GlitchThreshold
                 or (if GlitchThreshold<0) by |GlitchThreshold*baseline|.
-    \item {\tt GlitchBaselineAutoReset} --- Optional short parameter for glitch-based trigger.
-                Normally (if there is no glitch) the baseline is updated at each step using
-                baseline -> (baseline*samples+newReading)/(samples+1).  After a glitch, one
-                may want to do something different.
+    \item {\tt GlitchBaselineAutoReset} --- Optional short parameter for glitch-based trigger. \newline
+                Normally (if there is no glitch) the baseline is updated at each step using \newline
+                baseline -\textgreater (baseline*samples+newReading)/(samples+1). \newline
+                After a glitch, one may want to do something different.
     \begin{itemize}
       \item {\tt 1}   After a glitch, the baseline is reassigned to its current value.
       \item {\tt 0}   The pre-glitch baseline is retained.

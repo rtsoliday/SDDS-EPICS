@@ -31,7 +31,9 @@ usage: sddscasr <inputFile> <outputRoot> [-verbose]
     [-runControlDescription={string=<string>|parameter=<string>}] [-unique]
     [-outputFilePV=<pvname>] [-inputFilePV=<pvname>] [-add] [-dryRun]
     [-pidFile=<pidFile>] [-casavePV=<string>] [-interval=<seconds>] [-pendIOTime=<seconds>]
-    [-pipe=[input|output]] [-waveform=[rootname=<string>][,extension=<string>][,directory=<string>][,onefile][,saveWaveformFile[,fullname]]]
+    [-pipe=[input|output]] 
+    [-waveform=[rootname=<string>][,extension=<string>][,directory=<string>][,onefile]
+      [,saveWaveformFile[,fullname]]]
     [-numerical] [-description=<string>|pv=<pvname>]
 \end{verbatim}
 \item \textbf{files:}
@@ -80,7 +82,8 @@ corresponding PV or n if no error occurs.
   \item {\tt runControlPV=string=<string>|parameter=<string>[,pingTimeout=<value>,pingInterval=<value>]} --- specifies the run control PV record.
   \item {\tt runControlDescription} --- specifies a string parameter whose value is a run control PV description record.
   \item {\tt numerical} --- return a numerical string value rather than a string for enumerated types.
-  \item {\tt waveform=rootname=<string>[,extension=<string>][,directory=<string>][,onefile][,saveWaveformFile][,fullname]} --- provide the waveform rootname and directory for the restore option. By default, the directory is pwd and the rootname is the SnapshotFilename parameter in the input file.
+  \item {\tt waveform=rootname=<string>[,extension=<string>][,directory=<string>][,onefile] \newline
+      [,saveWaveformFile][,fullname]} --- provide the waveform rootname and directory for the restore option. By default, the directory is pwd and the rootname is the SnapshotFilename parameter in the input file.
   \item {\tt verbose} --- print out messages.
 \end{itemize}
 

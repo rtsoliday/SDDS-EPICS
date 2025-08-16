@@ -74,11 +74,14 @@ Accumulator} is referred to in \cite{Norum2007} as simply ``Plane''.
 \small
 \begin{verbatim}
 usage: sddsgencontrolbits <inputRAMFile> <outputFile>
-          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>] [-receiver=0|1|2|3]
+          [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>] 
+          [-receiver=0|1|2|3]
+
 sddsgencontrolbits {-RAMWaveformPV=<string> [-scopeArrayLength=<int>] |
           -scopeWaveformPV=<string> -turnsPerWrap=<int> [-RAMArrayLength=<string>] |
           -RAMWaveformPV=<string> -scopeWaveformPV=<string> } <outputFile>
           [-setRAMWaveformPV=<string>] [-controlRAMFile=<filename>] [-comment=<string>]
+
 sddsgencontrolbits  [-RAMArrayLength=<string>] [-scopeArrayLength=<int>] [-receiver=0|1|2|3]
           {-presetRAMconfiguration=<string>,file=<filename> |
            -planeMode=<string> -commutationMode=<string>]
@@ -107,8 +110,9 @@ such as preset bunch pattern and others.
                     bunch pattern.
 -turnsPerWrap       number of turns in each wrap;
                     "Simulated" scope readback control bits can normally be generated
-                    from RAM long integer data. However for the inverse generation the quantity turnsPerWrap
-                    is required. This option is required for the -scopeWaveformPV input method.
+                    from RAM long integer data. However for the inverse generation the quantity 
+                    turnsPerWrap is required. This option is required for the -scopeWaveformPV 
+                    input method.
 
 -presetRAMconfiguration  specifies a particular configuration from the file of RAM configuration presets.
                     A preset configuration consists of Label, PlaneMode, CommutationMode,

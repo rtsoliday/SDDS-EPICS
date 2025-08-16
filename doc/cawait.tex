@@ -18,7 +18,8 @@ cawait -waitFor=SR:state,equalTo=1 -and -waitFor=SR:mode,equalTo=2
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<seconds>]
- -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>][,above=<value>][,below=<value>][,changed][,monitor]
+ -waitFor=<PVname>[,lowerLimit=<value>,upperLimit=<value>][,equalTo=<value>][,sameAs=<string>]
+   [,above=<value>][,below=<value>][,changed][,monitor]
  [{-and | -or | -not}]
  [-repeat[=<number>]]
  [-emit=event=<string>[,timeout=<string>][,end=<string>]]

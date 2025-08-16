@@ -14,14 +14,17 @@ cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds -list=cavit:
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
-[-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
-[-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]
-[-noQuotes] [-embrace=start=<string>,end=<string>] [-cavputForm]
-[-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename>]]]
-[-pendIoTime=<seconds>] [-dryRun] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]
-[-numerical] [-errorValue=<string>] [-excludeErrors]
-[-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]
-[-provider={ca|pva}] [-info] [-printErrors] pvname [...]
+      [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
+      [-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]
+      [-noQuotes] [-embrace=start=<string>,end=<string>] [-cavputForm]
+      [-statistics=number=<value>,pause=<value>
+        [,format=[tagvalue][pretty][SDDS,file=<filename>]]]
+      [-pendIoTime=<seconds>] [-dryRun]
+      [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]
+      [-numerical] [-errorValue=<string>] [-excludeErrors]
+      [-despike[[neighbors=<integer>][,passes=<integer>]
+        [,averageOf=<integer>][,threshold=<value>]]]
+      [-provider={ca|pva}] [-info] [-printErrors] pvname [...]
 \end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}

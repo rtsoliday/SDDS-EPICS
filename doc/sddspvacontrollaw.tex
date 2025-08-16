@@ -9,7 +9,8 @@ readbacks to zero or to given offsets, optionally logging data and applying limi
 
 \item \textbf{examples:}
 \begin{verbatim}
-sddspvacontrollaw sddspvacontrollaw.inv -searchPath=/home/controls -interval=1 -steps=10 -gain=0.75 -runControlPV=string=shang:ControlLawRC -verbose
+sddspvacontrollaw sddspvacontrollaw.inv -searchPath=/home/controls -interval=1 -steps=10 -gain=0.75 
+  -runControlPV=string=shang:ControlLawRC -verbose
 \end{verbatim}
 
 \item \textbf{synopsis:}
@@ -18,13 +19,17 @@ usage: sddspvacontrollaw <inputfile> [-searchPath=<dir-path>] [-actuatorColumn=<
 [-gain={<real-value>|PVname=<name>}] [-interval={<real-value>|PVname=<name>}] [-steps=<integer>]
 [-updateInterval=<integer>] [-average={<number>|PVname=<name>}[,interval=<seconds>]]
 [-testValues=<file>]
-[-despike[=neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>][,pvthreshold=<pvname>][,file=<filename>][,countLimit=<integer>][,startThreshold=<value>,endThreshold=<value>,stepsThreshold=<integer>][,rampThresholdPV=<string>]]
+[-despike[=neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]
+  [,pvthreshold=<pvname>][,file=<filename>][,countLimit=<integer>]
+  [,startThreshold=<value>,endThreshold=<value>,stepsThreshold=<integer>]
+  [,rampThresholdPV=<string>]]
 [-deltaLimit={value=<value>|file=<filename>}]
 [-readbackLimit={value=<value>|minValue=<value>,maxValue=<value>|file=<filename>}]
 [-actionLimit={value=<value>|file=<filename>}]
 [-runControlPV={string=<string>|parameter=<string>}[,pingTimeout=<value>]]
 [-runControlDescription={string=<string>|parameter=<string>}] [-controlLogFile=<file>]
-[-glitchLogFile=file=<string>[,readbackRmsThreshold=<value>][,controlRmsThreshold=<value>][,rows=<integer>]]
+[-glitchLogFile=file=<string>[,readbackRmsThreshold=<value>][,controlRmsThreshold=<value>]
+  [,rows=<integer>]]
 [-CASecurityTest] [-waveforms=<filename>,<type>] [-verbose] [-dryRun]
 \end{verbatim}
 
