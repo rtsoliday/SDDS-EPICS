@@ -6,7 +6,7 @@
 \item \textbf{examples:}
 The trajectory of the booster BPMs is controlled with this command:
 \begin{verbatim}
-sddsoptimize -measFile=booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12\\
+sddsoptimize -measFile=booster.h.moni -varFile=vv -simplex=evaluations=50,divisions=12
 \quad -knobFiles=booster.cokn -verbose
 \end{verbatim}
 where the contents of the file \verb+booster.h.moni+ are
@@ -78,15 +78,15 @@ oag:B1C2H:KickAO -0.93188756664225914
 
 \item \textbf{synopsis:}
 \begin{verbatim}
-usage: sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]\
-[-restartFile=<file>] [-pendIOtime=<seconds>] [-conditioning=<script>]\
--varFile=<file> -knobFiles=<file1>[,<file2>...]\
-[-simplex=[restarts=<nRestarts>][,cycles=<nCycles>][,evaluations=<nEvals>][,no1dscans][,divisions=<int>][,randomSigns]]\
-[-rcds=[cycles=<number>][,evaluations=<number>][,step=<value>][,noise=<value>][,dmatFile=<file>][,useMinForBracket][,verbose]]\
-[-1dscan=[divisions=<value>][,cycles=<number>][,evaluations=<value>][,refresh]]\
-[-logFile=<file>] [-extraLogFile=<file>] [-dryRun] [-verbose] [-tolerance=<value>] [-maximize]\
-[-target=<value>] [-testValues=file=<file>[,limit=<count>]]\
-[-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]\
+usage: sddsoptimize [-measFile=<file>|-measScript=<script>] [-varScript=<script>]
+[-restartFile=<file>] [-pendIOtime=<seconds>] [-conditioning=<script>]
+-varFile=<file> -knobFiles=<file1>[,<file2>...]
+[-simplex=[restarts=<nRestarts>][,cycles=<nCycles>][,evaluations=<nEvals>][,no1dscans][,divisions=<int>][,randomSigns]]
+[-rcds=[cycles=<number>][,evaluations=<number>][,step=<value>][,noise=<value>][,dmatFile=<file>][,useMinForBracket][,verbose]]
+[-1dscan=[divisions=<value>][,cycles=<number>][,evaluations=<value>][,refresh]]
+[-logFile=<file>] [-extraLogFile=<file>] [-dryRun] [-verbose] [-tolerance=<value>] [-maximize]
+[-target=<value>] [-testValues=file=<file>[,limit=<count>]]
+[-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]
 [-runControlDescription={string=<string>|parameter=<string>}]
 \end{verbatim}
 Perform optimization on APS control system process variables using simplex, 1dscan, or RCDS methods.

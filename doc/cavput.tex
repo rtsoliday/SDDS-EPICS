@@ -4,22 +4,22 @@
 \item \textbf{examples:}
     Set all storage ring quadrupoles to zero.
     \begin{verbatim}
-    cavput -list=S -range=begin=1,end=40,format=\%ld\\
+    cavput -list=S -range=begin=1,end=40,format=\%ld
       -list=AQ,BQ -range=begin=1,end=5 -list=:CurrentAI=0
     
 \end{verbatim}
     Configure slow beam history for S1A BPMs and 4080 samples.
     \begin{verbatim}
-    cavput -list=S:bpm -range=begin=1,end=40,format=\%ld -list=:SlowBh:\\
+    cavput -list=S:bpm -range=begin=1,end=40,format=\%ld -list=:SlowBh:
       -list=MI=0,sizeAO=4080,modeBO=1,enableBO=1
     
 \end{verbatim}
 \item \textbf{synopsis:}
     \begin{verbatim}
-usage: cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\\\relax
-      [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\\\relax
-      [-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>]\\\relax
-      [-numerical] [-charArray] [-blunderAhead[=silently]]\\\relax
+usage: cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
+      [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
+      [-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>]
+      [-numerical] [-charArray] [-blunderAhead[=silently]]
       [-provider=\{ca|pva\}]
     
 \end{verbatim}

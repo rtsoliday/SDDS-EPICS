@@ -6,22 +6,22 @@
   operation, run control integration, trigger PVs, and waveform handling.
 \item \textbf{examples:}
 \begin{verbatim}
-sddspvasaverestore pvlist.sdds snapshots/sr -save -dailyFiles -logFile=save.log\\
+sddspvasaverestore pvlist.sdds snapshots/sr -save -dailyFiles -logFile=save.log
 \end{verbatim}
 \item \textbf{synopsis:}
 \begin{verbatim}
-usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]\
-  [-save] [-restore[=verify]]\
-  [-daemon]\
-    [-inputFilePV=<pvname>,<provider>] [-outputFilePV=<pvname>,<provider>]\
-    [-triggerPV=<string>,<provider>]\
-    [-description=<string>|pv=<pvname>,provider=<provider>]\
-  [-interval=<seconds>] [-pendIOTime=<seconds>]\
-  [-dailyFiles] [-semaphore=<filename>] [-logFile=<filename>]\
-  [-unique] [-pidFile=<pidFile>] [-verbose]\
-  [-waveform=[rootname=<string>][,directory=<string>][,extension=<string>][,pingTimeout=<seconds>][,onefile][,savewaveformFile][,fullname]]\
-  [-numerical]\
-  [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]\
+usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]
+  [-save] [-restore[=verify]]
+  [-daemon]
+    [-inputFilePV=<pvname>,<provider>] [-outputFilePV=<pvname>,<provider>]
+    [-triggerPV=<string>,<provider>]
+    [-description=<string>|pv=<pvname>,provider=<provider>]
+  [-interval=<seconds>] [-pendIOTime=<seconds>]
+  [-dailyFiles] [-semaphore=<filename>] [-logFile=<filename>]
+  [-unique] [-pidFile=<pidFile>] [-verbose]
+  [-waveform=[rootname=<string>][,directory=<string>][,extension=<string>][,pingTimeout=<seconds>][,onefile][,savewaveformFile][,fullname]]
+  [-numerical]
+  [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]
   [-runControlDescription={string=<string>|parameter=<string>}]
 \end{verbatim}
 \item \textbf{files:}

@@ -17,25 +17,25 @@ sdds2dfeedforward ID1Compensation.sdds -interval=10
 \end{verbatim}
 where \verb+ID1Compensation.sdds+ might contain
 \begin{verbatim}
-Readback1Name = ID1:X \quad Readback2Name = ID1:Y \quad ActuatorName = S1B:H1:CurrentAO\\
- Readback1Value  Readback2Value  ActuatorValue\\
-------------------------------\\
-       150.000       0.000          0.000\\
-       100.000      50.000          1.000\\
-        50.000     100.000         10.000\\
+Readback1Name = ID1:X \quad Readback2Name = ID1:Y \quad ActuatorName = S1B:H1:CurrentAO
+ Readback1Value  Readback2Value  ActuatorValue
+------------------------------
+       150.000       0.000          0.000
+       100.000      50.000          1.000
+        50.000     100.000         10.000
 \end{verbatim}
 \item \textbf{synopsis:}
 \begin{verbatim}
-usage: sdds2dfeedforward <inputfile>\
-       [-controlLog=<rootname>]\
-       [-interval=<real-value>] [-steps=<integer-value>]\
-       [-verbose] [-dryRun] [-offsetOnly]\
-       [-averageOf=<number>[,interval=<seconds>]]\
-       [-advance=<seconds>]\
-       [-testValues=<SDDSfile>]\
-       [-runControlPV=string=<string>[,pingTimeout=<value>]]\
-       [-runControlDescription=<string>]\
-       [-CASecurityTest]\
+usage: sdds2dfeedforward <inputfile>
+       [-controlLog=<rootname>]
+       [-interval=<real-value>] [-steps=<integer-value>]
+       [-verbose] [-dryRun] [-offsetOnly]
+       [-averageOf=<number>[,interval=<seconds>]]
+       [-advance=<seconds>]
+       [-testValues=<SDDSfile>]
+       [-runControlPV=string=<string>[,pingTimeout=<value>]]
+       [-runControlDescription=<string>]
+       [-CASecurityTest]
        [-pendIOtime=<seconds>] [-infiniteLoop]
 \end{verbatim}
 \item \textbf{files:}

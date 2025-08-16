@@ -7,20 +7,20 @@
 It supports formatting, repeated acquisition and statistical analysis for scripting and data collection.
 \item \textbf{examples:}
 \begin{verbatim}
-cavget -list=my:pv\\
-cavget -repeat=number=10,pause=1 -labeled -list=quadrupole:current\\
+cavget -list=my:pv
+cavget -repeat=number=10,pause=1 -labeled -list=quadrupole:current
 cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds -list=cavit:readback
 \end{verbatim}
 \item \textbf{synopsis:}
 \begin{verbatim}
-usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\
-[-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\
-[-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]\
-[-noQuotes] [-embrace=start=<string>,end=<string>] [-cavputForm]\
-[-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename>]]]\
-[-pendIoTime=<seconds>] [-dryRun] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]\
-[-numerical] [-errorValue=<string>] [-excludeErrors]\
-[-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]\
+usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
+[-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
+[-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]
+[-noQuotes] [-embrace=start=<string>,end=<string>] [-cavputForm]
+[-statistics=number=<value>,pause=<value>[,format=[tagvalue][pretty][SDDS,file=<filename>]]]
+[-pendIoTime=<seconds>] [-dryRun] [-repeat=number=<integer>,pause=<seconds>[,average[,sigma]]]
+[-numerical] [-errorValue=<string>] [-excludeErrors]
+[-despike[[neighbors=<integer>][,passes=<integer>][,averageOf=<integer>][,threshold=<value>]]]
 [-provider={ca|pva}] [-info] [-printErrors] pvname [...]
 \end{verbatim}
 \item \textbf{switches:}

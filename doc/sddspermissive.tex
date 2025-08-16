@@ -10,17 +10,17 @@ this program sets the message field and minor alarm of a run control PV.
 The following command checks the PVs listed in \verb+permissive.sdds+ for one
 minute and updates the run control record \verb+myApp:Permissive+.
 \begin{verbatim}
-sddspermissive permissive.sdds -executionTime=60\\
-  -runControlPV=string=myApp:Permissive,pingTimeout=5,pingInterval=10\\
+sddspermissive permissive.sdds -executionTime=60
+  -runControlPV=string=myApp:Permissive,pingTimeout=5,pingInterval=10
   -runControlDescription=string=\"vacuum permissive\" -verbose
 \end{verbatim}
 
 \item \textbf{synopsis:}
 \begin{verbatim}
-usage: sddspermissive <inputfile>\
-[-executionTime=<seconds>]\
--runControlPV=string=<string>[,pingTimeout=<value>][,pingInterval=<value>]\
-[-runControlDescription=string=<string>]\
+usage: sddspermissive <inputfile>
+[-executionTime=<seconds>]
+-runControlPV=string=<string>[,pingTimeout=<value>][,pingInterval=<value>]
+[-runControlDescription=string=<string>]
 [-verbose] [-pendIOTime=<seconds>]
 \end{verbatim}
 
