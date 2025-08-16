@@ -10,6 +10,7 @@ where {\tt pvlist.sdds} defines the PVs to monitor and {\tt data.sdds} receives 
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddspvalogger <inputfile> <outputfile>
+Global Options:
   [-pendIOtime=<value>]
   [-watchInput]
   [-monitorMode=[randomTimedTrigger]]
@@ -48,13 +49,34 @@ Glitch Logger Options:
 
 \item \textbf{switches:}
 \begin{itemize}
-  \item {\tt -sampleInterval=<value>[,<units>]} --- sampling interval between readings.
-  \item {\tt -steps=<integer>} --- number of samples to take before exiting.
+  \item {\tt -pendIOtime=<value>} --- maximum time to wait for PV responses.
   \item {\tt -watchInput} --- reload the input file when it changes.
-  \item {\tt -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]} --- rotate output files.
-  \item {\tt -conditions=<file>,\{allMustPass|oneMustPass\}[,touchOutput][,retakeStep]} --- condition data taking on PV limits.
-  \item {\tt -runControlPV=string=<pv>,pingTimeout=<value>} --- integrate with run-control.
+  \item {\tt -monitorMode=[randomTimedTrigger]} --- use monitor mode; optional value randomizes trigger timing.
+  \item {\tt -append} --- append to an existing output file.
+  \item {\tt -overwrite} --- overwrite an existing output file.
+  \item {\tt -sampleInterval=<real-value>[,<time-units>]} --- interval between readings.
+  \item {\tt -dataStrobePV=<PVname>,<provider>[,notTimeValue][,holdoff=<seconds>]} --- use a PV as a data strobe with optional holdoff.
+  \item {\tt -steps=<integer-value>} --- number of samples to take before exiting.
+  \item {\tt -time=<real-value>[,<time-units>]} --- total logging time.
+  \item {\tt -conditions=<file>,\{allMustPass|oneMustPass\}[,touchOutput][,retakeStep]} --- require limits from a conditions file.
+  \item {\tt -onerror=\{usezero|skip|exit\}} --- action taken when a read fails.
+  \item {\tt -inhibitPV=name=<name>,provider=<provider>[,waitTime=<seconds>]} --- inhibit logging while this PV is nonzero.
+  \item {\tt -generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>]} --- rotate output files by generation.
+  \item {\tt -dailyFiles[=rowlimit=<number>][,timelimit=<secs>][,timetag][,verbose]} --- start a new output file each day.
+  \item {\tt -monthlyFiles[=rowlimit=<number>][,timelimit=<secs>][,timetag][,verbose]} --- start a new output file each month.
+  \item {\tt -strictPVverification} --- exit if PV data do not match expectations.
+  \item {\tt -truncateWaveforms} --- truncate waveform PVs to the minimum common length.
+  \item {\tt -runControlPV=string=<pv>,pingTimeout=<value>} --- integrate with run control.
+  \item {\tt -runControlDescription=string=<string>} --- description for the run-control record.
   \item {\tt -verbose} --- print progress messages.
+  \item {\tt -logInterval=<integer-value>} --- average this many samples before writing.
+  \item {\tt -flushInterval=<integer-value>} --- force a file flush after this many samples.
+  \item {\tt -onePvPerFile=<dirName>} --- write each PV to a separate file in the given directory.
+  \item {\tt -triggerFile=<filename>} --- read glitch trigger definitions from an SDDS file.
+  \item {\tt -circularBuffer=[before=<number>,][after=<number>]} --- samples to retain before and after a trigger.
+  \item {\tt -delay=<steps>} --- delay reading after a trigger (not yet implemented).
+  \item {\tt -holdoffTime=<seconds>} --- minimum time between triggers.
+  \item {\tt -autoHoldoff} --- compute holdoff time from post-trigger samples.
 \end{itemize}
 
 \item \textbf{see also:}

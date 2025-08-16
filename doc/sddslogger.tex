@@ -33,16 +33,22 @@ VM:01:2IP3.VAL pv Torr VM:01:2IP3
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddslogger <SDDSinputfile1> <SDDSoutputfile1> <SDDSinputfile2> <SDDSoutputfile2>...
-    [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] | 
-      -dailyFiles | -monthlyFiles]
-    [-sampleInterval=<real-value>[,<time-units>]]
-    [-logInterval=<integer-value>] [-flushInterval=<integer-value>]
+    [-generations[=digits=<integer>][,delimiter=<string>][,rowlimit=<number>][,timelimit=<secs>] |
+      -dailyFiles[=rowlimit=<number>][,timelimit=<secs>,timetag][,verbose] |
+      -monthlyFiles[=rowlimit=<number>][,timelimit=<secs>,timetag][,verbose]]
+    [-onePvPerFile=<dirName>]
+    [-erase | -append[=recover][,toPage]]
+    [-sampleInterval=<real-value>[,<time-units>] | -dataStrobePV=<PVname>]
+    [-logInterval=<integer-value>] [-flushInterval=<integer-value>] [-watchInput]
     [-steps=<integer-value> | -time=<real-value>[,<time-units>]]
     [-enforceTimeLimit] [-offsetTimeOfDay]
-    [-verbose] [-singleshot{=noprompt | stdout}]
-    [-precision={single|double}]
-    -onerror={usezero|skiprow|exit} [-pendIOtime=<value>]
-    [-conditions=<filename>,{allMustPass | oneMustPass}[,touchOutput][,retakeStep]]
+    [-verbose] [-singleshot{=noprompt|stdout}]
+    [-precision={single|double}] [-highTimePrecision]
+    [-onerror={usezero|skiprow|exit}] [-pendIOtime=<value>]
+    [-conditions=<filename>,{allMustPass|oneMustPass}[,touchOutput][,retakeStep]]
+    [-inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]]
+    [-runControlPV=string=<string>,pingTimeout=<value>]
+    [-runControlDescription=string=<string>]
 Writes values of process variables or devices to a binary SDDS file.
 \end{verbatim}
 \item \textbf{files:}
@@ -130,13 +136,24 @@ Writes values of process variables or devices to a binary SDDS file.
       file rollover behavior.
   \item {\tt -monthlyFiles} --- Starts a new output file each month with the same optional
       qualifiers as \verb+-dailyFiles+.
+  \item {\tt -onePvPerFile=<dirName>} --- Writes each PV to a separate file located in
+      \verb+<dirName>/<pvName>+. Only one input file is allowed and no output
+      filenames are given.
+  \item {\tt -erase} --- Deletes any existing output file before logging.
+  \item {\tt -append[=recover][,toPage]} --- Appends data to an existing file.
+      The \verb+recover+ qualifier attempts to salvage a corrupted file.
+      With \verb+toPage+, data are appended to the last page instead of
+      creating a new page.
   \item {\tt -sampleInterval=<real-value>[,<time-units>]} --- Specifies the interval between readings. The time
       interval is implemented with a call to usleep between calls to the control system.
       Because the calls to the control system may take up a significant amount of time, the average
       effective time interval may be longer than specified.
+  \item {\tt -dataStrobePV=<PVname>} --- Logs data when the named PV changes value,
+      typically to the current UNIX time, providing an external data strobe.
   \item {\tt -logInterval=<interval>} --- Specifies the number of sampling intervals to average before
       writing to the output file.
   \item {\tt -flushInterval=<interval>} --- Number of sampling intervals between forced flushes of data to disk.
+  \item {\tt -watchInput} --- Exits if any input file or its link target is modified.
   \item {\tt -steps=<integer-value>} --- Number of readbacks for each process variable before normal exiting.
   \item {\tt -time=<real-value>[,<time-units>]} --- Total time for monitoring. Valid time units are
       seconds, minutes, hours, and days. The program calculates the number of steps by dividing this time
@@ -147,11 +164,14 @@ Writes values of process variables or devices to a binary SDDS file.
       day for which the bulk of the data is taken.  Hence, a 26 hour job started at 11pm would have an
       initial time of day of -1 hour and a final time of day of 25 hours.
   \item {\tt -verbose} --- Prints out a message when data is taken.
-  \item {\verb+-singleshot[=noprompt]+} --- a single read is prompted at the terminal
+  \item {\verb+-singleshot[=noprompt|stdout]+} --- a single read is prompted at the terminal
       and initiated by a \verb+<cr>+ key press. The time interval is disabled.
-      With \verb+noprompt+ present, no prompt is written to the terminal, but a \verb+<cr>+
-      is still expected. Typing ``q'' or ``Q'' terminates the monitoring.
+      With \verb+noprompt+ present, no prompt is written to the terminal.
+      With \verb+stdout+ present, the prompt is written to standard output.
+      Typing ``q'' or ``Q'' terminates the monitoring.
   \item {\tt -precision={single|double}} --- Sets floating-point precision for logged data.
+  \item {\tt -highTimePrecision} --- Stores time values using long double precision and,
+      with \verb+-dataStrobePV+, records an additional \verb+TimeWS+ column.
   \item {\tt -onerror=\{usezero|skiprow|exit\}} --- Selects action taken when a channel access error occurs.
       The default is using zero ({\tt usezero}) for the value of the process variable
       with the channel access error, and resuming execution. The second option ({\tt skiprow}) is to
@@ -171,6 +191,15 @@ Writes values of process variables or devices to a binary SDDS file.
       when the conditions fail for a long period of time. If \verb+retakeStep+ is
       present, then the value of \verb+Step+ in the output file is not
       incremented until the conditions pass, and data is written to the output file.
+  \item {\tt -inhibitPV=name=<name>[,pendIOTime=<seconds>][,waitTime=<seconds>]} ---
+      Checks the specified PV before each sample; if it is nonzero, data collection
+      is suspended. \verb+pendIOTime+ sets the connection timeout, and \verb+waitTime+
+      gives the delay before the PV is checked again.
+  \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Enables run-control
+      support using the named PV. \verb+pingTimeout+ (in seconds) sets the allowed
+      acknowledgment time.
+  \item {\tt -runControlDescription=string=<string>} --- Supplies a description string
+      for the run-control PV record.
 \end{itemize}
 
 \item \textbf{see also:}
