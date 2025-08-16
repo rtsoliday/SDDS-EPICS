@@ -25,8 +25,12 @@ usage: cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
 \end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
-  \item {\tt -list} --- Specify PV name components with optional values.
-  \item {\tt -range} --- Generate PV names from a range.
+  \item {\tt -list} --- Specify PV name components with optional values. Repeating
+    \verb+-list+ concatenates the components to form each PV name, and
+    forms like \verb+-list=:Set=5+ assign the value \verb+5+.
+  \item {\tt -range} --- Generate PV names from a range. For example,
+    \verb+-list=Q -range=begin=1,end=4,format=%02d -list=:Set=0+
+    creates \verb+Q01:Set+ through \verb+Q04:Set+ with value \verb+0+.
   \item {\tt -pendIoTime} --- Maximum time to wait for connections and return values (default 1.0~s).
   \item {\tt -dryRun} --- Show PV names and values without sending to IOCs.
   \item {\tt -deltaMode} --- Treat values as deltas from current PV values; optional factor.

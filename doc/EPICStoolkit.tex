@@ -58,6 +58,7 @@ the present state and the states in one or more SDDS files.
 
 \subsubsection{Data Collecting}
 \begin{itemize}
+  \item \progref{cavget} --- Retrieves values of process variables using Channel Access or PVAccess.
   \item \progref{sddssnapshot} --- Reads values of process variables and writes them to a snapshot file.
         Example application: Taking successive sets of data.
   \item \progref{sddsmonitor} --- Reads values of process variables and writes them to a file at regular intervals.
@@ -95,6 +96,8 @@ the present state and the states in one or more SDDS files.
 
 \subsubsection{Control}
 \begin{itemize}
+  \item \progref{cavput} --- Sets values of process variables using Channel Access or PVAccess.
+  \item \progref{cawait} --- Waits for process variables to satisfy specified conditions.
   \item \progref{sddscontrollaw} --- Reads a matrix for a control law-type equation and regulates the
 values of a list of readback process variables by applying corrections to another list of process variables.
         Example application: removing slow drifts in accelerators (such as the energy of a linac beam), trajectory
@@ -216,7 +219,7 @@ than one file on the same pipe.
 
 \bibitem{SDDS_AP1.4}
     M. Borland, ``Application Programmer's Guide for SDDS Version 1.4'', APS LS Note.
-    Available \href{http://ops.aps.anl.gov/manuals/SDDStoolkit/SDDStoolkit.html}{here.}
+    Available \href{https://ops.aps.anl.gov/manuals/SDDStoolkit/SDDStoolkit.html}{here.}
 
 \bibitem{SDDSEPICS_PAC95}
         L. Emery, ``Commissioning Software Tools at the Advanced Photon Source'',

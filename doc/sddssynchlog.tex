@@ -5,7 +5,7 @@
 and writes them to an output file.  Synchronism is imposed by
 requiring that all PVs generated callbacks occur within the number of
 seconds given by the -synchInterval argument.
-\item \textbf{example 1:}
+\item \textbf{examples:}
 
 The linac bpms and MV200 PVs are synchronously monitored using the
 command below.  One might wish to monitor these PVs determine if linac
@@ -47,12 +47,11 @@ LI:VD1:y:raw:cal:sigmaM pv Pixels LVid:yRawSigma
 ...
 
 \end{verbatim}
-\item \textbf{example 2:}
 
 The scalar linac bpm and MV200 PVs are synchronously monitored along
 with LCLS bpm data waveforms using the command below.  The command is
-identical to that in example 1 except for the additional waveform file
-command which that specifies a file containing waveform PV data.
+identical to that in the previous example except for the additional
+waveform file that specifies a file containing waveform PV data.
 \begin{verbatim}
 sddssynchlog synchPVs.mon synchPVs.sdds -waveformData=LCLS.wmon
 -samples=100 -synchInterval=0.08 -timeLimit=20,seconds -verbose

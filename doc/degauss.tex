@@ -14,8 +14,29 @@ To configure magnets without starting degaussing and later query their state:
   \begin{verbatim}
     usage: degauss [-q|-query|-c|-configure|-s|-stop]
                    [-p|-pend|-pendIoTime <seconds>] [--] <spec-file>
-  
-\end{verbatim}
+
+  \end{verbatim}
+\item \textbf{files:}
+  The magnet specification \verb+spec-file+ is an SDDS file with one row per device.
+  Required string columns \verb+ControlName+ and \verb+ControlType+ identify the target device or process variable.
+  Optional \verb+SuffixName+ overrides the default subroutine record suffix.
+  For standard degaussing each row also supplies \verb+DecayMinutes+, \verb+DecaySeconds+, \verb+PeriodSeconds+,
+  \verb+MaxCurrent+, and \verb+NumDecay+.
+  Tri-degauss extends this with \verb+LastPeakCurrent+ and \verb+OutputInterval+,
+  while APSU tri-degauss uses \verb+FirstPeakCurrent+, \verb+NumCycles+, \verb+LastPeakCurrent+,
+  \verb+OutputInterval+, and \verb+MaxStepSize+.
+  \begin{verbatim}
+  &description text="degaussing specification"&end
+  &column name=ControlName, type=string &end
+  &column name=ControlType, type=string &end
+  &column name=DecayMinutes, type=long &end
+  &column name=DecaySeconds, type=long &end
+  &column name=PeriodSeconds, type=long &end
+  &column name=MaxCurrent, type=double &end
+  &column name=NumDecay, type=long &end
+  &data mode=ascii, no_row_counts=1 &end
+  Q1:Standardize,dev,0,30,10,5.0,3
+  \end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
   \item {\tt -q\,|\,-query} --- Print degaussing state of devices in {\tt spec-file}.

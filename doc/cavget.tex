@@ -10,6 +10,7 @@ It supports formatting, repeated acquisition and statistical analysis for script
 cavget -list=my:pv
 cavget -repeat=number=10,pause=1 -labeled -list=quadrupole:current
 cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds -list=cavit:readback
+cavget -list=Q -range=begin=1,end=4,format=%02d -list=:I
 \end{verbatim}
 \item \textbf{synopsis:}
 \begin{verbatim}
@@ -28,8 +29,13 @@ usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
 \end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
-  \item {\tt -list} --- Build PV names from components or explicit names.
-  \item {\tt -range} --- Append integer ranges to PV prefixes.
+  \item {\tt -list} --- Build PV names from components or explicit names. Multiple
+    \verb+-list+ entries are concatenated in order, so \verb+-list=quad -list=:readback+
+    becomes \verb+quad:readback+. Appending \verb+=<value>+ sets a value for use with
+    \verb+cavput+.
+  \item {\tt -range} --- Append integer ranges to PV prefixes. For example,
+    \verb+-list=Q -range=begin=1,end=4,format=%02d -list=:I+
+    produces names \verb+Q01:I+ through \verb+Q04:I+.
   \item {\tt -floatformat} --- Set printf-style format for floating point numbers.
   \item {\tt -charArray} --- Print character arrays as strings.
   \item {\tt -delimiter} --- String used to separate values.
