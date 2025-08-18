@@ -20,6 +20,13 @@
 % Program reference macro: hyperlink to a program label and typeset as program()
 \providecommand{\progref}[1]{\hyperref[#1]{\texttt{#1()}}}
 
+% Ensure boldface is preserved in HTML output.
+\ifdefined\HCode
+  \ifx\HCode\relax\else
+    \renewcommand{\textbf}[1]{\HCode{<strong>}#1\HCode{</strong>}}
+  \fi
+\fi
+
 % Environment for individual program documentation sections
 \newenvironment{sddsprog}[1]{%%
   \begin{latexonly}\newpage\end{latexonly}%
