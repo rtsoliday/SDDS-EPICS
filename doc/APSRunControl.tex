@@ -19,8 +19,12 @@ This document serves as a User's Manual and Reference for the runControl library
 \\
 This library is designed to be used by closed-loop EPICS control applications which are generally run in the background on the controls workstations. It permits an application to "register" itself with an EPICS record, thereby preventing additional instances of the same application from being run. In addition, the executing application may in turn be suspended or aborted via an MEDM control screen or other standard channel access client.\\
 \\
-The process is roughly as follows:\\
-\includegraphics{rc.eps}\\
+The process is roughly as follows:\
+\ifdefined\HCode
+  \includegraphics{rc.png}\\
+\else
+  \includegraphics{rc.eps}\\
+\fi
 \\
 This library is "cooperative" in nature, in that each application must select and use a unique application description string, and act on the library return codes properly.
 
