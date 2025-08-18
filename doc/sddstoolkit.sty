@@ -24,8 +24,15 @@
 \ifdefined\HCode
   \ifx\HCode\relax\else
     \renewcommand{\textbf}[1]{\HCode{<strong>}#1\HCode{</strong>}}
-    % Force monospace fonts for verbatim and inline code in HTML.
-    \Configure{@HEAD}{\HCode{<style>pre,code,tt{font-family:monospace,monospace;}</style>}}
+  \fi
+\fi
+
+% Ensure verbatim text uses a monospace font in HTML output.
+\ifdefined\HCode
+  \ifx\HCode\relax\else
+    \ifdefined\Css
+      \Css{pre,code,tt { font-family: monospace; }}
+    \fi
   \fi
 \fi
 
