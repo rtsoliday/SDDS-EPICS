@@ -34,9 +34,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#if !defined(_WIN32)
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/time.h>
+#endif
+#include <sys/types.h>
 #include <stddef.h>
 #include <cadef.h>
 #include <SDDS.h> /* SDDS library header */

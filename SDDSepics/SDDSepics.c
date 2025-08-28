@@ -828,7 +828,7 @@ long ReadWaveforms(char **readbackName, void **waveform, long length, int32_t *o
   if (offset) {
     for (i=0; i<waveforms; i++) {
       if (offset[i]>0) {
-        memmove(waveform[i], waveform[i]+offset[i]*SizeOfDataType(readbackDataType[i]), length*SizeOfDataType(readbackDataType[i]));
+        memmove(waveform[i],((char*)waveform[i])+offset[i]*SizeOfDataType(readbackDataType[i]), length*SizeOfDataType(readbackDataType[i]));
       }
     }
   }
