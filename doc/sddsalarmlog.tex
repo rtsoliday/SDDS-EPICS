@@ -20,6 +20,7 @@ usage: sddsalarmlog <input> <output>
 [-pendEventTime=<seconds>] [-durations] [-connectTimeout=<seconds>]
 [-explicit[=only]] [-verbose] [-comment=<parameterName>,<text>]
 [-requireChange[=severity][,status][,both]]
+[-conditions=<filename>,{allMustPass | oneMustPass}]
 [-inhibitPV=name=<name>,pendIOTime=<seconds>]
 [-watchInput]
 [-runControlPV=string=<string>,pingTimeout=<value>]
@@ -132,6 +133,7 @@ These parameters are defined:
   \item {\tt -verbose} --- Prints a message when data is taken.
   \item {\tt -comment=<parameterName>,<text>} --- Adds a comment parameter with the given text to the output file.
   \item {\tt -requireChange[=severity][,status][,both]} --- Requires the specified changes before an event is logged.
+  \item {\tt -conditions=<filename>,{allMustPass | oneMustPass}} --- Reads a conditions file and only logs when the listed PVs satisfy their limits.
   \item {\tt -inhibitPV=name=<name>,pendIOTime=<seconds>} --- Checks this process variable periodically and aborts data collection if it is nonzero.
   \item {\tt -watchInput} --- Monitors the input file for modifications and exits if it changes.
   \item {\tt -runControlPV=string=<string>,pingTimeout=<value>} --- Specifies a run control PV name and optional ping timeout in seconds.
