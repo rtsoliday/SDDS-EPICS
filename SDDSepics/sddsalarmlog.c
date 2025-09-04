@@ -86,13 +86,15 @@ const char *alarmStatusString[] = {
 #define CLO_DAILYFILES 14
 #define CLO_RUNCONTROLPV 15
 #define CLO_RUNCONTROLDESC 16
-#define COMMANDLINE_OPTIONS 17
+#define CLO_CONDITIONS 17
+#define COMMANDLINE_OPTIONS 18
 
 static char *commandline_option[COMMANDLINE_OPTIONS] = {
   "verbose", "timeduration", "pendeventtime", "explicit",
   "durations", "connecttimeout", "erasefile", "append",
   "generations", "comment", "requirechange", "offsettimeofday",
-  "inhibitpv", "watchInput", "dailyfiles", "runControlPV", "runControlDescription"};
+  "inhibitpv", "watchInput", "dailyfiles", "runControlPV", "runControlDescription",
+  "conditions"};
 
 static char *USAGE1 = "sddsalarmlog <input> <output> \n\
 -timeDuration=<realValue>[,<time-units>] [-offsetTimeOfDay]\n\
@@ -101,6 +103,7 @@ static char *USAGE1 = "sddsalarmlog <input> <output> \n\
 [-pendEventTime=<seconds>] [-durations] [-connectTimeout=<seconds>]\n\
 [-explicit[=only]] [-verbose] [-comment=<parameterName>,<text>]\n\
 [-requireChange[=severity][,status][,both]]\n\
+[-conditions=<filename>,{allMustPass | oneMustPass}]\n\
 [-inhibitPV=name=<name>,pendIOTime=<seconds>]\n\
 [-watchInput]\n\
 [-runControlPV=string=<string>,pingTimeout=<value>\n\
@@ -140,6 +143,9 @@ static char *USAGE3 = "-connectTimeout Specifies maximum time in seconds to wait
 -requireChange  Specifies that either severity, status, or both must change before an\n\
                 event is logged.  The default behavior is to log an event whenever a\n\
                 callback occurs, which means either severity or status has changed.\n\
+-conditions     Names an SDDS file containing PVs to read and limits on each PV that must\n\
+                be satisfied for logging to occur.  The file is like the main input file\n\
+                but includes LowerLimit and UpperLimit columns.\n\
 -inhibitPV      Checks this PV periodically.  If nonzero, then data collection is aborted.\n\
 -runControlPV   specifies a runControl PV name.\n\
 -runControlDescription\n\
@@ -244,6 +250,14 @@ static double startTime, startHour, hourOffset = 0, timeZoneOffsetInHours = 0;
 static short alarmsOccurred = 0;
 static double HourAdjust = 0, HourIOCAdjust = 0;
 
+static unsigned long CondMode = 0;
+static char **CondDeviceName = NULL, **CondReadMessage = NULL, *CondFile = NULL;
+static double *CondScaleFactor = NULL, *CondLowerLimit = NULL, *CondUpperLimit = NULL, *CondHoldoff = NULL;
+static double *CondDataBuffer = NULL;
+static chid *CondCHID = NULL;
+static long conditions = 0;
+static volatile long conditionsPass = 1;
+
 /* offset in seconds between EPICS start-of-EPOCH and UNIX start-of-EPOCH */
 #define EPOCH_OFFSET 631173600
 
@@ -277,6 +291,7 @@ int main(int argc, char **argv) {
   char **commentParameter, **commentText, *generationsDelimiter;
   long comments, inhibit = 0;
   double timeDuration, endTime, timeLeft, theTime, connectTimeout, nonConnectsHandled, zeroTime;
+  double lastConditionCheck;
   short verbose, eraseFile;
   long i_arg, timeUnits;
   long generations, dailyFiles, dailyFilesVerbose, updatePages = 0;
@@ -309,6 +324,7 @@ int main(int argc, char **argv) {
   comments = 0;
   offsetTimeOfDay = 0;
   HourNow = 0;
+  lastConditionCheck = 0;
 
   argc = scanargs(&s_arg, argc, argv);
   if (argc == 1) {
@@ -461,6 +477,14 @@ int main(int argc, char **argv) {
             InhibitPendIOTime <= 0)
           SDDS_Bomb("invalid -InhibitPV syntax/values");
         inhibit = 1;
+        break;
+      case CLO_CONDITIONS:
+        if (s_arg[i_arg].n_items != 3)
+          SDDS_Bomb("invalid -conditions syntax/values");
+        SDDS_CopyString(&CondFile, s_arg[i_arg].list[1]);
+        if (SDDS_StringIsBlank(CondFile) ||
+            !(CondMode = IdentifyConditionMode(s_arg[i_arg].list + 2, s_arg[i_arg].n_items - 2)))
+          SDDS_Bomb("invalid -conditions syntax/values");
         break;
       case CLO_WATCHINPUT:
         watchInput = 1;
@@ -621,6 +645,23 @@ int main(int argc, char **argv) {
   HourAdjust = startHour - startTime / 3600.0 - hourOffset;
   HourIOCAdjust = HourAdjust + EPOCH_OFFSET / 3600.0 - timeZoneOffsetInHours;
 
+  if (CondFile) {
+    if (!getConditionsData(&CondDeviceName, &CondReadMessage, &CondScaleFactor,
+                           &CondLowerLimit, &CondUpperLimit, &CondHoldoff, &conditions,
+                           CondFile))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    if (!(CondDataBuffer = (double *)malloc(sizeof(*CondDataBuffer) * conditions)))
+      SDDS_Bomb("allocation failure");
+    if (!(CondCHID = (chid *)malloc(sizeof(*CondCHID) * conditions)))
+      SDDS_Bomb("allocation failure");
+    for (i = 0; i < conditions; i++)
+      CondCHID[i] = NULL;
+    conditionsPass = PassesConditions(CondDeviceName, CondReadMessage, CondScaleFactor,
+                                      CondDataBuffer, CondLowerLimit, CondUpperLimit,
+                                      CondHoldoff, conditions, CondMode, CondCHID, pendEventTime);
+    lastConditionCheck = getTimeInSecs();
+  }
+
   if (!InitiateConnections(controlName, relatedName, description, bitDecoderIndex, controlNames, &chInfo))
     SDDS_Bomb("unable to establish callbacks for PVs");
 
@@ -675,6 +716,13 @@ int main(int argc, char **argv) {
         LogEventToFile(i, theTime, Hour, Hour, theTime - chInfo[i].lastChangeTime,
                        chInfo[i].lastStatus, chInfo[i].lastSeverity, NULL);
       }
+    }
+
+    if (CondFile && theTime - lastConditionCheck >= 1) {
+      conditionsPass = PassesConditions(CondDeviceName, CondReadMessage, CondScaleFactor,
+                                        CondDataBuffer, CondLowerLimit, CondUpperLimit,
+                                        CondHoldoff, conditions, CondMode, CondCHID, pendEventTime);
+      lastConditionCheck = theTime;
     }
 
     if (inhibit && QueryInhibitDataCollection(InhibitPV, &inhibitID, InhibitPendIOTime, 0)) {
@@ -732,6 +780,30 @@ int main(int argc, char **argv) {
   if (!updatePages && !SDDS_UpdatePage(&logDataset, FLUSH_TABLE)) {
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     return (1);
+  }
+  if (CondFile) {
+    if (CondDeviceName) {
+      for (i = 0; i < conditions; i++)
+        free(CondDeviceName[i]);
+      free(CondDeviceName);
+    }
+    if (CondReadMessage) {
+      for (i = 0; i < conditions; i++)
+        free(CondReadMessage[i]);
+      free(CondReadMessage);
+    }
+    if (CondScaleFactor)
+      free(CondScaleFactor);
+    if (CondLowerLimit)
+      free(CondLowerLimit);
+    if (CondUpperLimit)
+      free(CondUpperLimit);
+    if (CondHoldoff)
+      free(CondHoldoff);
+    if (CondDataBuffer)
+      free(CondDataBuffer);
+    if (CondCHID)
+      free(CondCHID);
   }
   if (!SDDS_Terminate(&logDataset))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
@@ -813,6 +885,9 @@ void EventHandler(struct event_handler_args event) {
   severityIndex = (short)dbrValue->severity;
   tsStamp = &(dbrValue->stamp);
   HourIOC = (tsStamp->secPastEpoch + 1e-9 * tsStamp->nsec) / 3600.0 + HourIOCAdjust;
+
+  if (CondFile && !conditionsPass)
+    return;
 
 #ifdef DEBUG
   fprintf(stderr, "EventHandler : index = %ld, status = %ld, severity = %ld\n",
