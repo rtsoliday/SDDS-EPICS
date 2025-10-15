@@ -33,6 +33,7 @@ typedef struct {
 void multiplyWithList(PV_VALUE **PVvalue, long *PVvalues,
                       TERM_LIST *List, long listEntries);
 void multiplyWithRange(PV_VALUE **PVvalue, long *PVvalues, long begin, long end, long interval, char *format);
+PV_VALUE *excludePVsFromLists(PV_VALUE *PVvalue, long PVs, long  *kept, char **excludePatterns, long excludeCount);
 
 #define BEGIN_GIVEN 0x0001U
 #define END_GIVEN 0x0002U
