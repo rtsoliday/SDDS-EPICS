@@ -9,6 +9,7 @@
  * @section Usage
  * ```
  * cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
+ *        [-delist=<pattern>[,<pattern]...]
  *        [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
  *        [-pendIoTime=<seconds>]
  *        [-dryRun]
@@ -90,7 +91,8 @@
 #define CLO_RAMP 9
 #define CLO_PROVIDER 10
 #define CLO_CHARARRAY 11
-#define COMMANDLINE_OPTIONS 12
+#define CLO_DELIST 12
+#define COMMANDLINE_OPTIONS 13
 char *commandline_option[COMMANDLINE_OPTIONS] = {
   (char *)"list",
   (char *)"range",
@@ -104,6 +106,7 @@ char *commandline_option[COMMANDLINE_OPTIONS] = {
   (char *)"ramp",
   (char *)"provider",
   (char *)"chararray",
+  (char *)"delist",
 };
 
 #define PROVIDER_CA 0
@@ -115,11 +118,13 @@ char *providerOption[PROVIDER_COUNT] = {
 };
 
 static char *USAGE = (char *)"cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\n\
+[-delist=<pattern>[,<pattern>...]]\n\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\n\
 [-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>] \n\
 [-numerical] [-charArray] [-blunderAhead[=silently]]\n\
 [-provider={ca|pva}]\n\n\
 -list           specifies PV name string components\n\
+-delist        Exclude PVs that match any of the comma-separated glob patterns (supports * and ?).\n\
 -range          specifies range of integers and format string\n\
 -pendIoTime     specifies maximum time to wait for connections and\n\
                 return values.  Default is 1.0s \n\
@@ -169,6 +174,9 @@ int main(int argc, char **argv) {
   short deltaMode, doRamp, charArray=0;
   double *presentValue, deltaFactor, rampPause;
   long providerMode = 0;
+  /* Exclusion filters */
+  char **excludePatterns = NULL;
+  long excludeCount = 0;
 #if (EPICS_VERSION > 3)
   PVA_OVERALL pva;
   double *rampDeltas = NULL;
@@ -259,6 +267,16 @@ int main(int argc, char **argv) {
       case CLO_CHARARRAY:
         charArray = 1;
         break;
+      case CLO_DELIST: {
+        if (s_arg[i_arg].n_items < 2)
+          SDDS_Bomb((char *)"invalid -exclude syntax (cavput)");
+        long add = s_arg[i_arg].n_items - 1;
+        excludePatterns = (char **)trealloc(excludePatterns, sizeof(*excludePatterns) * (excludeCount + add));
+        for (j = 1; j < s_arg[i_arg].n_items; j++) {
+          excludePatterns[excludeCount++] = s_arg[i_arg].list[j];
+        }
+        break;
+      }
       case CLO_BLUNDERAHEAD:
         s_arg[i_arg].n_items--;
         if (!scanItemList(&blunderAhead, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
@@ -293,6 +311,13 @@ int main(int argc, char **argv) {
       }
     } else
       bomb((char *)"unknown option", NULL);
+  }
+
+  /* Apply exclusion filters before validating values or performing operations */
+  if (excludeCount > 0 && PVs > 0) {
+    long kept = 0;
+    PVvalue = excludePVsFromLists(PVvalue, PVs, &kept, excludePatterns, excludeCount);
+    PVs = kept;
   }
 
   for (j = 0; j < PVs; j++)
