@@ -9,6 +9,7 @@
  * @section Usage
  * ```
  * cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
+ *        [-delist=<pattern>[,<pattern]...]
  *        [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
  *        [-floatformat=<printfString>] 
  *        [-charArray] 
@@ -33,6 +34,7 @@
  * | Option           | Description |
  * |------------------|-------------|
  * | `-list`          | Specify PV name components or explicit names. |
+ * | `-delist`        | Give patterns that will be removed from lists.  |
  * | `-range`         | Provide a range of integer suffixes. |
  * | `-floatformat`   | Specify printf style format for floating point values. |
  * | `-charArray`     | Print character arrays as strings. |
@@ -113,13 +115,14 @@
 #define CLO_PROVIDER 17
 #define CLO_INFO 18
 #define CLO_CHARARRAY 19
-#define COMMANDLINE_OPTIONS 20
+#define CLO_DELIST 20
+#define COMMANDLINE_OPTIONS 21
 char *commandline_option[COMMANDLINE_OPTIONS] = {
   (char *)"list", (char *)"range", (char *)"pendiotime", (char *)"dryrun", (char *)"labeled",
   (char *)"floatformat", (char *)"delimiter", (char *)"noquotes", (char *)"embrace", (char *)"repeat",
-  (char *)"errorvalue", (char *)"numerical", (char *)"cavputform", (char *)"excludeerrors", 
+  (char *)"errorvalue", (char *)"numerical", (char *)"cavputform", (char *)"excludeerrors",
   (char *)"statistics", (char *)"despike", (char *)"printErrors", (char *)"provider", (char *)"info",
-  (char *)"chararray"};
+  (char *)"chararray", (char *)"delist"};
 
 #define CLO_STATS_TAGVALUE 0
 #define CLO_STATS_PRETTY 1
@@ -140,6 +143,7 @@ char *providerOption[PROVIDER_COUNT] = {
 };
 
 static char *USAGE1 = (char *)"cavget [-list=<string>[=<value>][,<string>[=<value>]...]]\n\
+[-delist=<pattern>[,<pattern>...]]\n\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\n\
 [-floatformat=<printfString>] \n\
 [-charArray] \n\
@@ -153,6 +157,7 @@ static char *USAGE1 = (char *)"cavget [-list=<string>[=<value>][,<string>[=<valu
 [-info]\n\
 [-printErrors] \n\n\
 -list        specifies PV name string components\n\
+-delist      Exclude PVs that match any of the comma-separated glob patterns (supports * and ?).\n\
 -range       specifies range of integers and format string\n\
 -floatFormat specifies printf-style format string for printing\n\
              single- and double-precision values.  %g is the default.\n\
@@ -252,6 +257,8 @@ int main(int argc, char **argv) {
   SCANNED_ARG *s_arg;
   char *rangeFormat, *floatFormat, *delimiter;
   short charArray=0;
+  char **excludePatterns = NULL;
+  long excludeCount = 0;
   double pendIOTime, repeatPause, despikeThreshold;
   chid *channelID;
   short *connectedInTime = NULL;
@@ -350,6 +357,16 @@ int main(int argc, char **argv) {
       case CLO_CHARARRAY:
         charArray = 1;
         break;
+      case CLO_DELIST: {
+        if (s_arg[i_arg].n_items < 2)
+          SDDS_Bomb((char *)"invalid -delist syntax (cavget)");
+        long add = s_arg[i_arg].n_items - 1;
+        excludePatterns = (char **)trealloc(excludePatterns, sizeof(*excludePatterns) * (excludeCount + add));
+        for (j = 1; j < s_arg[i_arg].n_items; j++) {
+          excludePatterns[excludeCount++] = s_arg[i_arg].list[j];
+        }
+        break;
+      }
       case CLO_FLOATFORMAT:
         if (s_arg[i_arg].n_items != 2)
           SDDS_Bomb((char *)"wrong number of items for -floatFormat");
@@ -463,6 +480,13 @@ int main(int argc, char **argv) {
       }
     } else
       SDDS_Bomb((char *)"unknown option");
+  }
+
+  /* Apply exclusion filters before any data retrieval/printing */
+  if (excludeCount > 0 && PVs > 0) {
+    long kept = 0;
+    PVvalue = excludePVsFromLists(PVvalue, PVs, &kept, excludePatterns, excludeCount);
+    PVs = kept;
   }
 
   if (doRepeat && doStats)
