@@ -15,6 +15,50 @@
 #include "pvMultList.h"
 #include <stdlib.h>
 
+PV_VALUE *excludePVsFromLists(PV_VALUE *PVvalue, long PVs, long  *kept, char **excludePatterns, long excludeCount)
+{
+  long j;
+  PV_VALUE *newPV = (PV_VALUE *)tmalloc(sizeof(*newPV) * PVs);
+  *kept = 0;
+  for (j = 0; j<excludeCount; j++) {
+    if (has_wildcards(excludePatterns[j]) && strchr(excludePatterns[j], '-'))
+        excludePatterns[j] = expand_ranges(excludePatterns[j]);
+  }
+  for (j = 0; j < PVs; j++) {
+    int excluded = 0;
+    for (long k = 0; k < excludeCount; k++) {
+      if (wild_match(PVvalue[j].name, excludePatterns[k])) {
+        excluded = 1;
+        break;
+      }
+    }
+    if (!excluded) {
+      /* Move entry into new array */
+      newPV[*kept] = PVvalue[j];
+      /* Prevent double-free of moved pointers */
+      PVvalue[j].name = NULL;
+      PVvalue[j].value = NULL;
+      *kept += 1;
+    } else {
+      /* Free excluded entry now since we'll discard original array */
+      if (PVvalue[j].name)
+        free(PVvalue[j].name);
+      if (PVvalue[j].value)
+        free(PVvalue[j].value);
+      PVvalue[j].name = PVvalue[j].value = NULL;
+    }
+  }
+  /* Free original container and update pointers/count */
+  free(PVvalue);
+  PVvalue = newPV;
+  PVs = *kept;
+  if (PVs == 0) {
+    fprintf(stderr, "Error: all PVs were excluded by -exclude filters\n");
+    exit(EXIT_FAILURE);
+  }
+  return newPV;
+}
+
 void multiplyWithList(PV_VALUE **PVvalue, long *PVvalues, TERM_LIST *List, long listEntries) {
   long newPVvalues, i, j, k;
   PV_VALUE *newPVvalue;
