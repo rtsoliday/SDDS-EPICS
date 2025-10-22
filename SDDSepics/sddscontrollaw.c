@@ -2199,6 +2199,29 @@ Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VER
 #else
         oag_ca_pend_event(sleepTime, &(sddscontrollawGlobal->sigint));
 #endif
+        
+        /* Re-check test conditions after holdoff sleep to ensure safety */
+        if (sddscontrollawGlobal->test.file) {
+          testOutOfRange = checkOutOfRange(&sddscontrollawGlobal->test, &backoff, &readbackStats, &readbackAdjustedStats, &controlStats, &sddscontrollawGlobal->loopParam, timeOfDay, verbose, warning);
+        }
+        waveformOutOfRange = CheckWaveformTest(&sddscontrollawGlobal->waveform_tests, &backoff, &sddscontrollawGlobal->loopParam, &sddscontrollawGlobal->despikeParam, verbose, warning, pendIOTime);
+        
+        if (waveformOutOfRange || testOutOfRange) {
+          /* Tests failed again during/after holdoff - abort control law execution */
+          outOfRange = 1;
+          for (icontrol = 0; icontrol < control->n; icontrol++) {
+            control->delta[0][icontrol] = 0;
+            control->old[icontrol] = control->value[0][icontrol];
+          }
+          calcControlDeltaStats(control, &controlStats, &controlDeltaStats);
+          if (verbose)
+            fprintf(stderr, "Tests failed after holdoff period - control law execution aborted.\n");
+          goto skip_control_law;
+        } else {
+          outOfRange = 0;
+          if (verbose)
+            fprintf(stderr, "Tests still passing after holdoff - proceeding with control law.\n");
+        }
       }
 #ifdef DEBUGTIMES
       if (debugTimes)
@@ -2423,6 +2446,7 @@ Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VER
     writeToStatsFile(sddscontrollawGlobal->statsFile, &sddscontrollawGlobal->statsPage, &statsRow, &sddscontrollawGlobal->loopParam, &readbackStats, &readbackDeltaStats, &controlStats, &controlDeltaStats);
     writeToGlitchFile(&sddscontrollawGlobal->glitchParam, &sddscontrollawGlobal->glitchPage, &glitchRow, &sddscontrollawGlobal->loopParam, &readbackAdjustedStats, &controlDeltaStats, &sddscontrollawGlobal->correction, &sddscontrollawGlobal->overlapCompensation, &sddscontrollawGlobal->test);
 
+  skip_control_law:
     /*******************************\
        * pause for iteration interval *
      \******************************/
