@@ -9,6 +9,36 @@ endif
 
 include ../Makefile.rules
 
+# Check if libCom was built with readline support by examining the library
+# Only on Unix-like systems (Linux, Darwin) - Windows doesn't use readline
+ifneq ($(OS),Windows)
+  # First, try libCom.so/dylib with ldd/otool, then fall back to checking libCom.a with nm
+  ifeq ($(OS),Darwin)
+    LIBCOM_SO = $(wildcard $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.dylib)
+  else
+    LIBCOM_SO = $(wildcard $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.so)
+  endif
+  LIBCOM_A = $(wildcard $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a)
+
+  ifneq ($(LIBCOM_SO),)
+    # Check if libCom.so/dylib depends on libreadline
+    # Darwin uses otool -L, Linux uses ldd
+    ifeq ($(OS),Darwin)
+      NEEDS_READLINE := $(shell otool -L $(LIBCOM_SO) 2>/dev/null | grep -q libreadline && echo yes)
+    else
+      NEEDS_READLINE := $(shell ldd $(LIBCOM_SO) 2>/dev/null | grep -q libreadline && echo yes)
+    endif
+  else ifneq ($(LIBCOM_A),)
+    # Check if libCom.a has undefined readline symbols (rl_readline_name is a common one)
+    # nm works on both Darwin and Linux
+    NEEDS_READLINE := $(shell nm $(LIBCOM_A) 2>/dev/null | grep -q "U rl_readline_name" && echo yes)
+  endif
+
+  ifeq ($(NEEDS_READLINE),yes)
+    READLINE_LIBS = -lreadline
+  endif
+endif
+
 PROD = cavget cavput cawait
 
 cavget_SRC = cavget.cc pvMultList.c pvaSDDS.cc
@@ -38,7 +68,7 @@ ifeq ($(OS), Linux)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
+    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
@@ -53,7 +83,7 @@ ifeq ($(OS), Darwin)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(PROD_SYS_LIBS)
+    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
