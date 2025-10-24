@@ -2202,6 +2202,11 @@ Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VER
         
         /* Re-check test conditions after holdoff sleep to ensure safety */
         if (sddscontrollawGlobal->test.file) {
+          /* Re-read test PV values to get current state */
+          if (verbose)
+            fprintf(stderr, "Re-reading test PVs after holdoff period.\n");
+          readPVs(sddscontrollawGlobal->test.controlName, sddscontrollawGlobal->test.value, sddscontrollawGlobal->test.channelInfo, sddscontrollawGlobal->test.n, NULL, pendIOTime);
+          despikeTestValues(&sddscontrollawGlobal->test, &sddscontrollawGlobal->despikeParam, verbose);
           testOutOfRange = checkOutOfRange(&sddscontrollawGlobal->test, &backoff, &readbackStats, &readbackAdjustedStats, &controlStats, &sddscontrollawGlobal->loopParam, timeOfDay, verbose, warning);
         }
         waveformOutOfRange = CheckWaveformTest(&sddscontrollawGlobal->waveform_tests, &backoff, &sddscontrollawGlobal->loopParam, &sddscontrollawGlobal->despikeParam, verbose, warning, pendIOTime);
