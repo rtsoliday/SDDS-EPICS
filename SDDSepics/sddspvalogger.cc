@@ -98,6 +98,7 @@ typedef struct
   short *storageType;
   bool *expectScalar;
   bool *expectScalarArray;
+  bool *treatScalarArrayAsScalar;
   bool strictPVverification;
   bool truncateWaveforms;
   int32_t *expectElements;
@@ -934,7 +935,8 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
   sdds = &(SDDS_table[0]);
   //Checking to see if we should use SDDS_COLUMNS or SDDS_ARRAYS
   for (j = 0; j < pva->numPVs; j++) {
-    if (logger->expectScalarArray[j]) {
+    // Skip scalarArrays that are being treated as scalars
+    if (logger->expectScalarArray[j] && !logger->treatScalarArrayAsScalar[j]) {
       if ((logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
         if (logger->n_rows == -1) {
           logger->n_rows = logger->scalarArrayEndIndex[j] - logger->scalarArrayStartIndex[j] + 1;
@@ -1143,7 +1145,7 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
     } else {
       units = pva->pvaData[j].units;
     }
-    if (logger->expectScalar[j]) {
+    if (logger->expectScalar[j] || logger->treatScalarArrayAsScalar[j]) {
       if (logger->scalarsAsColumns) { //No scalar arrays, so use SDDS_COLUMN for the scalar values
         logger->elementIndex[j] = SDDS_DefineColumn(sdds, logger->readbackName[j], NULL, units, NULL, NULL, sddstype, 0);
       } else { //Use SDDS_PARAMETER for the scalar values
@@ -1244,9 +1246,14 @@ void StoreDataIntoCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
 
   for (i = 0; i < pva->numPVs; i++) {
     if ((pva->isConnected[i]) && (logger->verifiedType[i]) && ((logger->monitor == false) || (pva->pvaData[i].numMonitorReadings > 0))) {
-      if (logger->expectScalar[i]) {
+      if (logger->expectScalar[i] || logger->treatScalarArrayAsScalar[i]) {
+        // For treatScalarArrayAsScalar, determine the element index to use
+        int32_t elemIdx = 0;
+        if (logger->treatScalarArrayAsScalar[i] && (logger->scalarArrayStartIndex != NULL)) {
+          elemIdx = logger->scalarArrayStartIndex[i] - 1;
+        }
         if (logger->expectNumeric[i]) {
-          value = logger->monitor ? pva->pvaData[i].monitorData[0].values[0] : pva->pvaData[i].getData[0].values[0];
+          value = logger->monitor ? pva->pvaData[i].monitorData[0].values[elemIdx] : pva->pvaData[i].getData[0].values[elemIdx];
           if (logger->scaleFactor) {
             value *= logger->scaleFactor[i];
           }
@@ -1257,7 +1264,7 @@ void StoreDataIntoCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
             logger->circularbufferString[i][j][0] = NULL;
           }
           cp_str(&(logger->circularbufferString[i][j][0]),
-                 logger->monitor ? pva->pvaData[i].monitorData[0].stringValues[0] : pva->pvaData[i].getData[0].stringValues[0]);
+                 logger->monitor ? pva->pvaData[i].monitorData[0].stringValues[elemIdx] : pva->pvaData[i].getData[0].stringValues[elemIdx]);
         }
       } else if (logger->expectScalarArray[i]) {
         if (logger->expectNumeric[i]) {
@@ -1291,7 +1298,7 @@ void StoreDataIntoCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
         }
       }
     } else {
-      if (logger->expectScalar[i]) {
+      if (logger->expectScalar[i] || logger->treatScalarArrayAsScalar[i]) {
         if (logger->expectNumeric[i]) {
           logger->circularbufferDouble[i][j][0] = 0;
         } else {
@@ -1338,7 +1345,7 @@ long WriteAccessoryData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *l
   for (n = 0; n < filecount; n++) {
     sdds = &(SDDS_table[n]);
     if (logger->onePv_OutputDirectory != NULL) {
-      if (logger->expectScalar[n]) {
+      if (logger->expectScalar[n] || logger->treatScalarArrayAsScalar[n]) {
         logger->scalarsAsColumns = true;
         logger->scalarArraysAsColumns = false;
       } else if (logger->expectScalarArray[n]) {
@@ -1622,7 +1629,7 @@ long WriteData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
     sdds = &(SDDS_table[n]);
     for (j = pvStart; j < pvEnd; j++) {
       if (logger->onePv_OutputDirectory != NULL) {
-        if (logger->expectScalar[n]) {
+        if (logger->expectScalar[n] || logger->treatScalarArrayAsScalar[n]) {
           logger->scalarsAsColumns = true;
           logger->scalarArraysAsColumns = false;
         } else if (logger->expectScalarArray[n]) {
@@ -1632,13 +1639,18 @@ long WriteData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
       }
 
       if ((pva->isConnected[j]) && (logger->verifiedType[j]) && ((logger->monitor == false) || (pva->pvaData[j].numMonitorReadings > 0))) {
-        if (logger->expectScalar[j]) {
+        if (logger->expectScalar[j] || logger->treatScalarArrayAsScalar[j]) {
+          // For treatScalarArrayAsScalar, determine the element index to use
+          int32_t elemIdx = 0;
+          if (logger->treatScalarArrayAsScalar[j] && (logger->scalarArrayStartIndex != NULL)) {
+            elemIdx = logger->scalarArrayStartIndex[j] - 1;
+          }
           if (logger->scalarsAsColumns) {
             if (logger->expectNumeric[j]) {
               if ((logger->logInterval > 1) && (logger->average) && ((logger->average[j] == 'y') || (logger->average[j] == 'Y'))) {
                 value = logger->averagedValues[j];
               } else {
-                value = logger->monitor ? pva->pvaData[j].monitorData[0].values[0] : pva->pvaData[j].getData[0].values[0];
+                value = logger->monitor ? pva->pvaData[j].monitorData[0].values[elemIdx] : pva->pvaData[j].getData[0].values[elemIdx];
                 if (logger->scaleFactor) {
                   value *= logger->scaleFactor[j];
                 }
@@ -1646,18 +1658,18 @@ long WriteData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
               result = SetNumericRowValue(sdds, logger->outputRow[n], logger->elementIndex[j], logger->storageType[j], value);
             } else {
               result = SetStringRowValue(sdds, logger->outputRow[n], logger->elementIndex[j], logger->storageType[j], 
-                                           logger->monitor ? pva->pvaData[j].monitorData[0].stringValues[0] : pva->pvaData[j].getData[0].stringValues[0]);
+                                           logger->monitor ? pva->pvaData[j].monitorData[0].stringValues[elemIdx] : pva->pvaData[j].getData[0].stringValues[elemIdx]);
             }
           } else {
             if (logger->expectNumeric[j]) {
-              value = logger->monitor ? pva->pvaData[j].monitorData[0].values[0] : pva->pvaData[j].getData[0].values[0];
+              value = logger->monitor ? pva->pvaData[j].monitorData[0].values[elemIdx] : pva->pvaData[j].getData[0].values[elemIdx];
               if (logger->scaleFactor) {
                 value *= logger->scaleFactor[j];
               }
               result = SetNumericParameterValue(sdds, logger->elementIndex[j], logger->storageType[j], value);
             } else {
               result = SetStringParameterValue(sdds, logger->elementIndex[j], logger->storageType[j], 
-                                                logger->monitor ? pva->pvaData[j].monitorData[0].stringValues[0] : pva->pvaData[j].getData[0].stringValues[0]);
+                                                logger->monitor ? pva->pvaData[j].monitorData[0].stringValues[elemIdx] : pva->pvaData[j].getData[0].stringValues[elemIdx]);
             }
           }
           if (result == 0) {
@@ -1718,7 +1730,7 @@ long WriteData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
           }
         }
       } else {
-        if (logger->expectScalar[j]) {
+        if (logger->expectScalar[j] || logger->treatScalarArrayAsScalar[j]) {
           if (logger->scalarsAsColumns) {
             if (logger->expectNumeric[j]) {
               result = SetNumericRowValue(sdds, logger->outputRow[n], logger->elementIndex[j], logger->storageType[j], (double)0);
@@ -2050,13 +2062,16 @@ long VerifyPVTypes(PVA_OVERALL *pva, LOGGER_DATA *logger) {
           fprintf(stderr, "Error (sddspvalogger): ExpectedFieldType does not match actual PV for %s\n", pva->pvaChannelNames[j].c_str());
           return (1);
         }
-        if ((logger->scaleFactor) && ((logger->scaleFactor[j] < .999) || (logger->scaleFactor[j] > 1.001))) {
-          fprintf(stderr, "Error (sddspvalogger): ScaleFactor limited to 1.0 for scalarArray type PVs\n");
-          return (1);
-        }
-        if ((logger->average) && ((logger->average[j] == 'y') || (logger->scaleFactor[j] == 'Y'))) {
-          fprintf(stderr, "Error (sddspvalogger): Averaging not supported for scalarArray type PVs\n");
-          return (1);
+        // Only apply scalarArray restrictions if not being treated as a scalar
+        if (!logger->treatScalarArrayAsScalar[j]) {
+          if ((logger->scaleFactor) && ((logger->scaleFactor[j] < .999) || (logger->scaleFactor[j] > 1.001))) {
+            fprintf(stderr, "Error (sddspvalogger): ScaleFactor limited to 1.0 for scalarArray type PVs\n");
+            return (1);
+          }
+          if ((logger->average) && ((logger->average[j] == 'y') || (logger->scaleFactor[j] == 'Y'))) {
+            fprintf(stderr, "Error (sddspvalogger): Averaging not supported for scalarArray type PVs\n");
+            return (1);
+          }
         }
         if (logger->monitor) {
           if ((pva->pvaData[j].numMonitorElements > 0) && (minElements > pva->pvaData[j].numMonitorElements)) {
@@ -2206,7 +2221,7 @@ long VerifyFileIsAppendable(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DAT
         sddstype = logger->storageType[j];
       }
     }
-    if (logger->expectScalar[j]) {
+    if (logger->expectScalar[j] || logger->treatScalarArrayAsScalar[j]) {
       if (logger->scalarsAsColumns) {
         if (SDDS_CHECK_OKAY != SDDS_CheckColumn(SDDS_table, logger->readbackName[j], NULL, sddstype, stderr)) {
           return (1);
@@ -2325,7 +2340,9 @@ long ReadInputFiles(LOGGER_DATA *logger) {
   stringColumn = (char **)SDDS_GetColumn(&SDDS_table, (char *)"ExpectFieldType");
   logger->expectScalar = (bool *)malloc(sizeof(bool) * logger->pvCount);
   logger->expectScalarArray = (bool *)malloc(sizeof(bool) * logger->pvCount);
+  logger->treatScalarArrayAsScalar = (bool *)malloc(sizeof(bool) * logger->pvCount);
   for (n = 0; n < logger->pvCount; n++) {
+    logger->treatScalarArrayAsScalar[n] = false;
     if (strcmp(stringColumn[n], (char *)"scalarArray") == 0) {
       logger->expectScalar[n] = false;
       logger->expectScalarArray[n] = true;
@@ -2412,6 +2429,19 @@ long ReadInputFiles(LOGGER_DATA *logger) {
   
   if (SDDS_CHECK_OKAY == SDDS_CheckColumn(&SDDS_table, (char *)"ScalarArrayEndIndex", NULL, SDDS_ANY_INTEGER_TYPE, NULL)) {
     logger->scalarArrayEndIndex = SDDS_GetColumnInLong(&SDDS_table, (char *)"ScalarArrayEndIndex");
+  }
+
+  // Mark single-element scalarArrays to be treated as scalars
+  for (n = 0; n < logger->pvCount; n++) {
+    if (logger->expectScalarArray[n]) {
+      int32_t effectiveElements = logger->expectElements[n];
+      if ((logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
+        effectiveElements = logger->scalarArrayEndIndex[n] - logger->scalarArrayStartIndex[n] + 1;
+      }
+      if (effectiveElements == 1) {
+        logger->treatScalarArrayAsScalar[n] = true;
+      }
+    }
   }
 
   if (SDDS_CHECK_OKAY == SDDS_CheckColumn(&SDDS_table, (char *)"Average", NULL, SDDS_CHARACTER, NULL)) {
@@ -2908,7 +2938,7 @@ long UpdateAndWritePages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *
       nEnd = pva->numPVs;
     }
     for (j = 0; j < pva->numPVs; j++) {
-      if (logger->expectScalar[j]) {
+      if (logger->expectScalar[j] || logger->treatScalarArrayAsScalar[j]) {
         if ((j >= nStart) && (j < nEnd)) {
           if (logger->doDisconnect && !SDDS_ReconnectFile(&(SDDS_table[j]))) {
             SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -2958,7 +2988,7 @@ long CloseFiles(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
   long j, result = 0;
   if (logger->onePv_OutputDirectory != NULL) {
     for (j = 0; j < pva->numPVs; j++) {
-      if (logger->expectScalar[j]) {
+      if (logger->expectScalar[j] || logger->treatScalarArrayAsScalar[j]) {
         if (logger->doDisconnect && !SDDS_ReconnectFile(&(SDDS_table[j]))) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
           result = 1;
@@ -3122,6 +3152,7 @@ void InitializeVariables(LOGGER_DATA *logger) {
   logger->scaleFactor = NULL;
   logger->scalarArrayStartIndex = NULL;
   logger->scalarArrayEndIndex = NULL;
+  logger->treatScalarArrayAsScalar = NULL;
   logger->units = NULL;
   logger->average = NULL;
   logger->averagedValues = NULL;
@@ -3633,7 +3664,8 @@ long CheckInputFileValidity(LOGGER_DATA *logger) {
   long j;
   logger->scalarsAsColumns = true;
   for (j = 0; j < logger->pvCount; j++) {
-    if (logger->expectScalarArray[j]) {
+    // Only set scalarsAsColumns to false for scalarArrays that are NOT being treated as scalars
+    if (logger->expectScalarArray[j] && !logger->treatScalarArrayAsScalar[j]) {
       logger->scalarsAsColumns = false;
     }
   }
@@ -4210,7 +4242,7 @@ long WriteGlitchPage(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logg
         return (1);
       }
       for (i = 0; i < pva->numPVs; i++) {
-        if (logger->expectScalar[i]) {
+        if (logger->expectScalar[i] || logger->treatScalarArrayAsScalar[i]) {
           if (logger->expectNumeric[i]) {
             result = SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE,
                                        logger->elementIndex[i], logger->circularbufferDouble[i][n][0]);
