@@ -1,4 +1,4 @@
-/*************************************************************************\
+/************************************************************************* \
  * Copyright (c) 2002 The University of Chicago, as Operator of Argonne
  * National Laboratory.
  * Copyright (c) 2002 The Regents of the University of California, as
@@ -269,8 +269,8 @@ char *option[N_OPTIONS] = {
   "maximize", "1dscan", "target", "testValues", "runControlPV", "runControlDescription", "varScript",
   "restartFile", "ezcatiming", "pendiotime", "rcds", "dryRun", "extraLogFile", "conditioning"};
 
-static char *USAGE1 = "sddsoptimize [-measFile=<filename>|-measScript=<script>] \n\
-       [-varScript=<scriptname>] [-restartFile=<filename>] [-pendIOtime=<seconds>] [-conditioning=<script>] \n\
+static char *USAGE1 = "sddsoptimize [-measFile=<filename>|-measScript=<script>[,style={oag|python}]] \n\
+       [-varScript=<scriptname>[,style={oag|python}]] [-restartFile=<filename>] [-pendIOtime=<seconds>] [-conditioning=<script>] \n\
        -varFile=<filename> -knobFiles=<filename1> , <filename2>,... \n\
        [-simplex=[restarts=<nRestarts>][,cycles=<nCycles>,] \n\
        [evaluations=<nEvals>,][no1dscans][,divisions=<int>][,randomSigns]] \n\
@@ -416,6 +416,8 @@ typedef struct
   short maximize;
   int32_t nEvalMax, extra_pvs;
   char *varScript, *measScript;
+  short measScriptStyle; /* 0=none, 1=oag, 2=python */
+  short varScriptStyle;  /* 0=none, 1=oag, 2=python */
   /*test parameters*/
   int32_t limit;
   TESTS *test;
@@ -581,16 +583,59 @@ int main(int argc, char **argv) {
         if (s_arg[i_arg].n_items == 2)
           SDDS_CopyString(&inputMeasureFile, s_arg[i_arg].list[1]);
         break;
-      case SET_SCRIPT:
-        if (s_arg[i_arg].n_items != 2)
+      case SET_SCRIPT: {
+        unsigned long msFlags = 0;
+        char *styleString = NULL;
+        if (s_arg[i_arg].n_items < 2)
           bomb("invalid -measScript syntax", NULL);
         SDDS_CopyString(&param->measScript, s_arg[i_arg].list[1]);
+        if (s_arg[i_arg].n_items > 2) {
+          /* parse optional qualifiers after the script name */
+          s_arg[i_arg].list += 2;
+          s_arg[i_arg].n_items -= 2;
+          if (!scanItemList(&msFlags, s_arg[i_arg].list, &s_arg[i_arg].n_items, 0,
+                            "style", SDDS_STRING, &styleString, 1, 0,
+                            NULL))
+            SDDS_Bomb("invalid -measScript syntax");
+          if (styleString) {
+            if (!strcmp(styleString, "oag"))
+              param->measScriptStyle = 1;
+            else if (!strcmp(styleString, "python"))
+              param->measScriptStyle = 2;
+            else
+              SDDS_Bomb("invalid -measScript style");
+            free(styleString);
+          }
+        }
         break;
-      case SET_VARSCRIPT:
-        if (s_arg[i_arg].n_items != 2)
+      }
+      case SET_VARSCRIPT: {
+        unsigned long vsFlags = 0;
+        char *styleString = NULL;
+        if (s_arg[i_arg].n_items < 2)
           bomb("invalid -varScript syntax", NULL);
         SDDS_CopyString(&param->varScript, s_arg[i_arg].list[1]);
+        param->varScriptStyle = 1;
+        if (s_arg[i_arg].n_items > 2) {
+          /* parse optional qualifiers after the script name */
+          s_arg[i_arg].list += 2;
+          s_arg[i_arg].n_items -= 2;
+          if (!scanItemList(&vsFlags, s_arg[i_arg].list, &s_arg[i_arg].n_items, 0,
+                            "style", SDDS_STRING, &styleString, 1, 0,
+                            NULL))
+            SDDS_Bomb("invalid -varScript syntax");
+          if (styleString) {
+            if (!strcmp(styleString, "oag"))
+              param->varScriptStyle = 1;
+            else if (!strcmp(styleString, "python"))
+              param->varScriptStyle = 2;
+            else
+              SDDS_Bomb("invalid -varScript style");
+            free(styleString);
+          }
+        }
         break;
+      }
       case SET_INPUTVAR:
         if (s_arg[i_arg].n_items == 2)
           SDDS_CopyString(&inputVarFile, s_arg[i_arg].list[1]);
@@ -853,8 +898,11 @@ int main(int argc, char **argv) {
 
   if (param->varScript) {
     long total = 0;
-    param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * (strlen(param->varScript) + 25));
-    strcat(param->varScript, " -tagList \"");
+    const char *tagOpt = (param->varScriptStyle==2 ? " --tagList \"" : " -tagList \"");
+    const char *valOpt = (param->varScriptStyle==2 ? "\" --valueList \"" : "\" -valueList \"");
+    /* append tag list built from control names */
+    param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * (strlen(param->varScript) + strlen(tagOpt) + 25));
+    strcat(param->varScript, tagOpt);
     for (i = 0; i < control->Variables; i++) {
       total = strlen(param->varScript) + strlen(control->ControlName[i]) + 2;
       param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * total);
@@ -863,16 +911,19 @@ int main(int argc, char **argv) {
         strcat(param->varScript, " ");
     }
 
+    /* optional extra option injected between tagList and valueList */
     if (control->varScriptExtraOption) {
-      param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * (total + 25));
-      strcat(param->varScript, "\" -extra \"");
+      const char *extraOpt = (param->varScriptStyle==2 ? "\" --extra \"" : "\" -extra \"");
+      param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * (total + strlen(extraOpt) + 25));
+      strcat(param->varScript, extraOpt);
       total = strlen(param->varScript) + strlen(control->varScriptExtraOption) + 2;
       param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * total);
       strcat(param->varScript, control->varScriptExtraOption);
     }
 
-    param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * (total + 25));
-    strcat(param->varScript, "\" -valueList \"");
+    /* start value list (values appended later in localfunc) */
+    param->varScript = SDDS_Realloc(param->varScript, sizeof(*param->varScript) * (total + strlen(valOpt) + 25));
+    strcat(param->varScript, valOpt);
     if (param->verbose) {
       fprintf(stdout, "\nvarScript: %s\n", param->varScript);
       fflush(stdout);
@@ -880,13 +931,41 @@ int main(int argc, char **argv) {
   }
   if (param->measScript) {
     long total = 0;
-    if (control->measScriptExtraOption) {
-      param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * (strlen(param->measScript) + 25));
-      strcat(param->measScript, " -extra \"");
-      total = strlen(param->measScript) + strlen(control->measScriptExtraOption) + 4;
-      param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * total);
-      strcat(param->measScript, control->measScriptExtraOption);
-      strcat(param->measScript, "\"");
+    if (param->measScriptStyle==1 || param->measScriptStyle==2) {
+      const char *tagOpt = param->measScriptStyle==1 ? " -tagList \"" : " --tagList \"";
+      const char *valOpt = param->measScriptStyle==1 ? "\" -valueList \"" : "\" --valueList \"";
+      /* append tag list built from control names */
+      param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * (strlen(param->measScript) + strlen(tagOpt) + 25));
+      strcat(param->measScript, tagOpt);
+      for (i = 0; i < control->Variables; i++) {
+        total = strlen(param->measScript) + strlen(control->ControlName[i]) + 2;
+        param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * total);
+        strcat(param->measScript, control->ControlName[i]);
+        if (i < control->Variables - 1)
+          strcat(param->measScript, " ");
+      }
+      /* optional extra option injected between tagList and valueList */
+      if (control->measScriptExtraOption) {
+        const char *extraOpt = param->measScriptStyle==1 ? "\" -extra \"" : "\" --extra \"";
+        param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * (total + strlen(extraOpt) + 25));
+        strcat(param->measScript, extraOpt);
+        total = strlen(param->measScript) + strlen(control->measScriptExtraOption) + 2;
+        param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * total);
+        strcat(param->measScript, control->measScriptExtraOption);
+      }
+      /* start value list (values appended later in localfunc) */
+      param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * (total + strlen(valOpt) + 25));
+      strcat(param->measScript, valOpt);
+    } else {
+      /* legacy behavior: only append -extra if provided */
+      if (control->measScriptExtraOption) {
+        param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * (strlen(param->measScript) + 25));
+        strcat(param->measScript, " -extra \"");
+        total = strlen(param->measScript) + strlen(control->measScriptExtraOption) + 4;
+        param->measScript = SDDS_Realloc(param->measScript, sizeof(*param->measScript) * total);
+        strcat(param->measScript, control->measScriptExtraOption);
+        strcat(param->measScript, "\"");
+      }
     }
     if (param->verbose) {
       fprintf(stdout, "\nmeasScript: %s\n", param->measScript);
@@ -1162,7 +1241,8 @@ int main(int argc, char **argv) {
       free(KnobFile[i]);
     free(KnobFile);
   }
-  free_scanargs(&s_arg, argc);
+  // This causes the program to crash
+  // free_scanargs(&s_arg, argc);
 
   if (inputMeasureFile)
     free(inputMeasureFile);
@@ -1968,6 +2048,22 @@ double localfunc(double *pValue, long *invalid) {
   if (param->measScript) {
     comd = (char *)malloc(sizeof(*comd) * (strlen(param->measScript) + 25));
     strcpy(comd, param->measScript);
+    /* if style qualifier provided, append value list similarly to varScript */
+    if (param->measScriptStyle==1 || param->measScriptStyle==2) {
+      char valueStr[1024];
+      long totalLength = strlen(comd) + 1;
+      for (i = 0; i < control->Variables; i++) {
+        sprintf(valueStr, "%21.15e", pValue[i]);
+        totalLength = strlen(comd) + strlen(valueStr) + 2;
+        comd = SDDS_Realloc(comd, sizeof(*comd) * totalLength);
+        strcat(comd, valueStr);
+        if (i < control->Variables - 1)
+          strcat(comd, " ");
+        else
+          strcat(comd, "\"");
+      }
+      comd = SDDS_Realloc(comd, sizeof(*comd) * (totalLength + 25));
+    }
 #ifdef _WIN32
     cp_str(&tmpfile, tmpname(NULL));
     strcat(comd, " 2> ");
@@ -2828,6 +2924,8 @@ void InitializeParam(COMMON_PARAM *param) {
   param->logData = NULL;
   param->nEvalMax = 100;
   param->varScript = param->measScript = NULL;
+  param->measScriptStyle = 0;
+  param->varScriptStyle = 0;
   param->conditioningCommand = NULL;
   param->extraLogFile = NULL;
   param->limit = 2;
