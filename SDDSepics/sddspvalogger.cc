@@ -2895,7 +2895,7 @@ long StartPages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
   }
   if (logger->onePv_OutputDirectory != NULL) {
     for (j = 0; j < pva->numPVs; j++) {
-      if (logger->expectScalarArray[j]) {
+      if (logger->expectScalarArray[j] && !logger->treatScalarArrayAsScalar[j]) {
         rows = logger->expectElements[j];
         if (logger->doDisconnect && !SDDS_ReconnectFile(&(SDDS_table[j]))) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
