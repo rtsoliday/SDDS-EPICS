@@ -818,7 +818,7 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
       }
       makeTimeBreakdown(getTimeInSecs(), NULL, &(logger->DayNow), &(logger->HourNow), NULL, NULL, NULL, NULL);
 
-      if (logger->expectScalarArray[j]) {
+      if (logger->expectScalarArray[j] && !logger->treatScalarArrayAsScalar[j]) {
         logger->scalarsAsColumns = false;
         logger->scalarArraysAsColumns = true;
         if (logger->expectElements[j] > logger->n_rows) {
