@@ -47,6 +47,28 @@ PROD = MV20image2sdds sddssnapshot sddscontrollaw sddscaramp sddsgencontrolbits 
        sddsexperiment sddsvexperiment sddspvalogger sddswget sddspvasaverestore sddspermissive \
        sddspvaglitchlogger sddscainfo sddspvacontrollaw
 
+# sddspcas (Portable Channel Access Server)
+# EPICS Base 3.x shipped PCAS headers/libraries as part of Base.
+# With EPICS Base 7, PCAS is typically provided as a separate EPICS module ("pcas").
+PCAS_BASE = $(firstword $(wildcard $(EPICS_BASE)/../pcas $(EPICS_BASE)/../PCAS ../../pcas))
+ifneq ($(wildcard $(EPICS_BASE)/include/casdef.h),)
+	# (avoid tab-indented assignments; tabs are reserved for recipes)
+  PCAS_INC_DIR = $(EPICS_BASE)/include
+  PCAS_LIB_DIR = $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)
+else ifneq ($(wildcard $(PCAS_BASE)/include/casdef.h),)
+  PCAS_INC_DIR = $(PCAS_BASE)/include
+  PCAS_LIB_DIR = $(PCAS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)
+else
+  PCAS_INC_DIR =
+  PCAS_LIB_DIR =
+  $(warning sddspcas disabled: casdef.h not found. Install/build the EPICS 'pcas' module and place it next to epics-base (../pcas), or set up EPICS Base with PCAS headers.)
+endif
+
+ifneq ($(PCAS_INC_DIR),)
+  PROD += sddspcas
+  sddspcas_SRC = sddspcas.cc sddspcasServer.cc sddspcasPV.cc sddspcasChannel.cc sddspcasScalarPV.cc sddspcasVectorPV.cc sddspcasAsyncPV.cc
+endif
+
 sddssynchlog_SRC = sddssynchlog.c SDDSepics.c
 sddsmonitor_SRC = sddsmonitor.c SDDSepics.c
 sddsstatmon_SRC = sddsstatmon.c SDDSepics.c
@@ -90,10 +112,18 @@ endif
 CFLAGS += -I$(EPICS_BASE)/include  -I$(SDDS_REPO)/include -DUSE_RUNCONTROL -I../runcontrol -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\" -DACCESS_SECURITY -D_NO_PROTO
 CCFLAGS += -I$(EPICS_BASE)/include -I$(SDDS_REPO)/include -DUSE_RUNCONTROL -I../runcontrol -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\" -DACCESS_SECURITY -D_NO_PROTO
 
+ifneq ($(PCAS_INC_DIR),)
+	CFLAGS += -I$(PCAS_INC_DIR)
+	CCFLAGS += -I$(PCAS_INC_DIR)
+endif
+
 ifeq ($(OS), Linux)
   CFLAGS += -I$(EPICS_BASE)/include/compiler/gcc -I$(EPICS_BASE)/include/os/$(OS) -DUSE_LOGDAEMON -I../logDaemon
   CCFLAGS += -fpermissive -I$(EPICS_BASE)/include/compiler/gcc -I$(EPICS_BASE)/include/os/$(OS) -DUSE_LOGDAEMON -I../logDaemon
-  LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH) -fopenmp $(LDFLAGS)
+	LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH) -fopenmp $(LDFLAGS)
+	ifneq ($(PCAS_LIB_DIR),)
+		LDFLAGS := -L$(PCAS_LIB_DIR) $(LDFLAGS)
+	endif
   PROD_SYS_LIBS := -lrunControl -lLogD $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvaClient.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libnt.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccessCA.a \
@@ -108,7 +138,10 @@ endif
 ifeq ($(OS), Darwin)
   CFLAGS += -I$(EPICS_BASE)/include/compiler/clang -I$(EPICS_BASE)/include/os/$(OS) -Wno-overloaded-virtual -Wno-deprecated-builtins -DUSE_LOGDAEMON -I../logDaemon
   CCFLAGS += -fpermissive -Wvla-cxx-extension -I$(EPICS_BASE)/include/compiler/clang -I$(EPICS_BASE)/include/os/$(OS) -Wno-overloaded-virtual -Wno-deprecated-builtins -DUSE_LOGDAEMON -I../logDaemon
-  LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH) $(LDFLAGS)
+	LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH) $(LDFLAGS)
+	ifneq ($(PCAS_LIB_DIR),)
+		LDFLAGS := -L$(PCAS_LIB_DIR) $(LDFLAGS)
+	endif
   PROD_SYS_LIBS := -lrunControl -lLogD $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvaClient.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libnt.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccessCA.a \
@@ -199,6 +232,14 @@ $(OBJ_DIR)/sddsfeedforward$(EXEEXT): $(sddsfeedforward_OBJS) $(PROD_DEPS)
 
 $(OBJ_DIR)/sdds2dfeedforward$(EXEEXT): $(sdds2dfeedforward_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sdds2dfeedforward_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
+	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
+
+$(OBJ_DIR)/sddspcas$(EXEEXT): $(sddspcas_OBJS) $(PROD_DEPS)
+	$(LINKEXE) $(OUTPUTEXE) $(sddspcas_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) \
+	  $(if $(PCAS_LIB_DIR),$(PCAS_LIB_DIR)/libcas.a $(PCAS_LIB_DIR)/libgdd.a,) \
+	  $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi

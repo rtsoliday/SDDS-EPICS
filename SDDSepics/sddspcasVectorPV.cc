@@ -130,7 +130,7 @@ void exVectorPV::scan() {
       if (pCF) {
         return;
       } else {
-        sprintf(newValue, "");
+        newValue[0] = '\0';
       }
       *(pF++) = newValue;
     }

@@ -37,7 +37,6 @@ exServer::exServer(const char *const pvPrefix,
   uint32_t i;
   exPV *pPV;
   pvInfo *pPVI;
-  pvInfo *pPVAfter;
   char pvAlias[256];
   const char *const pNameFmtStr = "%.100s%.40s";
   const char *const pAliasFmtStr = "%.100s%.40s%u";
@@ -113,8 +112,6 @@ exServer::exServer(const char *const pvPrefix,
     }
   }
 
-  pPVAfter = &exServer::pvList[pvListNElem];
-
   exPV::initFT();
 
   if (asyncScan) {
@@ -176,14 +173,23 @@ exServer::exServer(const char *const pvPrefix,
 //
 exServer::~exServer() {
   pvInfo *pPVI;
-  pvInfo *pPVAfter =
-    &exServer::pvList[NELEMENTS(exServer::pvList)];
+  pvInfo *pPVAfter;
+  if (exServer::pvList) {
+    pPVAfter = &exServer::pvList[exServer::pvListNElem];
+  } else {
+    pPVAfter = NULL;
+  }
 
   //
   // delete all pre-created PVs (eliminate bounds-checker warnings)
   //
-  for (pPVI = exServer::pvList; pPVI < pPVAfter; pPVI++) {
-    pPVI->deletePV();
+  if (exServer::pvList) {
+    for (pPVI = exServer::pvList; pPVI < pPVAfter; pPVI++) {
+      pPVI->deletePV();
+    }
+    delete[] exServer::pvList;
+    exServer::pvList = NULL;
+    exServer::pvListNElem = 0;
   }
 
   this->stringResTbl.traverse(&pvEntry::destroy);
@@ -465,7 +471,8 @@ epicsTimerNotify::expireStatus exAsyncCreateIO::expire(const epicsTime & /*curre
 void exServer::ReadPVInputFile() {
   SDDS_DATASET SDDS_input;
   int hoprFound = 0, loprFound = 0, unitsFound = 0, elementCountFound = 0, typeFound = 0;
-  int i, j;
+  int i;
+  uint32_t j;
   uint32_t rows;
   this->ControlName = NULL;
   this->ReadbackUnits = NULL;

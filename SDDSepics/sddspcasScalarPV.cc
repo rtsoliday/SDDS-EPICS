@@ -83,7 +83,7 @@ void exScalarPV::scan() {
     if (this->pValue.valid()) {
       return;
     } else {
-      sprintf(newValue, "");
+      newValue[0] = '\0';
     }
     *pDD = newValue;
   } else if (this->info.getType() == aitEnumUint8) {

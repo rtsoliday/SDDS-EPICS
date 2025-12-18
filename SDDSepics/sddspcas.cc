@@ -95,9 +95,7 @@ char *USAGE2 = (char *)"-masterPVFile   SDDS file containing all the IOC process
 -runControlDescription\n\
                 Specifies a runControl PV description record.\n\n\
 SDDS version of program by Robert Soliday\n\
-Link date: "__DATE__
-                       " "__TIME__
-                       ", SVN revision: " SVN_VERSION ", " EPICS_VERSION_STRING "\n";
+Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VERSION_STRING "\n";
 
 #ifndef USE_RUNCONTROL
 char *USAGE_WARNING = (char *)"** note ** Program is not compiled with run control.\n";
