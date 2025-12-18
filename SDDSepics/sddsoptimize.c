@@ -232,6 +232,7 @@
 void interrupt_handler(int sig);
 void rc_interrupt_handler();
 void abortSimplex(int sig);
+void executeSignalScript();
 
 #ifdef _WIN32
 #  include <windows.h>
@@ -263,14 +264,16 @@ void abortSimplex(int sig);
 #define SET_DRYRUN 19
 #define SET_EXTRALOGFILE 20
 #define SET_CONDITIONING 21
-#define N_OPTIONS 22
+#define SET_SIGNALSCRIPT 22
+#define N_OPTIONS 23
 char *option[N_OPTIONS] = {
   "measFile", "measScript", "varfile", "knobFiles", "simplex", "logfile", "verbose", "tolerance",
   "maximize", "1dscan", "target", "testValues", "runControlPV", "runControlDescription", "varScript",
-  "restartFile", "ezcatiming", "pendiotime", "rcds", "dryRun", "extraLogFile", "conditioning"};
+  "restartFile", "ezcatiming", "pendiotime", "rcds", "dryRun", "extraLogFile", "conditioning", "signalScript"};
 
 static char *USAGE1 = "sddsoptimize [-measFile=<filename>|-measScript=<script>[,style={oag|python}]] \n\
        [-varScript=<scriptname>[,style={oag|python}]] [-restartFile=<filename>] [-pendIOtime=<seconds>] [-conditioning=<script>] \n\
+       [-signalScript=<script>] \n\
        -varFile=<filename> -knobFiles=<filename1> , <filename2>,... \n\
        [-simplex=[restarts=<nRestarts>][,cycles=<nCycles>,] \n\
        [evaluations=<nEvals>,][no1dscans][,divisions=<int>][,randomSigns]] \n\
@@ -335,6 +338,10 @@ static char *USAGE3 = "-1dscan     Give parameters of one dimensional scan optim
 -extraLogFile provide PVs for extra logging, must have ControlName column.\n\
 -maximize   If maximize option is given, sddsoptimize maximize measurement by varying control\n\
             PVs and/or knobs. Otherwise, it minimize the measurement.\n\
+-signalScript\n\
+            Specifies a script to execute when a signal is caught. This script will be\n\
+            run when either abortSimplex() or interrupt_handler() is called due to\n\
+            signals like SIGINT, SIGTERM, SIGILL, SIGABRT, SIGFPE, SIGSEGV, or SIGHUP.\n\
 runControlPV  specifies the runControl PV record.\n\
 runControlDescription\n\
             specifies a string parameter whose value is a runControl PV description \n\
@@ -415,7 +422,7 @@ typedef struct
   double pendIOTime, controlTol, *extra_pvvalue;
   short maximize;
   int32_t nEvalMax, extra_pvs;
-  char *varScript, *measScript;
+  char *varScript, *measScript, *signalScript;
   short measScriptStyle; /* 0=none, 1=oag, 2=python */
   short varScriptStyle;  /* 0=none, 1=oag, 2=python */
   /*test parameters*/
@@ -576,6 +583,11 @@ int main(int argc, char **argv) {
 	if (s_arg[i_arg].n_items != 2)
           bomb("invalid -conditioning syntax", NULL);
         SDDS_CopyString(&param->conditioningCommand, s_arg[i_arg].list[1]);
+        break;
+      case SET_SIGNALSCRIPT:
+        if (s_arg[i_arg].n_items != 2)
+          bomb("invalid -signalScript syntax", NULL);
+        SDDS_CopyString(&param->signalScript, s_arg[i_arg].list[1]);
         break;
       case SET_INPUTMEAS:
         if (s_arg[i_arg].n_items > 2)
@@ -2831,11 +2843,36 @@ int runControlPingWhileSleep(double sleepTime) {
 }
 #endif
 
+void executeSignalScript() {
+  FILE *fp;
+  int result;
+  
+  if (param && param->signalScript && strlen(param->signalScript) > 0) {
+    if (param->verbose) {
+      fprintf(stdout, "Executing signal script: %s\n", param->signalScript);
+      fflush(stdout);
+    }
+    
+    fp = popen(param->signalScript, "r");
+    if (fp == NULL) {
+      fprintf(stderr, "Warning: Failed to execute signal script: %s\n", param->signalScript);
+      return;
+    }
+    
+    result = pclose(fp);
+    if (result != 0 && param->verbose) {
+      fprintf(stderr, "Warning: Signal script exited with code %d\n", result);
+    }
+  }
+}
+
 void interrupt_handler(int sig) {
+  executeSignalScript();
   exit(1);
 }
 
 void abortSimplex(int sig) {
+  executeSignalScript();
   if (!rcds)
     simplexMinAbort(1);
   else
@@ -2923,7 +2960,7 @@ void InitializeParam(COMMON_PARAM *param) {
   param->logFile = NULL;
   param->logData = NULL;
   param->nEvalMax = 100;
-  param->varScript = param->measScript = NULL;
+  param->varScript = param->measScript = param->signalScript = NULL;
   param->measScriptStyle = 0;
   param->varScriptStyle = 0;
   param->conditioningCommand = NULL;
