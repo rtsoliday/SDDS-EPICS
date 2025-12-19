@@ -26,7 +26,7 @@
  *               [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
  *               [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
  *               [-versus=name=<columnName>[,unitsValue=<string>|unitsPV=<string>][,deltaValue=<number>|deltaPV=<string>][,offsetValue=<integer>|offsetPV=<string>]]
- *               [-rms] [-bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV]]
+ *               [-rms] [-bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV][,minMaxPVName]]
  * ```
  *
  * @section Options
@@ -188,7 +188,7 @@ static char *USAGE1 = (char *)"sddswmonitor [<inputfile> | -PVnames=<name>[,<nam
     [-xParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>] \n\
     [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>] \n\
     [-versus=name=<columnName>[,unitsValue=<string>|unitsPV=<string>][,deltaValue=<number>|deltaPV=<string>][,offsetValue=<integer>|offsetPV=<string>]] \n\
-    [-rms] [-bandwidthLimitedRMS=<MinHZ>,<MaxHZ>[,scaleByOneOverOmegaSquared][,noPV]]\n\n";
+  [-rms] [-bandwidthLimitedRMS=<MinHZ>,<MaxHZ>[,scaleByOneOverOmegaSquared][,noPV][,minMaxPVName]]\n\n";
 static char *USAGE2 = (char *)"Writes values of process variables to a binary SDDS file.\n\
 <inputfile>        SDDS input file containing the columns \"WaveformPV\" and\n\
                    \"WaveformName\", plus a parameter \"WaveformLength\".  A \"DataType\"\n\
@@ -342,13 +342,14 @@ int main(int argc, char **argv) {
   long indeptOffset = 0;
 
   short rms = 0;
-  char buffer[50];
+  char buffer[256];
   double *fftIndepVariable = NULL, *fftDepenQuantity = NULL;
 
   short bandwidthLimitedRMSCount = 0;
   double bandwidthLimitedRMS_MIN[10], bandwidthLimitedRMS_MAX[10], bandwidthLimitedRMSResult;
   short bandwidthLimitedRMS_Omega[10];
   short bandwidthLimitedRMS_noPV[10];
+  short bandwidthLimitedRMS_minMaxPVName[10];
   chid *bandwidthLimitedRMS_CHID = NULL;
   SDDS_RegisterProgramName(argv[0]);
 
@@ -626,7 +627,7 @@ int main(int argc, char **argv) {
         if (bandwidthLimitedRMSCount == 10) {
           bomb((char *)"Limited to 10 -bandwidthLimitedRMS options", NULL);
         }
-        if ((s_arg[i_arg].n_items != 3) && (s_arg[i_arg].n_items != 4) && (s_arg[i_arg].n_items != 5))
+        if ((s_arg[i_arg].n_items < 3) || (s_arg[i_arg].n_items > 6))
           bomb((char *)"no value or invalid value given for option -bandwidthLimitedRMS", NULL);
         if (!(get_double(&(bandwidthLimitedRMS_MIN[bandwidthLimitedRMSCount]), s_arg[i_arg].list[1])))
           bomb((char *)"no value or invalid value given for option -bandwidthLimitedRMS", NULL);
@@ -636,19 +637,18 @@ int main(int argc, char **argv) {
           bomb((char *)"no value or invalid value given for option -bandwidthLimitedRMS", NULL);
         bandwidthLimitedRMS_Omega[bandwidthLimitedRMSCount] = 0;
         bandwidthLimitedRMS_noPV[bandwidthLimitedRMSCount] = 0;
+        bandwidthLimitedRMS_minMaxPVName[bandwidthLimitedRMSCount] = 0;
 
-        if (s_arg[i_arg].n_items >= 4) {
-          if (strncasecmp(s_arg[i_arg].list[3], "scaleByOneOverOmegaSquared", strlen(s_arg[i_arg].list[3])) == 0) {
+        for (long qualIndex = 3; qualIndex < s_arg[i_arg].n_items; qualIndex++) {
+          if (strncasecmp(s_arg[i_arg].list[qualIndex], "scaleByOneOverOmegaSquared", strlen(s_arg[i_arg].list[qualIndex])) == 0) {
             bandwidthLimitedRMS_Omega[bandwidthLimitedRMSCount] = 1;
-          } else if (strncasecmp(s_arg[i_arg].list[3], "noPV", strlen(s_arg[i_arg].list[3])) == 0) {
+          } else if (strncasecmp(s_arg[i_arg].list[qualIndex], "noPV", strlen(s_arg[i_arg].list[qualIndex])) == 0) {
             bandwidthLimitedRMS_noPV[bandwidthLimitedRMSCount] = 1;
-          }
-        }
-        if (s_arg[i_arg].n_items == 5) {
-          if (strncasecmp(s_arg[i_arg].list[4], "scaleByOneOverOmegaSquared", strlen(s_arg[i_arg].list[4])) == 0) {
-            bandwidthLimitedRMS_Omega[bandwidthLimitedRMSCount] = 1;
-          } else if (strncasecmp(s_arg[i_arg].list[4], "noPV", strlen(s_arg[i_arg].list[4])) == 0) {
-            bandwidthLimitedRMS_noPV[bandwidthLimitedRMSCount] = 1;
+          } else if (strncasecmp(s_arg[i_arg].list[qualIndex], "minMaxPVName", strlen(s_arg[i_arg].list[qualIndex])) == 0) {
+            bandwidthLimitedRMS_minMaxPVName[bandwidthLimitedRMSCount] = 1;
+          } else {
+            if (!noWarnings)
+              fprintf(stderr, "warning: unknown qualifier '%s' for -bandwidthLimitedRMS (ignored)\n", s_arg[i_arg].list[qualIndex]);
           }
         }
         bandwidthLimitedRMSCount++;
@@ -791,7 +791,11 @@ int main(int argc, char **argv) {
     for (i = 0; i < readbacks; i++) {
       for (j = 0; j < bandwidthLimitedRMSCount; j++) {
         if (strlen(rmsPVPrefix[i]) > 0) {
-          snprintf(buffer, sizeof(buffer), "%s:%ldHzBW", rmsPVPrefix[i], (long)(bandwidthLimitedRMS_MAX[j]));
+          if (bandwidthLimitedRMS_minMaxPVName[j]) {
+            snprintf(buffer, sizeof(buffer), "%s:%ld-%ldHzBW", rmsPVPrefix[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+          } else {
+            snprintf(buffer, sizeof(buffer), "%s:%ldHzBW", rmsPVPrefix[i], (long)(bandwidthLimitedRMS_MAX[j]));
+          }
           if (bandwidthLimitedRMS_noPV[j] == 0) {
             if (ca_search(buffer, &(bandwidthLimitedRMS_CHID[n])) != ECA_NORMAL) {
               fprintf(stderr, "error: problem doing search for %s\n", buffer);

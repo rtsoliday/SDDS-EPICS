@@ -57,7 +57,7 @@ usage: sddswmonitor {<inputfile> | -PVnames=<name>[,<name>]} <outputfile>
     [-yParameter=dimension=<value>[,name=<name>][,minimum=<value>][,maximum=<value>][,interval=<value>]]
     [-versus=name=<columnName>[,unitsValue=<string>|unitsPV=<string>]
       [,deltaValue=<number>|deltaPV=<string>][,offsetValue=<integer>|offsetPV=<string>]]
-    [-rms] [-bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV]]
+        [-rms] [-bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV][,minMaxPVName]]
 Writes values of waveform process variables to a binary SDDS file.
 \end{verbatim}
 \item \textbf{files:}
@@ -197,9 +197,12 @@ Many additional parameters which don't change values throughout the file are def
   \item {\tt -versus=name=<columnName>[,unitsValue=<string>|unitsPV=<string>][,deltaValue=<number>|deltaPV=<string>][,offsetValue=<integer>|offsetPV=<string>]} ---
           Define the physical quantity represented by the waveform index.
   \item {\tt -rms} --- Create RMS parameters for each waveform.
-  \item {\tt -bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV]} ---
+  \item {\tt -bandwidthLimitedRMS=<minHz>,<maxHz>[,scaleByOneOverOmegaSquared][,noPV][,minMaxPVName]} ---
           Compute RMS values within a frequency band. With \verb+noPV+, the
-          waveform is not stored for this calculation.
+          waveform is not stored for this calculation. With \verb+minMaxPVName+,
+          any PVs created/connected via the optional \verb+rmsPVPrefix+ input-file
+          column use the name pattern \verb+<rmsPVPrefix>:<min>-<max>HzBW+ instead
+          of the default \verb+<rmsPVPrefix>:<max>HzBW+.
 \end{itemize}
 
 \item \textbf{see also:}
