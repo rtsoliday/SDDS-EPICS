@@ -85,11 +85,15 @@ static pid_t gEqPid = -1;
 static std::string gTempDir;
 static std::string gDbPath;
 static std::string gPcasPvFile;
+static std::string gExecutableDir;
 
 static std::string resolveAbsolutePath(const std::string &path);
+static std::string resolveAbsolutePathFromBaseDir(const std::string &path, const std::string &baseDir);
+static std::string getExecutableDir(const char *argv0);
+static std::string findDefaultEpicsBase();
 
 static void printUsage() {
-  std::string defaultBase = resolveAbsolutePath("../epics-base");
+  std::string defaultBase = findDefaultEpicsBase();
   fprintf(stderr, "%s", USAGE);
   fprintf(stderr, "Default -epicsBase resolves to: %s\n", defaultBase.c_str());
 }
@@ -103,6 +107,195 @@ static std::string resolveAbsolutePath(const std::string &path) {
     return std::string(resolved);
   }
   return path;
+}
+
+static bool isAbsolutePath(const std::string &path) {
+  return !path.empty() && path[0] == '/';
+}
+
+static std::string dirnameOfPath(const std::string &path) {
+  size_t slash = path.find_last_of('/');
+  if (slash == std::string::npos) {
+    return std::string();
+  }
+  if (slash == 0) {
+    return std::string("/");
+  }
+  return path.substr(0, slash);
+}
+
+static std::string getCwdPath() {
+  char buf[PATH_MAX];
+  if (getcwd(buf, sizeof(buf))) {
+    return std::string(buf);
+  }
+  return std::string();
+}
+
+static std::string lexicallyNormalizeAbsolutePath(const std::string &path) {
+  if (!isAbsolutePath(path)) {
+    return path;
+  }
+
+  std::vector<std::string> parts;
+  size_t i = 0;
+  while (i < path.size()) {
+    while (i < path.size() && path[i] == '/') {
+      i++;
+    }
+    if (i >= path.size()) {
+      break;
+    }
+    size_t j = i;
+    while (j < path.size() && path[j] != '/') {
+      j++;
+    }
+    std::string token = path.substr(i, j - i);
+    if (token == "." || token.empty()) {
+      // skip
+    } else if (token == "..") {
+      if (!parts.empty()) {
+        parts.pop_back();
+      }
+    } else {
+      parts.push_back(token);
+    }
+    i = j;
+  }
+
+  std::string out = "/";
+  for (size_t k = 0; k < parts.size(); k++) {
+    out += parts[k];
+    if (k + 1 < parts.size()) {
+      out += "/";
+    }
+  }
+  return out;
+}
+
+static std::string resolveAbsolutePathFromBaseDir(const std::string &path, const std::string &baseDir) {
+  if (path.empty()) {
+    return path;
+  }
+
+  std::string effectiveBase = baseDir;
+  if (effectiveBase.empty()) {
+    effectiveBase = getCwdPath();
+  }
+  if (!isAbsolutePath(effectiveBase)) {
+    std::string cwd = getCwdPath();
+    if (!cwd.empty()) {
+      effectiveBase = cwd + "/" + effectiveBase;
+    }
+  }
+
+  std::string candidate;
+  if (isAbsolutePath(path)) {
+    candidate = path;
+  } else {
+    if (!effectiveBase.empty() && effectiveBase[effectiveBase.size() - 1] == '/') {
+      candidate = effectiveBase + path;
+    } else {
+      candidate = effectiveBase + "/" + path;
+    }
+  }
+
+  candidate = lexicallyNormalizeAbsolutePath(candidate);
+
+  char resolved[PATH_MAX];
+  if (realpath(candidate.c_str(), resolved)) {
+    return std::string(resolved);
+  }
+  return candidate;
+}
+
+static bool isDirectory(const std::string &path) {
+  struct stat st;
+  if (stat(path.c_str(), &st) != 0) {
+    return false;
+  }
+  return S_ISDIR(st.st_mode);
+}
+
+static bool isExecutableFile(const std::string &path) {
+  return access(path.c_str(), X_OK) == 0;
+}
+
+static std::string findDefaultEpicsBase() {
+  std::vector<std::string> candidates;
+
+  const char *env = getenv("EPICS_BASE");
+  if (env && env[0]) {
+    candidates.push_back(resolveAbsolutePath(std::string(env)));
+  }
+
+  candidates.push_back(std::string("/usr/local/oag/base"));
+
+  /*
+   * Match the Makefile search path as closely as practical.
+   * Prefer EPICS Base checkouts next to the SDDSepics repo, then fall back to $HOME.
+   */
+  std::string binDir = dirnameOfPath(gExecutableDir);
+  std::string sddsEpicsRoot;
+  if (!binDir.empty() && binDir.substr(binDir.find_last_of('/') + 1) == "bin") {
+    sddsEpicsRoot = dirnameOfPath(binDir);
+  }
+  if (!sddsEpicsRoot.empty()) {
+    candidates.push_back(resolveAbsolutePathFromBaseDir("../epics-base", sddsEpicsRoot));
+  }
+
+  const char *home = getenv("HOME");
+  if (home && home[0]) {
+    candidates.push_back(resolveAbsolutePath(std::string(home) + "/epics/base"));
+  }
+
+  /* Original historical default */
+  candidates.push_back(resolveAbsolutePathFromBaseDir("../epics-base", getCwdPath()));
+
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (candidates[i].empty()) {
+      continue;
+    }
+    if (!isDirectory(candidates[i])) {
+      continue;
+    }
+    /* startSoftIoc and getHostArchFromEpicsBase require this script */
+    if (!isExecutableFile(candidates[i] + "/startup/EpicsHostArch")) {
+      continue;
+    }
+    return candidates[i];
+  }
+
+  /* Fall back to a predictable absolute path even if it doesn't exist */
+  if (!sddsEpicsRoot.empty()) {
+    return resolveAbsolutePathFromBaseDir("../epics-base", sddsEpicsRoot);
+  }
+  return resolveAbsolutePathFromBaseDir("../epics-base", getCwdPath());
+}
+
+static std::string getExecutableDir(const char *argv0) {
+  char resolved[PATH_MAX];
+  ssize_t len = readlink("/proc/self/exe", resolved, sizeof(resolved) - 1);
+  if (len > 0) {
+    resolved[len] = '\0';
+    return dirnameOfPath(std::string(resolved));
+  }
+
+  if (argv0 && argv0[0]) {
+    std::string p = std::string(argv0);
+    if (!isAbsolutePath(p) && p.find('/') != std::string::npos) {
+      std::string cwd = getCwdPath();
+      if (!cwd.empty()) {
+        p = cwd + "/" + p;
+      }
+    }
+    std::string d = dirnameOfPath(p);
+    if (!d.empty()) {
+      return d;
+    }
+  }
+
+  return getCwdPath();
 }
 
 static void signal_handler(int /*sig*/) {
@@ -750,12 +943,15 @@ extern "C" int main(int argc, char **argv) {
   std::vector<std::string> inputFiles;
 
   SDDS_RegisterProgramName(argv[0]);
+  gExecutableDir = getExecutableDir(argv[0]);
   SCANNED_ARG *s_arg;
   argc = scanargs(&s_arg, argc, argv);
   if (argc < 2) {
     printUsage();
     exit(1);
   }
+
+  bool epicsBaseProvided = false;
 
   for (int i_arg = 1; i_arg < argc; i_arg++) {
     if (s_arg[i_arg].arg_type == OPTION) {
@@ -804,6 +1000,7 @@ extern "C" int main(int argc, char **argv) {
           SDDS_Bomb((char *)"invalid -epicsBase syntax");
         if (sscanf(s_arg[i_arg].list[1], "%1023s", epicsBaseC) != 1)
           SDDS_Bomb((char *)"invalid -epicsBase syntax or value");
+        epicsBaseProvided = true;
         break;
       case SET_STANDALONE:
         standalone = 1;
@@ -850,8 +1047,14 @@ extern "C" int main(int argc, char **argv) {
     epicsEnvSet("EPICS_CA_MAX_ARRAY_BYTES", arraySize);
   }
 
-  // Default (and user-provided) EPICS base path should be absolute
-  std::string epicsBase = resolveAbsolutePath(std::string(epicsBaseC));
+  // Default EPICS base should be an actual EPICS Base directory.
+  // User-provided -epicsBase remains relative to the current working directory.
+  std::string epicsBase;
+  if (epicsBaseProvided) {
+    epicsBase = resolveAbsolutePath(std::string(epicsBaseC));
+  } else {
+    epicsBase = findDefaultEpicsBase();
+  }
 
   // Set up signal handling
   signal(SIGINT, signal_handler);
