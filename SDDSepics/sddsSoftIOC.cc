@@ -70,25 +70,29 @@ Creates a temporary EPICS soft IOC (EPICS Base) that serves the same PV names\n\
 /types as sddspcas, based on the same SDDS input files. The generated IOC\n\
 DB files are created at runtime and removed on exit.\n";
 
-/*
- * Input file format:
- * Each <inputfile> is an SDDS file describing PVs, with one row per PV.
- *
- * Required columns:
- *   - ControlName   (string): base PV name (pvPrefix is prepended; name is truncated per sddspcas rules).
- *
- * Optional columns:
- *   - Type          (string): one of char/uchar/short/ushort/int/uint/float/double/string/enum (default: double).
- *   - ElementCount  (integer): number of elements for waveform PVs (default: 1).
- *   - ReadbackUnits (string): engineering units (default: single space).
- *   - Hopr, Lopr    (numeric): display range (defaults: very large/small; swapped if Hopr < Lopr).
- *   - EnumStrings   (string): required only when Type=enum; comma-separated list of up to 16 state strings.
- *
- * Constraints:
- *   - PV names must not contain '.' (extensions are not allowed).
- *   - Type=string must have ElementCount=1 (scalar; emitted as a stringout record).
- *   - Type=enum must have ElementCount=1 and EnumStrings must not contain quotes; empty states are not allowed.
- */
+static char *INPUT_FILE_HELP = (char *)"\
+\n\
+Input file format:\n\
+  Each <inputfile> is an SDDS file describing PVs, with one row per PV.\n\
+\n\
+  Required columns:\n\
+    - ControlName   (string): base PV name.\n\
+      The served PV name is pvPrefix + ControlName, truncated like sddspcas.\n\
+\n\
+  Optional columns:\n\
+    - Type          (string): char/uchar/short/ushort/int/uint/float/double/string/enum\n\
+      (default: double).\n\
+    - ElementCount  (integer): number of elements for waveform PVs (default: 1).\n\
+    - ReadbackUnits (string): engineering units (default: single space).\n\
+    - Hopr, Lopr    (numeric): display range (defaults: very large/small; swapped if Hopr < Lopr).\n\
+    - EnumStrings   (string): required only when Type=enum; comma-separated list\n\
+      of up to 16 state strings.\n\
+\n\
+  Constraints:\n\
+    - PV names must not contain '.' (extensions are not allowed).\n\
+    - Type=string must have ElementCount=1 (scalar; emitted as a stringout record).\n\
+    - Type=enum must have ElementCount=1 and EnumStrings must not contain quotes; empty states are not allowed.\n";
+
 
 struct PVDef {
   std::string controlName;
@@ -168,6 +172,7 @@ static void parseEnumStatesCsv(const std::string &pvName, const std::string &csv
 static void printUsage() {
   std::string defaultBase = findDefaultEpicsBase();
   fprintf(stderr, "%s", USAGE);
+  fprintf(stderr, "%s", INPUT_FILE_HELP);
   fprintf(stderr, "Default -epicsBase resolves to: %s\n", defaultBase.c_str());
 }
 
