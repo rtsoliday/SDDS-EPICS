@@ -26,6 +26,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "cadef.h"
 #include "envDefs.h"
@@ -69,6 +70,26 @@ Creates a temporary EPICS soft IOC (EPICS Base) that serves the same PV names\n\
 /types as sddspcas, based on the same SDDS input files. The generated IOC\n\
 DB files are created at runtime and removed on exit.\n";
 
+/*
+ * Input file format:
+ * Each <inputfile> is an SDDS file describing PVs, with one row per PV.
+ *
+ * Required columns:
+ *   - ControlName   (string): base PV name (pvPrefix is prepended; name is truncated per sddspcas rules).
+ *
+ * Optional columns:
+ *   - Type          (string): one of char/uchar/short/ushort/int/uint/float/double/string/enum (default: double).
+ *   - ElementCount  (integer): number of elements for waveform PVs (default: 1).
+ *   - ReadbackUnits (string): engineering units (default: single space).
+ *   - Hopr, Lopr    (numeric): display range (defaults: very large/small; swapped if Hopr < Lopr).
+ *   - EnumStrings   (string): required only when Type=enum; comma-separated list of up to 16 state strings.
+ *
+ * Constraints:
+ *   - PV names must not contain '.' (extensions are not allowed).
+ *   - Type=string must have ElementCount=1 (scalar; emitted as a stringout record).
+ *   - Type=enum must have ElementCount=1 and EnumStrings must not contain quotes; empty states are not allowed.
+ */
+
 struct PVDef {
   std::string controlName;
   std::string pvName;  // includes pvPrefix + truncation rules
@@ -77,6 +98,7 @@ struct PVDef {
   double hopr;
   double lopr;
   uint32_t elementCount;
+  std::vector<std::string> enumStates; /* only used when type=="enum" */
 };
 
 static volatile sig_atomic_t gTerminate = 0;
@@ -91,6 +113,57 @@ static std::string resolveAbsolutePath(const std::string &path);
 static std::string resolveAbsolutePathFromBaseDir(const std::string &path, const std::string &baseDir);
 static std::string getExecutableDir(const char *argv0);
 static std::string findDefaultEpicsBase();
+
+static std::string trimWhitespace(const std::string &in) {
+  size_t first = 0;
+  while (first < in.size() && (in[first] == ' ' || in[first] == '\t' || in[first] == '\r' || in[first] == '\n')) {
+    first++;
+  }
+  size_t last = in.size();
+  while (last > first && (in[last - 1] == ' ' || in[last - 1] == '\t' || in[last - 1] == '\r' || in[last - 1] == '\n')) {
+    last--;
+  }
+  return in.substr(first, last - first);
+}
+
+static void parseEnumStatesCsv(const std::string &pvName, const std::string &csv, std::vector<std::string> &outStates) {
+  outStates.clear();
+
+  /* Do not allow quoting/escaping. */
+  if (csv.find('"') != std::string::npos || csv.find('\'') != std::string::npos) {
+    fprintf(stderr, "error: EnumStrings for %s must not contain quotes\n", pvName.c_str());
+    exit(1);
+  }
+
+  size_t start = 0;
+  while (start <= csv.size()) {
+    size_t comma = csv.find(',', start);
+    std::string token;
+    if (comma == std::string::npos) {
+      token = csv.substr(start);
+      start = csv.size() + 1;
+    } else {
+      token = csv.substr(start, comma - start);
+      start = comma + 1;
+    }
+
+    token = trimWhitespace(token);
+    if (token.empty()) {
+      fprintf(stderr, "error: EnumStrings for %s contains an empty state (consecutive commas or leading/trailing comma)\n", pvName.c_str());
+      exit(1);
+    }
+    outStates.push_back(token);
+  }
+
+  if (outStates.size() < 1) {
+    fprintf(stderr, "error: EnumStrings for %s must specify at least one state\n", pvName.c_str());
+    exit(1);
+  }
+  if (outStates.size() > 16) {
+    fprintf(stderr, "error: EnumStrings for %s specifies %lu states; EPICS mbbo supports up to 16\n", pvName.c_str(), (unsigned long)outStates.size());
+    exit(1);
+  }
+}
 
 static void printUsage() {
   std::string defaultBase = findDefaultEpicsBase();
@@ -374,6 +447,9 @@ static const char *ftvlFromType(const std::string &type) {
     return "DOUBLE";
   } else if (type == "string") {
     return "STRING";
+  } else if (type == "enum") {
+    /* Not used for enum PVs (they become mbbo records), but keep a stable default. */
+    return "SHORT";
   }
   // sddspcas default
   return "DOUBLE";
@@ -383,7 +459,7 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
   SDDS_DATASET SDDS_input;
 
   for (size_t i = 0; i < inputFiles.size(); i++) {
-    int hoprFound = 0, loprFound = 0, unitsFound = 0, elementCountFound = 0, typeFound = 0;
+    int hoprFound = 0, loprFound = 0, unitsFound = 0, elementCountFound = 0, typeFound = 0, enumStringsFound = 0;
     uint32_t rows;
 
     if (!SDDS_InitializeInput(&SDDS_input, (char *)inputFiles[i].c_str())) {
@@ -411,6 +487,9 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
     if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "Type") >= 0) {
       typeFound = 1;
     }
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "EnumStrings") >= 0) {
+      enumStringsFound = 1;
+    }
 
     if (SDDS_ReadPage(&SDDS_input) != 1) {
       fprintf(stderr, "error: Unable to read SDDS file %s\n", inputFiles[i].c_str());
@@ -435,6 +514,7 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
     char **ru = NULL;
     uint32_t *ec = NULL;
     char **ty = NULL;
+    char **es = NULL;
 
     if (hoprFound) {
       ho = SDDS_GetColumnInDoubles(&SDDS_input, (char *)"Hopr");
@@ -476,6 +556,14 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
         exit(1);
       }
     }
+    if (enumStringsFound) {
+      es = (char **)SDDS_GetColumn(&SDDS_input, (char *)"EnumStrings");
+      if (!es) {
+        fprintf(stderr, "error: Unable to read EnumStrings column from %s\n", inputFiles[i].c_str());
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+        exit(1);
+      }
+    }
 
     for (uint32_t j = 0; j < rows; j++) {
       PVDef pv;
@@ -486,6 +574,18 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
       pv.units = unitsFound ? (ru[j] ? ru[j] : " ") : " ";
       pv.elementCount = elementCountFound ? ec[j] : 1u;
       pv.type = typeFound ? (ty[j] ? ty[j] : "double") : "double";
+
+      if (pv.type == "enum") {
+        if (!enumStringsFound || !es || !es[j]) {
+          fprintf(stderr, "error: PV %s has Type=enum but EnumStrings is missing or NULL\n", pv.pvName.c_str());
+          exit(1);
+        }
+        parseEnumStatesCsv(pv.pvName, es[j], pv.enumStates);
+        if (pv.elementCount != 1u) {
+          fprintf(stderr, "error: PV %s has Type=enum but ElementCount!=1 (ElementCount=%u)\n", pv.pvName.c_str(), pv.elementCount);
+          exit(1);
+        }
+      }
 
       if (pv.pvName.find('.') != std::string::npos) {
         fprintf(stderr, "error: PV extensions are not allowed (%s)\n", pv.pvName.c_str());
@@ -515,6 +615,9 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
       if (ty) {
         free(ty[j]);
       }
+      if (es) {
+        free(es[j]);
+      }
     }
     free(cn);
     if (ru) {
@@ -522,6 +625,9 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
     }
     if (ty) {
       free(ty);
+    }
+    if (es) {
+      free(es);
     }
     if (ho) {
       free(ho);
@@ -544,8 +650,76 @@ static void writeDbFile(const std::string &dbPath, const std::vector<PVDef> &pvs
     exit(1);
   }
 
+  static const char *enumStateField[16] = {
+    "ZRST", "ONST", "TWST", "THST", "FRST", "FVST", "SXST", "SVST",
+    "EIST", "NIST", "TEST", "ELST", "TVST", "TTST", "FTST", "FFST"};
+  static const char *enumValueField[16] = {
+    "ZRVL", "ONVL", "TWVL", "THVL", "FRVL", "FVVL", "SXVL", "SVVL",
+    "EIVL", "NIVL", "TEVL", "ELVL", "TVVL", "TTVL", "FTVL", "FFVL"};
+
+  auto nobtForEnumCount = [](size_t count) -> unsigned int {
+    if (count <= 1) {
+      return 1;
+    }
+    unsigned int bits = 0;
+    unsigned int maxValue = (unsigned int)(count - 1);
+    while (maxValue) {
+      bits++;
+      maxValue >>= 1;
+    }
+    if (bits < 1) {
+      bits = 1;
+    }
+    return bits;
+  };
+
+  auto escapeDbString = [](const std::string &in) -> std::string {
+    std::string out;
+    out.reserve(in.size());
+    for (size_t i = 0; i < in.size(); i++) {
+      char c = in[i];
+      if (c == '\\' || c == '"') {
+        out.push_back('\\');
+      }
+      out.push_back(c);
+    }
+    return out;
+  };
+
   for (size_t i = 0; i < pvs.size(); i++) {
     const PVDef &pv = pvs[i];
+
+    if (pv.type == "enum") {
+      if (pv.enumStates.empty()) {
+        fprintf(stderr, "error: internal: PV %s has Type=enum but no parsed enum states\n", pv.pvName.c_str());
+        exit(1);
+      }
+      if (pv.enumStates.size() > 16) {
+        fprintf(stderr, "error: internal: PV %s has %lu enum states; max 16\n", pv.pvName.c_str(), (unsigned long)pv.enumStates.size());
+        exit(1);
+      }
+
+      out << "record(mbbo, \"" << pv.pvName << "\") {\n";
+      out << "  field(NOBT, \"" << nobtForEnumCount(pv.enumStates.size()) << "\")\n";
+      for (size_t s = 0; s < pv.enumStates.size(); s++) {
+        out << "  field(" << enumStateField[s] << ", \"" << escapeDbString(pv.enumStates[s]) << "\")\n";
+        out << "  field(" << enumValueField[s] << ", \"" << s << "\")\n";
+      }
+      out << "}\n\n";
+      continue;
+    }
+
+    if (pv.type == "string") {
+      /*
+       * EPICS waveform records do not reliably support FTVL=STRING across EPICS Base versions.
+       * Since sddspcas only supports scalar string PVs, emit a scalar string record.
+       */
+      out << "record(stringout, \"" << pv.pvName << "\") {\n";
+      out << "  field(VAL, \"\")\n";
+      out << "}\n\n";
+      continue;
+    }
+
     out << "record(waveform, \"" << pv.pvName << "\") {\n";
     out << "  field(FTVL, \"" << ftvlFromType(pv.type) << "\")\n";
     out << "  field(NELM, \"" << pv.elementCount << "\")\n";

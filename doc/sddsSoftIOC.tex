@@ -30,6 +30,14 @@ sddsSoftIOC pvlist.sdds -noise=1
 sddsSoftIOC pvlist.sdds -standalone
 \end{verbatim}
 
+\item \textbf{input file columns:}
+The SDDS input format is the same as for \progref{sddspcas} (at minimum a string column named \verb+ControlName+).
+Optional columns include \verb+Type+, \verb+Hopr+, \verb+Lopr+, \verb+ReadbackUnits+, and \verb+ElementCount+.
+
+In addition, \verb+sddsSoftIOC+ supports enumerated PVs by setting \verb+Type=enum+ and providing a string column
+\verb+EnumStrings+. The \verb+EnumStrings+ value is a comma-separated list of state strings (up to 16).
+Whitespace around each comma-separated token is trimmed. Quotes are not allowed in the list.
+
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsSoftIOC <inputfiles>
