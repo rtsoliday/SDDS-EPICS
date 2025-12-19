@@ -232,7 +232,10 @@ caStatus exPV::getUnits(gdd &units) {
 //
 caStatus exPV::getEnums(gdd &enumsIn) {
   if (this->info.getType() == aitEnumEnum16) {
-    static const uint32_t nStr = 2;
+    const uint32_t nStr = this->info.getEnumStateCount();
+    if (nStr < 1) {
+      return S_cas_success;
+    }
     aitFixedString *str;
     exFixedStringDestructor *pDes;
 
@@ -247,10 +250,11 @@ caStatus exPV::getEnums(gdd &enumsIn) {
       return S_casApp_noMemory;
     }
 
-    strncpy(str[0].fixed_string, "off",
-            sizeof(str[0].fixed_string));
-    strncpy(str[1].fixed_string, "on",
-            sizeof(str[1].fixed_string));
+        for (uint32_t i = 0; i < nStr; i++) {
+          strncpy(str[i].fixed_string, this->info.getEnumState(i),
+            sizeof(str[i].fixed_string));
+          str[i].fixed_string[sizeof(str[i].fixed_string) - 1] = '\0';
+        }
 
     enumsIn.setDimension(1);
     enumsIn.setBound(0, 0, nStr);

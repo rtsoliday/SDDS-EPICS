@@ -15,10 +15,69 @@
 //
 // Example EPICS CA server
 //
+#include <string>
+#include <vector>
 #include <complex>
 #include "sddspcasServer.h"
 #include "mdb.h"
 #include "SDDS.h"
+
+static std::string trimWhitespace(const std::string &in) {
+  size_t first = 0;
+  while (first < in.size() && (in[first] == ' ' || in[first] == '\t' || in[first] == '\r' || in[first] == '\n')) {
+    first++;
+  }
+  size_t last = in.size();
+  while (last > first && (in[last - 1] == ' ' || in[last - 1] == '\t' || in[last - 1] == '\r' || in[last - 1] == '\n')) {
+    last--;
+  }
+  return in.substr(first, last - first);
+}
+
+static void parseEnumStatesCsv(const char *pvName, const char *csv, std::vector<std::string> &outStates) {
+  outStates.clear();
+  if (!csv) {
+    fprintf(stderr, "error: EnumStrings for %s is NULL\n", pvName ? pvName : "(unknown)");
+    exit(1);
+  }
+
+  const std::string csvStr(csv);
+
+  /* Do not allow quoting/escaping. */
+  if (csvStr.find('"') != std::string::npos || csvStr.find('\'') != std::string::npos) {
+    fprintf(stderr, "error: EnumStrings for %s must not contain quotes\n", pvName ? pvName : "(unknown)");
+    exit(1);
+  }
+
+  size_t start = 0;
+  while (start <= csvStr.size()) {
+    size_t comma = csvStr.find(',', start);
+    std::string token;
+    if (comma == std::string::npos) {
+      token = csvStr.substr(start);
+      start = csvStr.size() + 1;
+    } else {
+      token = csvStr.substr(start, comma - start);
+      start = comma + 1;
+    }
+
+    token = trimWhitespace(token);
+    if (token.empty()) {
+      fprintf(stderr, "error: EnumStrings for %s contains an empty state (consecutive commas or leading/trailing comma)\n", pvName ? pvName : "(unknown)");
+      exit(1);
+    }
+    outStates.push_back(token);
+  }
+
+  if (outStates.size() < 1) {
+    fprintf(stderr, "error: EnumStrings for %s must specify at least one state\n", pvName ? pvName : "(unknown)");
+    exit(1);
+  }
+  if (outStates.size() > 16) {
+    fprintf(stderr, "error: EnumStrings for %s specifies %lu states; CA enums support up to 16\n", pvName ? pvName : "(unknown)", (unsigned long)outStates.size());
+    exit(1);
+  }
+}
 
 //
 // static list of pre-created PVs
@@ -79,6 +138,20 @@ exServer::exServer(const char *const pvPrefix,
         pvList[n].setType(aitEnumUint32);
       } else if (strcmp("float", this->Types[n]) == 0) {
         pvList[n].setType(aitEnumFloat32);
+      } else if (strcmp("enum", this->Types[n]) == 0) {
+        if ((this->elementCount) && (this->elementCount[n] > 1)) {
+          fprintf(stderr, "error: Type=enum requires ElementCount=1 for %s\n", this->ControlName[n]);
+          exit(1);
+        }
+        if (!this->EnumStrings || !this->EnumStrings[n] || this->EnumStrings[n][0] == '\0') {
+          fprintf(stderr, "error: PV %s has Type=enum but EnumStrings is missing or empty\n", this->ControlName[n]);
+          exit(1);
+        }
+
+        std::vector<std::string> states;
+        parseEnumStatesCsv(this->ControlName[n], this->EnumStrings[n], states);
+        pvList[n].setEnumStateStrings(states);
+        pvList[n].setType(aitEnumEnum16);
       } else if (strcmp("string", this->Types[n]) == 0) {
         if ((this->elementCount) && (this->elementCount[n] > 1)) {
           fprintf(stderr, "Multiple elements with String PVs are not supported in sddspcas yet\n");
@@ -470,19 +543,21 @@ epicsTimerNotify::expireStatus exAsyncCreateIO::expire(const epicsTime & /*curre
 
 void exServer::ReadPVInputFile() {
   SDDS_DATASET SDDS_input;
-  int hoprFound = 0, loprFound = 0, unitsFound = 0, elementCountFound = 0, typeFound = 0;
+  int hoprFound = 0, loprFound = 0, unitsFound = 0, elementCountFound = 0, typeFound = 0, enumStringsFound = 0;
   int i;
   uint32_t j;
   uint32_t rows;
   this->ControlName = NULL;
   this->ReadbackUnits = NULL;
   this->Types = NULL;
+  this->EnumStrings = NULL;
   this->hopr = NULL;
   this->lopr = NULL;
   this->elementCount = NULL;
   char **cn = NULL;
   char **ru = NULL;
   char **ty = NULL;
+  char **es = NULL;
   double *ho = NULL;
   double *lo = NULL;
   uint32_t *ec = NULL;
@@ -493,6 +568,7 @@ void exServer::ReadPVInputFile() {
     unitsFound = 0;
     elementCountFound = 0;
     typeFound = 0;
+    enumStringsFound = 0;
     if (!SDDS_InitializeInput(&SDDS_input, this->inputfile[i])) {
       fprintf(stderr, "error: Unable to read SDDS input file\n");
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -519,6 +595,10 @@ void exServer::ReadPVInputFile() {
     if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE,
                                 SDDS_STRING, "Type") >= 0) {
       typeFound = 1;
+    }
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE,
+                                SDDS_STRING, "EnumStrings") >= 0) {
+      enumStringsFound = 1;
     }
     if (SDDS_ReadPage(&SDDS_input) != 1) {
       fprintf(stderr, "error: Unable to read SDDS file\n");
@@ -625,6 +705,23 @@ void exServer::ReadPVInputFile() {
       for (j = 0; j < rows; j++) {
         this->Types[pvListNElem - rows + j] = (char *)malloc(7 * sizeof(char));
         sprintf(this->Types[pvListNElem - rows + j], "double");
+      }
+    }
+
+    this->EnumStrings = (char **)trealloc(this->EnumStrings, pvListNElem * sizeof(*this->EnumStrings));
+    if (enumStringsFound) {
+      if (!(es = (char **)SDDS_GetColumn(&SDDS_input, (char *)"EnumStrings"))) {
+        fprintf(stderr, "error: Unable to read SDDS input file\n");
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+        exit(1);
+      }
+      for (j = 0; j < rows; j++) {
+        this->EnumStrings[pvListNElem - rows + j] = es[j];
+      }
+      free(es);
+    } else {
+      for (j = 0; j < rows; j++) {
+        this->EnumStrings[pvListNElem - rows + j] = NULL;
       }
     }
     SDDS_Terminate(&SDDS_input);

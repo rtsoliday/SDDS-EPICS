@@ -69,9 +69,13 @@ by SDDS input files.\n\
                 The ElementCount column is optional. This is used to create\n\
                 waveform PVs with various elements.\n\
                 The Type column is optional. This is used to specify the\n\
-                type of PV to create. The value values are:\n\
-                char, uchar, short, ushort, int, uint, float, double, string.\n\
+                type of PV to create. The valid values are:\n\
+                char, uchar, short, ushort, int, uint, float, double, string, enum.\n\
                 The default is double.\n\
+                The EnumStrings column is optional, except it is required\n\
+                when Type=enum. It is a comma-separated list of state\n\
+                strings (1..16). Quotes are not supported and empty states\n\
+                are not allowed. Type=enum must have ElementCount=1.\n\
                 The Equation column is optional. It will automatically update PV\n\
                 values based on other PV values. An example might look like:\n\
                 ( ca:FirstPV + ca:SecondPV ) / 100.0\n";

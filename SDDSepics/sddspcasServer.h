@@ -35,6 +35,12 @@
 #include <stdio.h>
 
 //
+// C++
+//
+#include <string>
+#include <vector>
+
+//
 // EPICS
 //
 #define epicsAssertAuthor "Jeff Hill johill@lanl.gov"
@@ -117,6 +123,10 @@ public:
   void setIndex(int indexIn) { index = indexIn; }
   void setScanPeriod(double scanPeriodIn) { scanPeriod = scanPeriodIn; }
 
+  void setEnumStateStrings(const std::vector<std::string> &statesIn);
+  unsigned getEnumStateCount() const;
+  const char *getEnumState(unsigned index) const;
+
 private:
   double scanPeriod;
   char *pName;
@@ -126,6 +136,7 @@ private:
   aitEnum type;
   excasIoType ioType;
   unsigned elementCount;
+  std::vector<std::string> enumStateStrings;
   exPV *pPV;
   pvInfo &operator=(const pvInfo &);
   int index;
@@ -326,6 +337,7 @@ public:
   char **ControlName;
   char **ReadbackUnits;
   char **Types;
+  char **EnumStrings;
   double *hopr;
   double *lopr;
   unsigned *elementCount;
@@ -486,6 +498,7 @@ inline pvInfo::pvInfo(void) :
                               scanPeriod(-1.0), pName((char *)""), pUnits((char *)""),
                               hopr(100.0f), lopr(-100.0f), type(aitEnumFloat64),
                               ioType(excasIoSync), elementCount(1u),
+                              enumStateStrings(),
                               pPV(0), index(0) {
 }
 
@@ -497,6 +510,7 @@ inline pvInfo::pvInfo(double scanPeriodIn, char *pNameIn, char *pUnitsIn,
                                           scanPeriod(scanPeriodIn), pName(pNameIn), pUnits(pUnitsIn),
                                           hopr(hoprIn), lopr(loprIn), type(typeIn),
                                           ioType(ioTypeIn), elementCount(countIn),
+                                          enumStateStrings(),
                                           pPV(0), index(0) {
 }
 
@@ -509,7 +523,23 @@ inline pvInfo::pvInfo(const pvInfo &copyIn) :
                                               scanPeriod(copyIn.scanPeriod), pName(copyIn.pName), pUnits(copyIn.pUnits),
                                               hopr(copyIn.hopr), lopr(copyIn.lopr), type(copyIn.type),
                                               ioType(copyIn.ioType), elementCount(copyIn.elementCount),
+                                              enumStateStrings(copyIn.enumStateStrings),
                                               pPV(copyIn.pPV) {
+}
+
+inline void pvInfo::setEnumStateStrings(const std::vector<std::string> &statesIn) {
+  this->enumStateStrings = statesIn;
+}
+
+inline unsigned pvInfo::getEnumStateCount() const {
+  return (unsigned)this->enumStateStrings.size();
+}
+
+inline const char *pvInfo::getEnumState(unsigned indexIn) const {
+  if (indexIn >= this->enumStateStrings.size()) {
+    return "";
+  }
+  return this->enumStateStrings[indexIn].c_str();
 }
 
 inline pvInfo::~pvInfo() {

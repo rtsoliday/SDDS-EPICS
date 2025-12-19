@@ -51,6 +51,8 @@ void exScalarPV::scan() {
 
   if (this->info.getType() == aitEnumString) {
     pDD = new gddScalar(gddAppType_value, aitEnumString);
+  } else if (this->info.getType() == aitEnumEnum16) {
+    pDD = new gddScalar(gddAppType_value, aitEnumEnum16);
   } else if (this->info.getType() == aitEnumUint8) {
     pDD = new gddScalar(gddAppType_value, aitEnumUint8);
   } else if (this->info.getType() == aitEnumInt8) {
@@ -84,6 +86,14 @@ void exScalarPV::scan() {
       return;
     } else {
       newValue[0] = '\0';
+    }
+    *pDD = newValue;
+  } else if (this->info.getType() == aitEnumEnum16) {
+    unsigned short newValue;
+    if (this->pValue.valid()) {
+      return;
+    } else {
+      newValue = 0;
     }
     *pDD = newValue;
   } else if (this->info.getType() == aitEnumUint8) {
@@ -200,6 +210,8 @@ caStatus exScalarPV::updateValue(const gdd &valueIn) {
   if (!pValue.valid()) {
     if (this->info.getType() == aitEnumString) {
       this->pValue = new gddScalar(gddAppType_value, aitEnumString);
+    } else if (this->info.getType() == aitEnumEnum16) {
+      this->pValue = new gddScalar(gddAppType_value, aitEnumEnum16);
     } else if (this->info.getType() == aitEnumUint8) {
       this->pValue = new gddScalar(gddAppType_value, aitEnumUint8);
     } else if (this->info.getType() == aitEnumInt8) {
