@@ -636,6 +636,65 @@ static void waitForPvConnect(const std::string &pvName, double timeoutSeconds) {
   ca_flush_io();
 }
 
+struct NoiseChannel {
+  chid ch;
+  unsigned long elementCount;
+  double hopr;
+  double lopr;
+  bool enabled;
+};
+
+static void initNoiseChannels(const std::vector<PVDef> &pvs, std::vector<NoiseChannel> &channels, double connectTimeoutSeconds) {
+  channels.clear();
+  channels.resize(pvs.size());
+
+  for (size_t i = 0; i < pvs.size(); i++) {
+    channels[i].ch = NULL;
+    channels[i].enabled = false;
+    channels[i].elementCount = 0;
+    channels[i].hopr = 0.0;
+    channels[i].lopr = 0.0;
+
+    const PVDef &pv = pvs[i];
+    if (pv.type != "float" && pv.type != "double") {
+      continue;
+    }
+    if (pv.elementCount == 0) {
+      continue;
+    }
+
+    chid ch;
+    int status = ca_create_channel(pv.pvName.c_str(), NULL, NULL, 0, &ch);
+    if (status != ECA_NORMAL) {
+      continue;
+    }
+
+    channels[i].ch = ch;
+    channels[i].elementCount = (unsigned long)pv.elementCount;
+    channels[i].hopr = pv.hopr;
+    channels[i].lopr = pv.lopr;
+    channels[i].enabled = true;
+  }
+
+  /* Drive connection state for all created channels */
+  if (connectTimeoutSeconds > 0) {
+    ca_pend_io(connectTimeoutSeconds);
+  } else {
+    ca_pend_event(0.0);
+  }
+}
+
+static void clearNoiseChannels(std::vector<NoiseChannel> &channels) {
+  for (size_t i = 0; i < channels.size(); i++) {
+    if (channels[i].ch) {
+      ca_clear_channel(channels[i].ch);
+      channels[i].ch = NULL;
+    }
+  }
+  ca_flush_io();
+  channels.clear();
+}
+
 static double clamp(double value, double lo, double hi) {
   if (value > hi) {
     return hi;
@@ -646,50 +705,37 @@ static double clamp(double value, double lo, double hi) {
   return value;
 }
 
-static void doNoiseUpdate(const std::vector<PVDef> &pvs) {
+static void doNoiseUpdate(const std::vector<NoiseChannel> &channels) {
   // Match sddspcas noise magnitude: sin(radians)/10
   double radians = (rand() * 2.0 * 3.14159265358979323846) / (double)RAND_MAX;
   double delta = sin(radians) / 10.0;
 
-  for (size_t i = 0; i < pvs.size(); i++) {
-    const PVDef &pv = pvs[i];
-
-    if (pv.type != "float" && pv.type != "double") {
-      // sddspcas scan initializes non-float types once; we keep IOC defaults
+  for (size_t i = 0; i < channels.size(); i++) {
+    const NoiseChannel &nc = channels[i];
+    if (!nc.enabled || !nc.ch) {
+      continue;
+    }
+    if (ca_state(nc.ch) != cs_conn) {
       continue;
     }
 
-    chid ch;
-    int status = ca_create_channel(pv.pvName.c_str(), NULL, NULL, 0, &ch);
-    if (status != ECA_NORMAL) {
-      continue;
-    }
-
-    status = ca_pend_io(0.1);
-    if (status != ECA_NORMAL) {
-      ca_clear_channel(ch);
-      continue;
-    }
-
-    unsigned long count = pv.elementCount;
+    unsigned long count = nc.elementCount;
     std::vector<double> values(count);
 
-    status = ca_array_get(DBR_DOUBLE, count, ch, values.data());
+    int status = ca_array_get(DBR_DOUBLE, count, nc.ch, values.data());
     if (status == ECA_NORMAL) {
       status = ca_pend_io(0.2);
     }
 
     if (status == ECA_NORMAL) {
       for (unsigned long j = 0; j < count; j++) {
-        values[j] = clamp(values[j] + delta, pv.lopr, pv.hopr);
+        values[j] = clamp(values[j] + delta, nc.lopr, nc.hopr);
       }
-      status = ca_array_put(DBR_DOUBLE, count, ch, values.data());
+      status = ca_array_put(DBR_DOUBLE, count, nc.ch, values.data());
       if (status == ECA_NORMAL) {
         ca_flush_io();
       }
     }
-
-    ca_clear_channel(ch);
   }
 }
 
@@ -1103,6 +1149,11 @@ extern "C" int main(int argc, char **argv) {
     waitForPvConnect(pvs[0].pvName, 5.0);
   }
 
+  std::vector<NoiseChannel> noiseChannels;
+  if (noiseRate > 0.0) {
+    initNoiseChannels(pvs, noiseChannels, 5.0);
+  }
+
   // Main loop
   double start = nowSeconds();
   double lastNoise = start;
@@ -1128,7 +1179,7 @@ extern "C" int main(int argc, char **argv) {
     if (noiseRate > 0.0) {
       double now = nowSeconds();
       if ((now - lastNoise) >= noiseRate) {
-        doNoiseUpdate(pvs);
+        doNoiseUpdate(noiseChannels);
         lastNoise = now;
       }
     }
@@ -1137,6 +1188,7 @@ extern "C" int main(int argc, char **argv) {
   }
 
   // Shutdown
+  clearNoiseChannels(noiseChannels);
   caFini();
   safeKill(gEqPid, SIGTERM);
   safeKill(gIocPid, SIGTERM);
