@@ -110,6 +110,12 @@ values of a list of readback process variables by applying corrections to anothe
   \item \progref{sddspvtest} ---tests the process variable given by the inputfile are out-of-range or not and sets the number of out-of-range process variables to a control PV.
 \end{itemize}
 
+\subsubsection{Soft IOCs and PV Servers}
+\begin{itemize}
+      \item \progref{sddspcas} --- A Portable Channel Access Server (PCAS) configured by SDDS input files.
+      \item \progref{sddsSoftIOC} --- Generates a temporary EPICS Base \verb+softIoc+ database from SDDS input files and runs it.
+\end{itemize}
+
 \subsection{Toolkit Program Usage Conventions}
 (This text in this section is borrowed from \cite{SDDS_AP1.4}.)
 
@@ -215,6 +221,8 @@ than one file on the same pipe.
 \input{squishPVs.tex}
 \input{standardize.tex}
 \input{toggle.tex}
+\input{sddspcas.tex}
+\input{sddsSoftIOC.tex}
 \begin{thebibliography}{2}
 
 \bibitem{SDDS_AP1.4}

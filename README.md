@@ -37,6 +37,13 @@ This repository relies on the following external projects:
    make -j
    ```
 
+## Notable Tools
+
+- **sddspcas**: Portable Channel Access Server (PCAS) configured by SDDS input files. It creates and serves PVs defined by a `ControlName` column (with optional limits, units, element count, type, and equation support).
+- **sddsSoftIOC**: Temporary EPICS Base `softIoc` wrapper compatible with the same SDDS input format as `sddspcas`. It generates an IOC `.db` at runtime, launches `softIoc`, and removes generated files on exit.
+
+Detailed manual pages for both tools are included in the LaTeX documentation sources under `doc/` (see `doc/EPICStoolkit.tex`).
+
 ## License
 This library is distributed under the **Software License Agreement** found in the `LICENSE` file.
 

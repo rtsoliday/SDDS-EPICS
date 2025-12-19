@@ -1,0 +1,64 @@
+%
+% sddspcas documentation.
+%
+\begin{sddsprog}{sddspcas}
+\item \textbf{description:}
+\verb+sddspcas+ is a Portable Channel Access Server (PCAS) that creates and serves EPICS process variables (PVs)
+from one or more SDDS input files. Each input file must contain a \verb+ControlName+ column with PV base names.
+Optional columns (e.g., \verb+Hopr+, \verb+Lopr+, \verb+ReadbackUnits+, \verb+ElementCount+, \verb+Type+) control
+limits, engineering units, waveform length, and data type.
+
+If an \verb+Equation+ column is present, PV values can be automatically updated based on expressions involving
+other PVs.
+
+\item \textbf{examples:}
+\begin{verbatim}
+# Serve PVs described by an SDDS file
+sddspcas pvlist.sdds
+
+# Add a prefix to all served PVs and run for 10 minutes
+sddspcas pvlist.sdds -pvPrefix=TEST: -executionTime=600
+
+# Enable periodic noise updates
+sddspcas pvlist.sdds -pvPrefix=TEST: -noise=1
+
+# Run without checking master PV lists
+sddspcas pvlist.sdds -standalone
+\end{verbatim}
+
+\item \textbf{synopsis:}
+\begin{verbatim}
+usage: sddspcas <inputfiles>
+      [-masterPVFile=<filename>]
+      [-pcasPVFile=<filename>]
+      [-debugLevel=<debug level>]
+      [-executionTime=<seconds>] (default=12 hours, 0=forever)
+      [-pvPrefix=<PV name prefix>]
+      [-noise=<rateSeconds>]
+      [-runControlPV=string=<string>,pingTimeout=<value>]
+      [-runControlDescription=string=<string>]
+      [-standalone]
+\end{verbatim}
+
+\item \textbf{switches:}
+\begin{itemize}
+  \item {\tt -masterPVFile} --- SDDS file containing IOC PV names. Used to ensure no duplicate PVs are created.
+  \item {\tt -pcasPVFile} --- SDDS file tracking PVs created by \verb+sddspcas+. Used to prevent multiple servers
+        from advertising the same PVs and to record the serving host.
+  \item {\tt -standalone} --- Do not use the master PV files unless explicitly provided.
+  \item {\tt -executionTime} --- How long to run in seconds. Values less than 0.5 are treated as ``forever''.
+  \item {\tt -pvPrefix} --- Prefix prepended to all PV names.
+  \item {\tt -noise} --- Periodically adds small random noise to numeric PV values.
+  \item {\tt -debugLevel} --- Increase diagnostic output.
+  \item {\tt -runControlPV} / {\tt -runControlDescription} --- Optional run-control integration (if built with runcontrol).
+\end{itemize}
+
+\item \textbf{see also:}
+\begin{itemize}
+  \item \progref{sddsSoftIOC}
+  \item \progref{cavget}
+  \item \progref{cavput}
+\end{itemize}
+
+\item \textbf{author:} Robert Soliday, ANL/APS.
+\end{sddsprog}

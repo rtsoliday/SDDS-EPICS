@@ -1,0 +1,69 @@
+%
+% sddsSoftIOC documentation.
+%
+\begin{sddsprog}{sddsSoftIOC}
+\item \textbf{description:}
+\verb+sddsSoftIOC+ creates a temporary EPICS soft IOC (EPICS Base) that serves the same PV names and types as
+\progref{sddspcas}, based on the same SDDS input file format.
+
+At runtime, \verb+sddsSoftIOC+ generates an EPICS database (\verb+.db+) file in a temporary directory, starts
+\verb+softIoc+ with that database, and removes the generated files on exit.
+
+This is useful when you want ``IOC-like'' behavior using an EPICS Base \verb+softIoc+ without installing or
+maintaining a static IOC application directory.
+
+\item \textbf{examples:}
+\begin{verbatim}
+# Serve PVs described by an SDDS file using EPICS Base softIoc
+sddsSoftIOC pvlist.sdds
+
+# Add a prefix and run for 5 minutes
+sddsSoftIOC pvlist.sdds -pvPrefix=TEST: -executionTime=300
+
+# Use a specific EPICS Base installation
+sddsSoftIOC pvlist.sdds -epicsBase=/path/to/epics-base
+
+# Enable periodic noise updates
+sddsSoftIOC pvlist.sdds -noise=1
+
+# Run without checking master PV lists
+sddsSoftIOC pvlist.sdds -standalone
+\end{verbatim}
+
+\item \textbf{synopsis:}
+\begin{verbatim}
+usage: sddsSoftIOC <inputfiles>
+      [-masterPVFile=<filename>]
+      [-pcasPVFile=<filename>]
+      [-standalone]
+      [-debugLevel=<debug level>]
+      [-executionTime=<seconds>] (default=12 hours, 0=forever)
+      [-pvPrefix=<PV name prefix>]
+      [-noise=<rateSeconds>]
+      [-arraySize=<bytes>] (sets EPICS_CA_MAX_ARRAY_BYTES)
+      [-epicsBase=<path>]
+      [-help] | [-h]
+\end{verbatim}
+
+\item \textbf{switches:}
+\begin{itemize}
+  \item {\tt -masterPVFile} --- SDDS file containing IOC PV names. Used to ensure no duplicate PVs are created.
+  \item {\tt -pcasPVFile} --- SDDS file tracking PVs served by PCAS-style servers. Used to prevent duplicate PV advertisements.
+  \item {\tt -standalone} --- Do not use the master PV files unless explicitly provided.
+  \item {\tt -executionTime} --- How long to run in seconds. Values less than 0.5 are treated as ``forever''.
+  \item {\tt -pvPrefix} --- Prefix prepended to all PV names.
+  \item {\tt -noise} --- Periodically adds small random noise to numeric PV values.
+  \item {\tt -arraySize} --- Sets \verb+EPICS_CA_MAX_ARRAY_BYTES+ for waveform transfers.
+  \item {\tt -epicsBase} --- Path to an EPICS Base installation containing \verb+startup/EpicsHostArch+ and \verb+bin/<arch>/softIoc+.
+  \item {\tt -debugLevel} --- Increase diagnostic output.
+\end{itemize}
+
+\item \textbf{see also:}
+\begin{itemize}
+  \item \progref{sddspcas}
+  \item \progref{cavget}
+  \item \progref{cavput}
+\end{itemize}
+
+\item \textbf{author:} Robert Soliday, ANL/APS.
+\end{sddsprog}
