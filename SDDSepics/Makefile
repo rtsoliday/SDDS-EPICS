@@ -47,6 +47,9 @@ PROD = MV20image2sdds sddssnapshot sddscontrollaw sddscaramp sddsgencontrolbits 
        sddsexperiment sddsvexperiment sddspvalogger sddswget sddspvasaverestore sddspermissive \
        sddspvaglitchlogger sddscainfo sddspvacontrollaw
 
+# sddsSoftIOC (Soft IOC wrapper compatible with sddspcas input files)
+PROD += sddsSoftIOC
+
 # sddspcas (Portable Channel Access Server)
 # EPICS Base 3.x shipped PCAS headers/libraries as part of Base.
 # With EPICS Base 7, PCAS is typically provided as a separate EPICS module ("pcas").
@@ -99,6 +102,8 @@ sddspvaglitchlogger_SRC = sddspvaglitchlogger.cc SDDSepics.c pvaSDDS.cc
 sddscainfo_SRC = sddscainfo.cc pvaSDDS.cc
 sddspermissive_SRC = sddspermissive.cc pvaSDDS.cc
 sddspvacontrollaw_SRC = sddspvacontrollaw.cc pvaSDDS.cc
+
+sddsSoftIOC_SRC = sddsSoftIOC.cc
 
 ifneq ($(wildcard $(DD)../.svn),)
   SVN_VERSION=$(shell svnversion .)
@@ -357,3 +362,14 @@ $(OBJ_DIR)/sddspvacontrollaw$(EXEEXT): $(sddspvacontrollaw_OBJS) $(PROD_DEPS)
 	cp -f $@ $(BIN_DIR)/
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
+
+
+$(OBJ_DIR)/sddsSoftIOC$(EXEEXT): $(sddsSoftIOC_OBJS) $(PROD_DEPS)
+	$(LINKEXE) $(OUTPUTEXE) $(sddsSoftIOC_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
+	cp -f $@ $(BIN_DIR)/
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
+	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
+
+.PHONY: sddsSoftIOC
+sddsSoftIOC: $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/sddsSoftIOC$(EXEEXT)
+	@true
