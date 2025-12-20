@@ -11,6 +11,11 @@ limits, engineering units, waveform length, and data type.
 If an \verb+Equation+ column is present, PV values can be automatically updated based on expressions involving
 other PVs.
 
+On Unix-like systems, if a second \verb+sddspcas+ instance is launched under the same user account while a first instance
+is already running on the same host, the second instance will forward its PV definitions to the running instance and
+exit immediately. The running instance will create any PVs it is not already hosting and (unless started with
+\verb+-standalone+) will append the new PVs to the configured \verb+-pcasPVFile+.
+
 \item \textbf{examples:}
 \begin{verbatim}
 # Serve PVs described by an SDDS file

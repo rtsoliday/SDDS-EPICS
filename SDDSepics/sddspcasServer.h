@@ -40,6 +40,17 @@
 #include <string>
 #include <vector>
 
+/* PV definition used for dynamic additions (e.g., via IPC). */
+struct SddspcasPvDef {
+  std::string controlName;
+  std::string type;        /* char, uchar, short, ushort, int, uint, float, double, string, enum */
+  std::string enumStrings; /* comma-separated, only for enum; empty otherwise */
+  std::string units;       /* may be empty */
+  double hopr;
+  double lopr;
+  unsigned elementCount;
+};
+
 //
 // EPICS
 //
@@ -350,11 +361,22 @@ public:
   void ReadMasterSDDSpcasPVFile(const char *const pvPrefix);
   void AppendMasterSDDSpcasPVFile(const char *const pvPrefix);
 
+  /* Add new PVs after server startup. Returns number of PVs added. */
+  unsigned addPVs(const std::vector<SddspcasPvDef> &defs);
+
 private:
   resTable<pvEntry, stringId> stringResTbl;
   epicsTimerQueueActive *pTimerQueue;
   unsigned simultAsychIOCount;
   bool scanOn;
+
+  std::string pvPrefix;
+  double scanRate;
+  std::vector<pvInfo *> dynamicPvInfos;
+
+  bool hasAlias(const char *pAliasName) const;
+  bool pvConflictsMasterFiles(const char *pvAliasMaster20) const;
+  void appendMasterSddspcasPvFileForAliases(const std::vector<std::string> &pvAliasesMaster20);
 
   void installAliasName(pvInfo &info, const char *pAliasName);
   pvExistReturn pvExistTest(const casCtx &,

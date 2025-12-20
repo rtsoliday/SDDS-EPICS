@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 #include <complex>
+#include <errno.h>
+#include <float.h>
 #include "sddspcasServer.h"
 #include "mdb.h"
 #include "SDDS.h"
@@ -79,6 +81,30 @@ static void parseEnumStatesCsv(const char *pvName, const char *csv, std::vector<
   }
 }
 
+static aitEnum typeStringToAitEnum(const std::string &typeStr) {
+  if (typeStr == "char")
+    return aitEnumInt8;
+  if (typeStr == "uchar")
+    return aitEnumUint8;
+  if (typeStr == "short")
+    return aitEnumInt16;
+  if (typeStr == "ushort")
+    return aitEnumUint16;
+  if (typeStr == "int")
+    return aitEnumInt32;
+  if (typeStr == "uint")
+    return aitEnumUint32;
+  if (typeStr == "float")
+    return aitEnumFloat32;
+  if (typeStr == "double" || typeStr.empty())
+    return aitEnumFloat64;
+  if (typeStr == "string")
+    return aitEnumString;
+  if (typeStr == "enum")
+    return aitEnumEnum16;
+  return aitEnumFloat64;
+}
+
 //
 // static list of pre-created PVs
 //
@@ -92,7 +118,10 @@ exServer::exServer(const char *const pvPrefix,
                    uint32_t aliasCount, bool scanOnIn,
                    bool asyncScan, long numInputs, char **input, char *PVFile1,
                    char *PVFile2, double rate) : pTimerQueue(0), simultAsychIOCount(0u),
-                                                 scanOn(scanOnIn) {
+                                                 scanOn(scanOnIn),
+                                                 pvPrefix(pvPrefix ? pvPrefix : ""),
+                                                 scanRate(rate),
+                                                 dynamicPvInfos() {
   uint32_t i;
   exPV *pPV;
   pvInfo *pPVI;
@@ -264,6 +293,14 @@ exServer::~exServer() {
     exServer::pvList = NULL;
     exServer::pvListNElem = 0;
   }
+
+  for (size_t i = 0; i < this->dynamicPvInfos.size(); i++) {
+    if (this->dynamicPvInfos[i]) {
+      this->dynamicPvInfos[i]->deletePV();
+      delete this->dynamicPvInfos[i];
+    }
+  }
+  this->dynamicPvInfos.clear();
 
   this->stringResTbl.traverse(&pvEntry::destroy);
 }
@@ -879,4 +916,224 @@ void exServer::AppendMasterSDDSpcasPVFile(const char *const pvPrefix) {
   }
 
   SDDS_Terminate(&SDDS_masterlist);
+}
+
+bool exServer::hasAlias(const char *pAliasName) const {
+  if (!pAliasName)
+    return false;
+  stringId id(pAliasName, stringId::refString);
+  pvEntry *pPVE = this->stringResTbl.lookup(id);
+  return pPVE != NULL;
+}
+
+bool exServer::pvConflictsMasterFiles(const char *pvAliasMaster20) const {
+  if (!pvAliasMaster20 || pvAliasMaster20[0] == '\0')
+    return false;
+
+  if (this->masterPVFile) {
+    SDDS_DATASET SDDS_masterlist;
+    long rows;
+    char **rec_name = NULL;
+    if (!SDDS_InitializeInput(&SDDS_masterlist, this->masterPVFile)) {
+      fprintf(stderr, "error: Unable to read SDDS file %s\n", this->masterPVFile);
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      return true;
+    }
+    if (SDDS_ReadPage(&SDDS_masterlist) == 1) {
+      rows = SDDS_RowCount(&SDDS_masterlist);
+      if (rows > 0 && (rec_name = (char **)SDDS_GetColumn(&SDDS_masterlist, (char *)"rec_name"))) {
+        for (int m = 0; m < rows; m++) {
+          if (rec_name[m] && strcmp(pvAliasMaster20, rec_name[m]) == 0) {
+            for (int k = 0; k < rows; k++) {
+              if (rec_name[k])
+                free(rec_name[k]);
+            }
+            free(rec_name);
+            SDDS_Terminate(&SDDS_masterlist);
+            return true;
+          }
+        }
+        for (int k = 0; k < rows; k++) {
+          if (rec_name[k])
+            free(rec_name[k]);
+        }
+        free(rec_name);
+      }
+    }
+    SDDS_Terminate(&SDDS_masterlist);
+  }
+
+  if (this->pcasPVFile) {
+    SDDS_DATASET SDDS_masterlist;
+    long rows;
+    char **rec_name = NULL;
+    if (!SDDS_InitializeInput(&SDDS_masterlist, this->pcasPVFile)) {
+      fprintf(stderr, "error: Unable to read SDDS file %s\n", this->pcasPVFile);
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      return true;
+    }
+    if (SDDS_ReadPage(&SDDS_masterlist) == 1) {
+      rows = SDDS_RowCount(&SDDS_masterlist);
+      if (rows > 0 && (rec_name = (char **)SDDS_GetColumn(&SDDS_masterlist, (char *)"rec_name"))) {
+        for (int m = 0; m < rows; m++) {
+          if (rec_name[m] && strcmp(pvAliasMaster20, rec_name[m]) == 0) {
+            for (int k = 0; k < rows; k++) {
+              if (rec_name[k])
+                free(rec_name[k]);
+            }
+            free(rec_name);
+            SDDS_Terminate(&SDDS_masterlist);
+            return true;
+          }
+        }
+        for (int k = 0; k < rows; k++) {
+          if (rec_name[k])
+            free(rec_name[k]);
+        }
+        free(rec_name);
+      }
+    }
+    SDDS_Terminate(&SDDS_masterlist);
+  }
+
+  return false;
+}
+
+void exServer::appendMasterSddspcasPvFileForAliases(const std::vector<std::string> &pvAliasesMaster20) {
+  if (!this->pcasPVFile)
+    return;
+  if (pvAliasesMaster20.empty())
+    return;
+
+  SDDS_DATASET SDDS_masterlist;
+  char hostname[255];
+  int64_t rowsPresent;
+  gethostname(hostname, 255);
+
+  if (!SDDS_InitializeAppendToPage(&SDDS_masterlist, this->pcasPVFile, 100, &rowsPresent)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    return;
+  }
+  if (!SDDS_LengthenTable(&SDDS_masterlist, (long)pvAliasesMaster20.size())) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&SDDS_masterlist);
+    return;
+  }
+
+  for (size_t i = 0; i < pvAliasesMaster20.size(); i++) {
+    if (!SDDS_SetRowValues(&SDDS_masterlist, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, rowsPresent,
+                           "rec_name", (char *)pvAliasesMaster20[i].c_str(),
+                           "host_name", hostname,
+                           NULL)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&SDDS_masterlist);
+      return;
+    }
+    rowsPresent++;
+  }
+
+  if (!SDDS_UpdatePage(&SDDS_masterlist, FLUSH_TABLE)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+  }
+  SDDS_Terminate(&SDDS_masterlist);
+}
+
+unsigned exServer::addPVs(const std::vector<SddspcasPvDef> &defs) {
+  if (defs.empty())
+    return 0u;
+
+  const char *const pNameFmtStr40 = "%.100s%.40s";
+  const char *const pNameFmtStr20 = "%.100s%.20s";
+  char pvAlias40[256];
+  char pvAlias20[256];
+
+  unsigned added = 0u;
+  std::vector<std::string> aliasesToAppend;
+  aliasesToAppend.reserve(defs.size());
+
+  for (size_t i = 0; i < defs.size(); i++) {
+    const SddspcasPvDef &d = defs[i];
+    if (d.controlName.empty())
+      continue;
+
+    sprintf(pvAlias40, pNameFmtStr40, this->pvPrefix.c_str(), d.controlName.c_str());
+    sprintf(pvAlias20, pNameFmtStr20, this->pvPrefix.c_str(), d.controlName.c_str());
+
+    if (strchr(pvAlias20, '.') != NULL) {
+      fprintf(stderr, "warning: PV extensions are not allowed (%s); skipping\n", pvAlias20);
+      continue;
+    }
+
+    if (this->hasAlias(pvAlias40)) {
+      continue;
+    }
+    if (this->pvConflictsMasterFiles(pvAlias20)) {
+      fprintf(stderr, "warning: PV %s conflicts with master PV lists; skipping\n", pvAlias20);
+      continue;
+    }
+
+    pvInfo *pInfo = new pvInfo();
+    if (!pInfo) {
+      fprintf(stderr, "warning: out of memory adding PV %s\n", pvAlias40);
+      continue;
+    }
+
+    char *nameDup = strdup(d.controlName.c_str());
+    char *unitsDup = NULL;
+    if (!d.units.empty())
+      unitsDup = strdup(d.units.c_str());
+    else
+      unitsDup = strdup(" ");
+
+    pInfo->setName(nameDup ? nameDup : (char *)"");
+    pInfo->setUnits(unitsDup ? unitsDup : (char *)"");
+    pInfo->setScanPeriod(this->scanRate);
+
+    const aitEnum typeEnum = typeStringToAitEnum(d.type);
+    if (typeEnum == aitEnumEnum16) {
+      if (d.elementCount > 1) {
+        fprintf(stderr, "warning: Type=enum requires ElementCount=1 for %s; skipping\n", d.controlName.c_str());
+        delete pInfo;
+        continue;
+      }
+      if (d.enumStrings.empty()) {
+        fprintf(stderr, "warning: PV %s has Type=enum but EnumStrings is empty; skipping\n", d.controlName.c_str());
+        delete pInfo;
+        continue;
+      }
+      std::vector<std::string> states;
+      parseEnumStatesCsv(d.controlName.c_str(), d.enumStrings.c_str(), states);
+      pInfo->setEnumStateStrings(states);
+    }
+    if (typeEnum == aitEnumString && d.elementCount > 1) {
+      fprintf(stderr, "warning: multiple elements with String PVs are not supported in sddspcas yet; skipping %s\n", d.controlName.c_str());
+      delete pInfo;
+      continue;
+    }
+    pInfo->setType(typeEnum);
+
+    if (d.hopr != DBL_MAX)
+      pInfo->setHopr(d.hopr);
+    if (d.lopr != -DBL_MAX)
+      pInfo->setLopr(d.lopr);
+    if (d.elementCount > 1)
+      pInfo->setElementCount(d.elementCount);
+
+    exPV *pPV = pInfo->createPV(*this, true, this->scanOn);
+    if (!pPV) {
+      fprintf(stderr, "warning: Unable to create new PV \"%s\"\n", pvAlias40);
+      delete pInfo;
+      continue;
+    }
+
+    this->installAliasName(*pInfo, pvAlias40);
+    this->dynamicPvInfos.push_back(pInfo);
+    aliasesToAppend.push_back(std::string(pvAlias20));
+    added++;
+  }
+
+  if (added && this->pcasPVFile) {
+    this->appendMasterSddspcasPvFileForAliases(aliasesToAppend);
+  }
+  return added;
 }

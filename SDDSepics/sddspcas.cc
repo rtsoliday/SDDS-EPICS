@@ -18,6 +18,20 @@
 #include "SDDS.h"
 #include "scan.h"
 
+#ifndef _WIN32
+#  include <sys/socket.h>
+#  include <sys/un.h>
+#  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <sys/wait.h>
+#  include <unistd.h>
+#  include <fcntl.h>
+#  include <errno.h>
+#  include <float.h>
+#  include <string>
+#  include <vector>
+#endif
+
 #ifdef USE_RUNCONTROL
 
 #  include "cadef.h"
@@ -123,11 +137,397 @@ RUNCONTROL_PARAM rcParam;
 #endif
 
 extern "C" void signal_handler(int sig);
+#ifndef _WIN32
+extern "C" void sigchld_handler(int sig);
+#endif
 extern "C" void CleanMasterSDDSpcasPVFile();
 extern "C" void rc_interrupt_handler();
 int runControlPingNoSleep();
 
 char *PVFile2 = NULL;
+
+#ifndef _WIN32
+static int gIpcListenFd = -1;
+static std::string gIpcSocketPath;
+static pid_t gIpcOwnerPid = (pid_t)-1;
+static volatile sig_atomic_t gGotSigchld = 0;
+
+static std::string buildIpcSocketPath() {
+  const char *runtimeDir = getenv("XDG_RUNTIME_DIR");
+  char buf[256];
+  if (runtimeDir && runtimeDir[0]) {
+    snprintf(buf, sizeof(buf), "%s/sddspcas.%ld.sock", runtimeDir, (long)getuid());
+  } else {
+    snprintf(buf, sizeof(buf), "/tmp/sddspcas.%ld.sock", (long)getuid());
+  }
+  return std::string(buf);
+}
+
+static void ipcCleanup() {
+  if (gIpcListenFd >= 0) {
+    close(gIpcListenFd);
+    gIpcListenFd = -1;
+  }
+  if (gIpcOwnerPid != (pid_t)-1 && getpid() != gIpcOwnerPid) {
+    return;
+  }
+  if (!gIpcSocketPath.empty()) {
+    unlink(gIpcSocketPath.c_str());
+  }
+}
+
+static bool writeAll(int fd, const void *buf, size_t n) {
+  const char *p = (const char *)buf;
+  while (n) {
+    ssize_t w = write(fd, p, n);
+    if (w < 0) {
+      if (errno == EINTR)
+        continue;
+      return false;
+    }
+    p += (size_t)w;
+    n -= (size_t)w;
+  }
+  return true;
+}
+
+static bool readAll(int fd, void *buf, size_t n) {
+  char *p = (char *)buf;
+  while (n) {
+    ssize_t r = read(fd, p, n);
+    if (r == 0)
+      return false;
+    if (r < 0) {
+      if (errno == EINTR)
+        continue;
+      return false;
+    }
+    p += (size_t)r;
+    n -= (size_t)r;
+  }
+  return true;
+}
+
+static void setCloexec(int fd) {
+  int flags = fcntl(fd, F_GETFD);
+  if (flags >= 0)
+    fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+}
+
+static std::vector<SddspcasPvDef> readPvDefsFromInputFiles(char **input, long inputfiles) {
+  std::vector<SddspcasPvDef> defs;
+  for (long i = 0; i < inputfiles; i++) {
+    SDDS_DATASET SDDS_input;
+    int hoprFound = 0, loprFound = 0, unitsFound = 0, elementCountFound = 0, typeFound = 0, enumStringsFound = 0;
+    uint32_t rows;
+
+    if (!SDDS_InitializeInput(&SDDS_input, input[i])) {
+      fprintf(stderr, "error: Unable to read SDDS input file %s\n", input[i]);
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      exit(1);
+    }
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "ControlName") == -1) {
+      fprintf(stderr, "error: string column ControlName does not exist in %s\n", input[i]);
+      exit(1);
+    }
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_NUMERIC_TYPE, (char *)"Hopr") >= 0)
+      hoprFound = 1;
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_NUMERIC_TYPE, (char *)"Lopr") >= 0)
+      loprFound = 1;
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "ReadbackUnits") >= 0)
+      unitsFound = 1;
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_INTEGER_TYPE, (char *)"ElementCount") >= 0)
+      elementCountFound = 1;
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "Type") >= 0)
+      typeFound = 1;
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "EnumStrings") >= 0)
+      enumStringsFound = 1;
+
+    if (SDDS_ReadPage(&SDDS_input) != 1) {
+      fprintf(stderr, "error: Unable to read SDDS file %s\n", input[i]);
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      exit(1);
+    }
+    if ((rows = (uint32_t)SDDS_RowCount(&SDDS_input)) < 1) {
+      fprintf(stderr, "error: No rows found in SDDS file %s\n", input[i]);
+      exit(1);
+    }
+
+    char **cn = (char **)SDDS_GetColumn(&SDDS_input, (char *)"ControlName");
+    char **ru = unitsFound ? (char **)SDDS_GetColumn(&SDDS_input, (char *)"ReadbackUnits") : NULL;
+    char **ty = typeFound ? (char **)SDDS_GetColumn(&SDDS_input, (char *)"Type") : NULL;
+    char **es = enumStringsFound ? (char **)SDDS_GetColumn(&SDDS_input, (char *)"EnumStrings") : NULL;
+    double *ho = hoprFound ? SDDS_GetColumnInDoubles(&SDDS_input, (char *)"Hopr") : NULL;
+    double *lo = loprFound ? SDDS_GetColumnInDoubles(&SDDS_input, (char *)"Lopr") : NULL;
+    uint32_t *ec = elementCountFound ? (uint32_t *)SDDS_GetColumnInLong(&SDDS_input, (char *)"ElementCount") : NULL;
+
+    if (!cn) {
+      fprintf(stderr, "error: Unable to read ControlName column from %s\n", input[i]);
+      exit(1);
+    }
+
+    for (uint32_t j = 0; j < rows; j++) {
+      SddspcasPvDef d;
+      d.controlName = cn[j] ? cn[j] : "";
+      d.type = (ty && ty[j]) ? ty[j] : "double";
+      d.enumStrings = (es && es[j]) ? es[j] : "";
+      d.units = (ru && ru[j]) ? ru[j] : "";
+      d.hopr = ho ? ho[j] : DBL_MAX;
+      d.lopr = lo ? lo[j] : -DBL_MAX;
+      d.elementCount = ec ? ec[j] : 1u;
+      defs.push_back(d);
+    }
+
+    for (uint32_t j = 0; j < rows; j++) {
+      if (cn && cn[j])
+        free(cn[j]);
+      if (ru && ru[j])
+        free(ru[j]);
+      if (ty && ty[j])
+        free(ty[j]);
+      if (es && es[j])
+        free(es[j]);
+    }
+    if (cn)
+      free(cn);
+    if (ru)
+      free(ru);
+    if (ty)
+      free(ty);
+    if (es)
+      free(es);
+    if (ho)
+      free(ho);
+    if (lo)
+      free(lo);
+    if (ec)
+      free(ec);
+
+    SDDS_Terminate(&SDDS_input);
+  }
+  return defs;
+}
+
+static bool anyInputHasEquationColumn(char **input, long inputfiles) {
+  for (long i = 0; i < inputfiles; i++) {
+    SDDS_DATASET SDDS_input;
+    if (!SDDS_InitializeInput(&SDDS_input, input[i])) {
+      fprintf(stderr, "error: Unable to read SDDS input file %s\n", input[i]);
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      exit(1);
+    }
+    if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "Equation") >= 0) {
+      SDDS_Terminate(&SDDS_input);
+      return true;
+    }
+    SDDS_Terminate(&SDDS_input);
+  }
+  return false;
+}
+
+static bool ipcTryForwardAddRequests(const std::string &sockPath, const std::vector<SddspcasPvDef> &defs) {
+  if (defs.empty())
+    return false;
+
+  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (fd < 0)
+    return false;
+  setCloexec(fd);
+
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  if (sockPath.size() >= sizeof(addr.sun_path)) {
+    close(fd);
+    return false;
+  }
+  strncpy(addr.sun_path, sockPath.c_str(), sizeof(addr.sun_path) - 1);
+
+  if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+    close(fd);
+    return false;
+  }
+
+  struct timeval tv;
+  tv.tv_sec = 2;
+  tv.tv_usec = 0;
+  setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+  const uint32_t magic = 0x53504341u; /* 'SPCA' */
+  const uint32_t version = 1u;
+  uint32_t count = (uint32_t)defs.size();
+  if (!writeAll(fd, &magic, sizeof(magic)) || !writeAll(fd, &version, sizeof(version)) || !writeAll(fd, &count, sizeof(count))) {
+    close(fd);
+    return false;
+  }
+
+  for (size_t i = 0; i < defs.size(); i++) {
+    const SddspcasPvDef &d = defs[i];
+    uint32_t nameLen = (uint32_t)d.controlName.size();
+    uint32_t typeLen = (uint32_t)d.type.size();
+    uint32_t unitsLen = (uint32_t)d.units.size();
+    uint32_t enumLen = (uint32_t)d.enumStrings.size();
+    uint32_t ec = (uint32_t)d.elementCount;
+    if (!writeAll(fd, &nameLen, sizeof(nameLen)) || !writeAll(fd, &typeLen, sizeof(typeLen)) ||
+        !writeAll(fd, &unitsLen, sizeof(unitsLen)) || !writeAll(fd, &enumLen, sizeof(enumLen)) ||
+        !writeAll(fd, &ec, sizeof(ec)) ||
+        !writeAll(fd, &d.hopr, sizeof(d.hopr)) || !writeAll(fd, &d.lopr, sizeof(d.lopr))) {
+      close(fd);
+      return false;
+    }
+    if (nameLen && !writeAll(fd, d.controlName.data(), nameLen)) {
+      close(fd);
+      return false;
+    }
+    if (typeLen && !writeAll(fd, d.type.data(), typeLen)) {
+      close(fd);
+      return false;
+    }
+    if (unitsLen && !writeAll(fd, d.units.data(), unitsLen)) {
+      close(fd);
+      return false;
+    }
+    if (enumLen && !writeAll(fd, d.enumStrings.data(), enumLen)) {
+      close(fd);
+      return false;
+    }
+  }
+
+  close(fd);
+  return true;
+}
+
+static int ipcSetupListener(const std::string &sockPath) {
+  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (fd < 0)
+    return -1;
+  setCloexec(fd);
+
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  if (sockPath.size() >= sizeof(addr.sun_path)) {
+    close(fd);
+    return -1;
+  }
+  strncpy(addr.sun_path, sockPath.c_str(), sizeof(addr.sun_path) - 1);
+
+  unlink(sockPath.c_str());
+  if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+    close(fd);
+    return -1;
+  }
+  chmod(sockPath.c_str(), 0600);
+
+  if (listen(fd, 8) != 0) {
+    close(fd);
+    unlink(sockPath.c_str());
+    return -1;
+  }
+  return fd;
+}
+
+static void ipcPump(exServer *pCAS) {
+  if (!pCAS || gIpcListenFd < 0)
+    return;
+
+  while (true) {
+    int cfd = accept(gIpcListenFd, NULL, NULL);
+    if (cfd < 0) {
+      if (errno == EINTR)
+        continue;
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return;
+      return;
+    }
+    setCloexec(cfd);
+    struct timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    setsockopt(cfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    uint32_t magic = 0, version = 0, count = 0;
+    if (!readAll(cfd, &magic, sizeof(magic)) || !readAll(cfd, &version, sizeof(version)) || !readAll(cfd, &count, sizeof(count))) {
+      close(cfd);
+      continue;
+    }
+    if (magic != 0x53504341u || version != 1u || count > 100000u) {
+      close(cfd);
+      continue;
+    }
+
+    std::vector<SddspcasPvDef> defs;
+    defs.reserve(count);
+    for (uint32_t i = 0; i < count; i++) {
+      uint32_t nameLen = 0, typeLen = 0, unitsLen = 0, enumLen = 0, ec = 0;
+      double hopr = DBL_MAX, lopr = -DBL_MAX;
+      if (!readAll(cfd, &nameLen, sizeof(nameLen)) || !readAll(cfd, &typeLen, sizeof(typeLen)) ||
+          !readAll(cfd, &unitsLen, sizeof(unitsLen)) || !readAll(cfd, &enumLen, sizeof(enumLen)) ||
+          !readAll(cfd, &ec, sizeof(ec)) || !readAll(cfd, &hopr, sizeof(hopr)) || !readAll(cfd, &lopr, sizeof(lopr))) {
+        defs.clear();
+        break;
+      }
+      if (nameLen > 4096u || typeLen > 128u || unitsLen > 1024u || enumLen > 4096u) {
+        defs.clear();
+        break;
+      }
+
+      SddspcasPvDef d;
+      d.hopr = hopr;
+      d.lopr = lopr;
+      d.elementCount = ec;
+
+      if (nameLen) {
+        std::string s(nameLen, '\0');
+        if (!readAll(cfd, &s[0], nameLen)) {
+          defs.clear();
+          break;
+        }
+        d.controlName = s;
+      }
+      if (typeLen) {
+        std::string s(typeLen, '\0');
+        if (!readAll(cfd, &s[0], typeLen)) {
+          defs.clear();
+          break;
+        }
+        d.type = s;
+      } else {
+        d.type = "double";
+      }
+      if (unitsLen) {
+        std::string s(unitsLen, '\0');
+        if (!readAll(cfd, &s[0], unitsLen)) {
+          defs.clear();
+          break;
+        }
+        d.units = s;
+      }
+      if (enumLen) {
+        std::string s(enumLen, '\0');
+        if (!readAll(cfd, &s[0], enumLen)) {
+          defs.clear();
+          break;
+        }
+        d.enumStrings = s;
+      }
+      if (d.elementCount == 0)
+        d.elementCount = 1;
+      defs.push_back(d);
+    }
+
+    if (!defs.empty()) {
+      unsigned added = pCAS->addPVs(defs);
+      if (added) {
+        fprintf(stderr, "sddspcas: added %u PV(s) via IPC\n", added);
+      }
+    }
+
+    close(cfd);
+  }
+}
+#endif
 
 //
 // main()
@@ -289,6 +689,18 @@ extern int main(int argc, const char **argv) {
     fprintf(stderr, "error: no input files given\n");
     exit(1);
   }
+
+#ifndef _WIN32
+  gIpcSocketPath = buildIpcSocketPath();
+  {
+    std::vector<SddspcasPvDef> defs = readPvDefsFromInputFiles(input, inputfiles);
+    if (ipcTryForwardAddRequests(gIpcSocketPath, defs)) {
+      fprintf(stderr, "sddspcas: forwarded %lu PV(s) to running instance; exiting\n", (unsigned long)defs.size());
+      free_scanargs(&s_arg, argc);
+      return 0;
+    }
+  }
+#endif
   if ((PVFile1 == NULL) && (standalone == 0)) {
     SDDS_CopyString(&PVFile1, (char *)"/home/helios/iocinfo/pvdata/all/iocRecNames.sdds");
   }
@@ -355,6 +767,7 @@ extern int main(int argc, const char **argv) {
   signal(SIGFPE, signal_handler);
   signal(SIGSEGV, signal_handler);
 #ifndef _WIN32
+  signal(SIGCHLD, sigchld_handler);
   signal(SIGHUP, signal_handler);
   signal(SIGQUIT, signal_handler);
   signal(SIGTRAP, signal_handler);
@@ -363,6 +776,20 @@ extern int main(int argc, const char **argv) {
   if (PVFile2 != NULL) {
     atexit(CleanMasterSDDSpcasPVFile);
   }
+
+#ifndef _WIN32
+  gIpcListenFd = ipcSetupListener(gIpcSocketPath);
+  if (gIpcListenFd >= 0) {
+    gIpcOwnerPid = getpid();
+    int flags = fcntl(gIpcListenFd, F_GETFL);
+    if (flags >= 0)
+      fcntl(gIpcListenFd, F_SETFL, flags | O_NONBLOCK);
+    atexit(ipcCleanup);
+  } else {
+    /* Non-fatal: server still runs; dynamic add via IPC disabled. */
+    fprintf(stderr, "warning: unable to create sddspcas IPC socket %s\n", gIpcSocketPath.c_str());
+  }
+#endif
 
   pCAS->setDebugLevel(debugLevel);
 
@@ -378,11 +805,16 @@ extern int main(int argc, const char **argv) {
   }
 #endif
 
-  pid = fork();
-  if (pid < 0) {
+  bool launchEquations = anyInputHasEquationColumn(input, inputfiles);
+  if (!launchEquations) {
+    pid = 1;
+  } else {
+    pid = fork();
+  }
+  if (launchEquations && pid < 0) {
     fprintf(stderr, "Error forking process\n");
     exit(1);
-  } else if (pid == 0) {
+  } else if (launchEquations && pid == 0) {
     // Child process
     std::string fileNames;
   
@@ -398,7 +830,7 @@ extern int main(int argc, const char **argv) {
       execlp("sddspcasEquations", "sddspcasEquations", "-input", fileNames.c_str(), NULL);
     }
     fprintf(stderr, "Error executing sddspcasEquations script\n");
-    exit(1);
+    _exit(1);
   } else {
     if (forever) {
       //
@@ -411,6 +843,15 @@ extern int main(int argc, const char **argv) {
         }
 #endif
         fileDescriptorManager.process(1000.0);
+      #ifndef _WIN32
+        if (gGotSigchld) {
+          int status;
+          gGotSigchld = 0;
+          while (waitpid(-1, &status, WNOHANG) > 0) {
+          }
+        }
+        ipcPump(pCAS);
+      #endif
       }
     } else {
       double delay = epicsTime::getCurrent() - begin;
@@ -425,6 +866,15 @@ extern int main(int argc, const char **argv) {
         }
 #endif
         fileDescriptorManager.process(1000.0);
+      #ifndef _WIN32
+        if (gGotSigchld) {
+          int status;
+          gGotSigchld = 0;
+          while (waitpid(-1, &status, WNOHANG) > 0) {
+          }
+        }
+        ipcPump(pCAS);
+      #endif
         delay = epicsTime::getCurrent() - begin;
       }
     }
@@ -441,6 +891,13 @@ extern int main(int argc, const char **argv) {
 extern "C" void signal_handler(int sig) {
   exit(1);
 }
+
+#ifndef _WIN32
+extern "C" void sigchld_handler(int sig) {
+  (void)sig;
+  gGotSigchld = 1;
+}
+#endif
 
 extern "C" void CleanMasterSDDSpcasPVFile() {
   SDDS_DATASET SDDS_masterlist;
