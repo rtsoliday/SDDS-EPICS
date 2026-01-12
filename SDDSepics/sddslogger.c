@@ -1204,6 +1204,9 @@ int main(int argc, char **argv) {
       if (ca_field_type(input[i].channelID[j]) == DBR_ENUM) {
         input[i].enumPV = SDDS_Realloc(input[i].enumPV, sizeof(*(input[i].enumPV)) * (input[i].enumPVs + 1));
         input[i].enumPV[input[i].enumPVs].flag = 0;
+        input[i].enumPV[input[i].enumPVs].no_str = 0;
+        input[i].enumPV[input[i].enumPVs].strs = NULL;
+        input[i].enumPV[input[i].enumPVs].PVname = NULL;
         length = strlen(input[i].ReadbackNames[j]);
         input[i].enumPV[input[i].enumPVs].PVname = malloc(sizeof(char) * (length + 20));
         strcpy(input[i].enumPV[input[i].enumPVs].PVname, input[i].ReadbackNames[j]);
