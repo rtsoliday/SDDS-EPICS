@@ -2574,10 +2574,10 @@ void getStringValuesOfEnumPV(struct event_handler_args event) {
 }
 
 long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
-  long ntries; /*try 10 times*/
+  long ntries; /*try 10 times per second*/
 
   ca_poll();
-  ntries = (long)(pendIOtime * 100);
+  ntries = (long)(pendIOtime * 10);
   while (ntries) {
     int done;
     epicsMutexLock(enumPVMutex);
@@ -2586,7 +2586,7 @@ long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
     if (done)
       return 0;
     ca_poll();
-    usleepSystemIndependent(1000);
+    usleepSystemIndependent(100);
     ntries--;
   }
   epicsMutexLock(enumPVMutex);
