@@ -255,9 +255,11 @@
 
 #ifdef _WIN32
 #  include <winsock.h>
+#  include <process.h>
 #  define usleep(usecs) Sleep(usecs / 1000)
 #else
 #  include <unistd.h>
+#  include <sys/wait.h>
 #endif
 
 #ifdef USE_RUNCONTROL
@@ -519,6 +521,9 @@ void FreeInputFiles(INPUTFILENAME *input, long numFiles);
 long setUpOnePvPerFileOutput(INPUTFILENAME **input, OUTPUTFILENAME **output, long numFiles,
                              char *onePvOutputDirectory);
 
+static int runSddsconvertRecover(const char *filename);
+static char *replaceSlashesWithPlus(const char *text);
+
 /*for datastrobe trigger */
 void datastrobeTriggerEventHandler(struct event_handler_args event);
 long setupDatastrobeTriggerCallbacks(DATASTROBE_TRIGGER *datastrobeTrigger);
@@ -653,6 +658,8 @@ int main(int argc, char **argv) {
           else
             bomb("unknown/ambiguous time units given for -sampleInterval\n", NULL);
         }
+        if (SampleTimeInterval <= 0)
+          bomb("value for -sampleInterval must be positive\n", NULL);
         break;
       case CLO_LOGINTERVAL:
         if (s_arg[i_arg].n_items < 2 ||
@@ -694,9 +701,9 @@ int main(int argc, char **argv) {
           bomb("no value given for option -time\n", NULL);
         totalTimeSet = 1;
         if (s_arg[i_arg].n_items == 3) {
-          if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) != 0) {
-            TotalTime *= TimeUnitFactor[TimeUnits];
-          }
+          if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) < 0)
+            bomb("unknown/ambiguous time units given for -time\n", NULL);
+          TotalTime *= TimeUnitFactor[TimeUnits];
         }
         break;
       case CLO_APPEND:
@@ -802,7 +809,7 @@ int main(int argc, char **argv) {
         if (!scanItemList(&dailyFilesFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
                           "rowlimit", SDDS_LONG, &generationsRowLimit, 1, 0,
                           "timelimit", SDDS_DOUBLE, &generationsTimeLimit, 1, 0,
-                          "timetage", -1, NULL, 0, USE_TIMETAG,
+                          "timetag", -1, NULL, 0, USE_TIMETAG,
                           "verbose", -1, NULL, 0, DAILYFILES_VERBOSE,
                           NULL))
           SDDS_Bomb("invalid -dailyFiles syntax/values");
@@ -826,7 +833,7 @@ int main(int argc, char **argv) {
         if (!scanItemList(&monthlyFilesFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
                           "rowlimit", SDDS_LONG, &generationsRowLimit, 1, 0,
                           "timelimit", SDDS_DOUBLE, &generationsTimeLimit, 1, 0,
-                          "timetage", -1, NULL, 0, USE_TIMETAG,
+                          "timetag", -1, NULL, 0, USE_TIMETAG,
                           "verbose", -1, NULL, 0, MONTHLYFILES_VERBOSE,
                           NULL))
           SDDS_Bomb("invalid -monthlyFiles syntax/values");
@@ -1195,10 +1202,9 @@ int main(int argc, char **argv) {
     if (append) {
       if (!SDDS_CheckFile(output[i].filename)) {
         if (recover) {
-          char commandBuffer[1024];
           fprintf(stderr, "warning: file %s is corrupted--reconstructing before appending--some data may be lost.\n", output[i].filename);
-          sprintf(commandBuffer, "sddsconvert -recover -nowarnings %s", output[i].filename);
-          system(commandBuffer);
+          if (runSddsconvertRecover(output[i].filename) != 0)
+            SDDS_Bomb("unable to recover corrupted SDDS file before appending");
         } else {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
           SDDS_Bomb("unable to get data from existing file---try -append=recover (may truncate file)");
@@ -2487,7 +2493,7 @@ long setUpOnePvPerFileOutput(INPUTFILENAME **input, OUTPUTFILENAME **output, lon
                              char *onePvOutputDirectory) {
   INPUTFILENAME input1;
   long i;
-  char buffer[1024];
+  char *pvDirName;
 
   input1.filename = (*input)[0].filename;
   (*input)[0].filename = NULL;
@@ -2590,12 +2596,13 @@ long setUpOnePvPerFileOutput(INPUTFILENAME **input, OUTPUTFILENAME **output, lon
     }
   }
   for (i = 0; i < input1.n_variables; i++) {
-    if (input1.ReadbackNames) {
-      replace_string(buffer, input1.ReadbackNames[i], "/", "+");
-    } else {
-      replace_string(buffer, input1.DeviceNames[i], "/", "+");
-    }
-    sprintf((*output)[i].origOutputFile, "%s/%s", onePvOutputDirectory, buffer);
+    pvDirName = replaceSlashesWithPlus(input1.ReadbackNames ? input1.ReadbackNames[i] : input1.DeviceNames[i]);
+    if (!pvDirName)
+      SDDS_Bomb("memory allocation failure");
+    if (snprintf((*output)[i].origOutputFile,
+                 strlen(onePvOutputDirectory) + strlen(pvDirName) + 2,
+                 "%s/%s", onePvOutputDirectory, pvDirName) < 0)
+      SDDS_Bomb("unable to create output directory name");
     if (access((*output)[i].origOutputFile, F_OK) != 0) {
       mode_t mode;
       mode = umask(0);
@@ -2606,7 +2613,11 @@ long setUpOnePvPerFileOutput(INPUTFILENAME **input, OUTPUTFILENAME **output, lon
         exit(1);
       }
     }
-    sprintf((*output)[i].origOutputFile, "%s/%s/log", onePvOutputDirectory, buffer);
+    if (snprintf((*output)[i].origOutputFile,
+                 strlen(onePvOutputDirectory) + strlen(pvDirName) + strlen("/log") + 2,
+                 "%s/%s/log", onePvOutputDirectory, pvDirName) < 0)
+      SDDS_Bomb("unable to create output filename");
+    free(pvDirName);
   }
   free(input1.DeviceNames);
   if (input1.ReadMessages)
@@ -2627,6 +2638,51 @@ long setUpOnePvPerFileOutput(INPUTFILENAME **input, OUTPUTFILENAME **output, lon
   return numFiles;
 }
 #endif
+
+static int runSddsconvertRecover(const char *filename) {
+#ifdef _WIN32
+  if (!filename)
+    return -1;
+  return _spawnlp(_P_WAIT, "sddsconvert", "sddsconvert", "-recover", "-nowarnings", filename, NULL);
+#else
+  pid_t pid;
+  int status;
+  if (!filename)
+    return -1;
+  pid = fork();
+  if (pid < 0)
+    return -1;
+  if (pid == 0) {
+    execlp("sddsconvert", "sddsconvert", "-recover", "-nowarnings", filename, (char *)NULL);
+    _exit(127);
+  }
+  do {
+    if (waitpid(pid, &status, 0) >= 0)
+      break;
+  } while (errno == EINTR);
+  if (WIFEXITED(status))
+    return WEXITSTATUS(status);
+  return -1;
+#endif
+}
+
+static char *replaceSlashesWithPlus(const char *text) {
+  char *result;
+  size_t i, length;
+  if (!text)
+    return NULL;
+  length = strlen(text);
+  if (!(result = malloc(length + 1)))
+    return NULL;
+  for (i = 0; i < length; i++) {
+    if (text[i] == '/')
+      result[i] = '+';
+    else
+      result[i] = text[i];
+  }
+  result[length] = 0;
+  return result;
+}
 
 void interrupt_handler(int sig) {
   exit(1);
