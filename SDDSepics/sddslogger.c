@@ -247,6 +247,9 @@
 
 #include <cadef.h>
 
+/* Used to synchronize shared state accessed from CA preemptive callbacks. */
+#include <epicsMutex.h>
+
 #include "mdb.h"
 #include "scan.h"
 #include "match_string.h"
@@ -539,6 +542,9 @@ void valueRelatedEventHandler(struct event_handler_args event);
 
 DATASTROBE_TRIGGER datastrobeTrigger;
 
+static epicsMutexId datastrobeTriggerMutex = NULL;
+static epicsMutexId enumPVMutex = NULL;
+
 int runControlPingWhileSleep(double sleepTime);
 void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
@@ -601,6 +607,13 @@ int main(int argc, char **argv) {
     return (1);
   }
 #endif
+
+  datastrobeTriggerMutex = epicsMutexCreate();
+  enumPVMutex = epicsMutexCreate();
+  if (!datastrobeTriggerMutex || !enumPVMutex) {
+    fprintf(stderr, "Unable to create mutexes for callback synchronization\n");
+    return (1);
+  }
 
   signal(SIGINT, sigint_interrupt_handler);
   signal(SIGTERM, sigint_interrupt_handler);
@@ -1238,9 +1251,15 @@ int main(int argc, char **argv) {
           return (1);
         }
         ca_poll();
-        if (!input[i].enumPV[input[i].enumPVs].flag &&
-            CheckEnumCACallbackStatus(&input[i].enumPV[input[i].enumPVs], pendIOtime))
+        {
+          int done;
+          epicsMutexLock(enumPVMutex);
+          done = input[i].enumPV[input[i].enumPVs].flag;
+          epicsMutexUnlock(enumPVMutex);
+          if (!done &&
+              CheckEnumCACallbackStatus(&input[i].enumPV[input[i].enumPVs], pendIOtime))
           return (1);
+        }
         input[i].enumPVs++;
       }
     }
@@ -1400,8 +1419,10 @@ int main(int argc, char **argv) {
 #endif
 
     if (datastrobeTriggerPresent) {
+      epicsMutexLock(datastrobeTriggerMutex);
       datastrobeTrigger.datastrobeMissed = 0;
       datastrobeTrigger.trigStep = Step;
+      epicsMutexUnlock(datastrobeTriggerMutex);
     }
     ElapsedTime = getTimeInSecs() - StartTime;
     RunTime = getTimeInSecs() - RunStartTime;
@@ -1455,7 +1476,13 @@ int main(int argc, char **argv) {
     }
     if (datastrobeTriggerPresent) {
       ping = 0;
-      while (!datastrobeTrigger.triggered) {
+      while (1) {
+        int triggered;
+        epicsMutexLock(datastrobeTriggerMutex);
+        triggered = datastrobeTrigger.triggered;
+        epicsMutexUnlock(datastrobeTriggerMutex);
+        if (triggered)
+          break;
         if (ping == 20) {
           ping = 0;
 #ifdef USE_RUNCONTROL
@@ -1602,9 +1629,11 @@ int main(int argc, char **argv) {
       if (CondMode & RETAKE_STEP)
         Step--;
       if (datastrobeTriggerPresent) {
+        epicsMutexLock(datastrobeTriggerMutex);
         datastrobeTrigger.datalogged = 1;
         datastrobeTrigger.triggered = 0;
         datastrobeTrigger.datastrobeMissed = 0;
+        epicsMutexUnlock(datastrobeTriggerMutex);
       }
       if (InhibitWaitTime > 0) {
 #ifdef USE_RUNCONTROL
@@ -1661,7 +1690,13 @@ int main(int argc, char **argv) {
       }
       if (datastrobeTriggerPresent) {
         ping = 0;
-        while (!datastrobeTrigger.triggered) {
+        while (1) {
+          int triggered;
+          epicsMutexLock(datastrobeTriggerMutex);
+          triggered = datastrobeTrigger.triggered;
+          epicsMutexUnlock(datastrobeTriggerMutex);
+          if (triggered)
+            break;
           if (ping == 20) {
             ping = 0;
 #ifdef USE_RUNCONTROL
@@ -1688,9 +1723,11 @@ int main(int argc, char **argv) {
       if (CondMode & RETAKE_STEP)
         Step--;
       if (datastrobeTriggerPresent) {
+        epicsMutexLock(datastrobeTriggerMutex);
         datastrobeTrigger.datalogged = 1;
         datastrobeTrigger.triggered = 0;
         datastrobeTrigger.datastrobeMissed = 0;
+        epicsMutexUnlock(datastrobeTriggerMutex);
       }
       continue;
     }
@@ -1733,9 +1770,11 @@ int main(int argc, char **argv) {
       }
       LogStep = 0;
       if (datastrobeTriggerPresent) {
+        epicsMutexLock(datastrobeTriggerMutex);
         datastrobeTrigger.datalogged = 1;
         datastrobeTrigger.triggered = 0;
         datastrobeTrigger.datastrobeMissed = 0;
+        epicsMutexUnlock(datastrobeTriggerMutex);
       }
       continue;
     }
@@ -1755,16 +1794,23 @@ int main(int argc, char **argv) {
       */
 
     if (highTimePrecision) {
-      if (datastrobeTriggerPresent)
-        LEpochTime = datastrobeTrigger.currentValue; /*This is a double value because EPICS does not support long doubles */
-      else
+      if (datastrobeTriggerPresent) {
+        double strobeTime;
+        epicsMutexLock(datastrobeTriggerMutex);
+        strobeTime = datastrobeTrigger.currentValue;
+        epicsMutexUnlock(datastrobeTriggerMutex);
+        /* This is a double value because EPICS does not support long doubles */
+        LEpochTime = strobeTime;
+      } else
         LEpochTime = getLongDoubleTimeInSecs();
       ElapsedTime = LEpochTime - StartTime;
       RunTime = LEpochTime - RunStartTime;
     } else {
-      if (datastrobeTriggerPresent)
+      if (datastrobeTriggerPresent) {
+        epicsMutexLock(datastrobeTriggerMutex);
         EpochTime = datastrobeTrigger.currentValue;
-      else
+        epicsMutexUnlock(datastrobeTriggerMutex);
+      } else
         EpochTime = getTimeInSecs();
       ElapsedTime = EpochTime - StartTime;
       RunTime = EpochTime - RunStartTime;
@@ -1784,9 +1830,12 @@ int main(int argc, char **argv) {
       continue;
     }
     if (datastrobeTriggerPresent) {
-      if (datastrobeTrigger.datastrobeMissed) {
-        fprintf(stderr, "%lf - data strobe missed = %ld\n", getTimeInSecs(), datastrobeTrigger.datastrobeMissed);
-      }
+      long missedStrobes;
+      epicsMutexLock(datastrobeTriggerMutex);
+      missedStrobes = datastrobeTrigger.datastrobeMissed;
+      epicsMutexUnlock(datastrobeTriggerMutex);
+      if (missedStrobes)
+        fprintf(stderr, "%lf - data strobe missed = %ld\n", getTimeInSecs(), missedStrobes);
     }
 
     for (i = 0; i < numFiles; i++) {
@@ -1820,6 +1869,10 @@ int main(int argc, char **argv) {
         }
       }
       if (datastrobeTriggerPresent && (!minimal)) {
+        long missedStrobes;
+        epicsMutexLock(datastrobeTriggerMutex);
+        missedStrobes = datastrobeTrigger.datastrobeMissed;
+        epicsMutexUnlock(datastrobeTriggerMutex);
         if (highTimePrecision) {
           if (!SDDS_SetRowValues(&output_page[i], SDDS_BY_NAME | SDDS_PASS_BY_VALUE, outputRow[i],
                                  "TimeWS", getLongDoubleTimeInSecs(),
@@ -1836,7 +1889,7 @@ int main(int argc, char **argv) {
           }
         }
         if (!SDDS_SetRowValues(&output_page[i], SDDS_BY_NAME | SDDS_PASS_BY_VALUE, outputRow[i],
-                               "MissedStrobes", datastrobeTrigger.datastrobeMissed,
+                               "MissedStrobes", missedStrobes,
                                NULL)) {
           SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
           errorFound = 1;
@@ -1902,9 +1955,11 @@ int main(int argc, char **argv) {
       newFileCountdown = 0;
     flushStep++;
     if (datastrobeTriggerPresent) {
+      epicsMutexLock(datastrobeTriggerMutex);
       datastrobeTrigger.datalogged = 1;
       datastrobeTrigger.triggered = 0;
       datastrobeTrigger.datastrobeMissed = 0;
+      epicsMutexUnlock(datastrobeTriggerMutex);
     }
     if (flushInterval == 1 || flushStep >= flushInterval) {
       t1 = getTimeInSecs();
@@ -1935,9 +1990,15 @@ int main(int argc, char **argv) {
                  }
               */
       }
-      if (datastrobeTrigger.triggered) {
+      {
+        int triggered;
+        epicsMutexLock(datastrobeTriggerMutex);
+        triggered = datastrobeTrigger.triggered;
+        epicsMutexUnlock(datastrobeTriggerMutex);
+        if (triggered) {
         t2 = getTimeInSecs();
         fprintf(stderr, "Data strobe detected while writing files (%lf). Gap time = %lf\n", t2, t2 - t1);
+        }
       }
       /*
             if (i+1 >= numFiles) {
@@ -2470,11 +2531,13 @@ void getStringValuesOfEnumPV(struct event_handler_args event) {
 
   if (!event.usr)
     return;
+  epicsMutexLock(enumPVMutex);
   enumPV = (ENUM_PV *)(event.usr);
   if (event.status != ECA_NORMAL || !event.dbr) {
     enumPV->no_str = 0;
     enumPV->strs = NULL;
     enumPV->flag = 1;
+    epicsMutexUnlock(enumPVMutex);
     return;
   }
 
@@ -2500,12 +2563,14 @@ void getStringValuesOfEnumPV(struct event_handler_args event) {
     if (!enumPV->strs) {
       enumPV->no_str = 0;
       enumPV->flag = 1;
+      epicsMutexUnlock(enumPVMutex);
       return;
     }
     for (i = 0; i < n; i++)
       SDDS_CopyString(&enumPV->strs[i], pvalue->strs[i]);
   }
   enumPV->flag = 1;
+  epicsMutexUnlock(enumPVMutex);
 }
 
 long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
@@ -2514,16 +2579,22 @@ long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
   ca_poll();
   ntries = (long)(pendIOtime * 100);
   while (ntries) {
-    if (!enumPV->flag) {
-      ca_poll();
-      usleepSystemIndependent(1000);
-    } else {
+    int done;
+    epicsMutexLock(enumPVMutex);
+    done = enumPV->flag;
+    epicsMutexUnlock(enumPVMutex);
+    if (done)
       return 0;
-    }
+    ca_poll();
+    usleepSystemIndependent(1000);
     ntries--;
   }
-  if (enumPV->flag)
+  epicsMutexLock(enumPVMutex);
+  if (enumPV->flag) {
+    epicsMutexUnlock(enumPVMutex);
     return 0;
+  }
+  epicsMutexUnlock(enumPVMutex);
   fprintf(stderr, "callback failed for enumeric PV %s\n", enumPV->PVname);
   return 1;
 }
@@ -2536,10 +2607,12 @@ void datastrobeTriggerEventHandler(struct event_handler_args event) {
 #ifdef DEBUG
   fprintf(stderr, "Received callback on data strobe PV\n");
 #endif
+  epicsMutexLock(datastrobeTriggerMutex);
   if (datastrobeTrigger.initialized == 0) {
     /* the first callback is just the connection event */
     datastrobeTrigger.initialized = 1;
     datastrobeTrigger.datalogged = 1;
+    epicsMutexUnlock(datastrobeTriggerMutex);
     return;
   }
   datastrobeTrigger.currentValue = *((double *)event.dbr);
@@ -2550,10 +2623,12 @@ void datastrobeTriggerEventHandler(struct event_handler_args event) {
   if (!datastrobeTrigger.datalogged)
     datastrobeTrigger.datastrobeMissed++;
   datastrobeTrigger.datalogged = 0;
+  epicsMutexUnlock(datastrobeTriggerMutex);
   return;
 }
 
 long setupDatastrobeTriggerCallbacks(DATASTROBE_TRIGGER *datastrobeTrigger) {
+  epicsMutexLock(datastrobeTriggerMutex);
   datastrobeTrigger->trigStep = -1;
   datastrobeTrigger->currentValue = 0;
   datastrobeTrigger->triggered = 0;
@@ -2561,6 +2636,7 @@ long setupDatastrobeTriggerCallbacks(DATASTROBE_TRIGGER *datastrobeTrigger) {
   datastrobeTrigger->usrValue = 1;
   datastrobeTrigger->datalogged = 0;
   datastrobeTrigger->initialized = 0;
+  epicsMutexUnlock(datastrobeTriggerMutex);
   if (ca_search(datastrobeTrigger->PV, &datastrobeTrigger->channelID) != ECA_NORMAL) {
     fprintf(stderr, "error: search failed for control name %s\n", datastrobeTrigger->PV);
     return 0;
