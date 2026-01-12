@@ -253,6 +253,13 @@
 #include "SDDS.h"
 #include "SDDSepics.h"
 
+/* EPICS typically defines MAX_ENUM_STATES in db_access.h (pulled in by cadef.h).
+ * Provide a fallback for unusual header stacks.
+ */
+#ifndef MAX_ENUM_STATES
+#  define MAX_ENUM_STATES 16
+#endif
+
 #ifdef _WIN32
 #  include <winsock.h>
 #  include <process.h>
@@ -2437,13 +2444,47 @@ void startMonitorFile(SDDS_DATASET *output_page, char *outputfile, long Precisio
 
 void getStringValuesOfEnumPV(struct event_handler_args event) {
   int i;
-  struct dbr_gr_enum *pvalue = (struct dbr_gr_enum *)(event.dbr);
+  int n;
+  struct dbr_ctrl_enum *pvalue;
   ENUM_PV *enumPV;
+
+  if (!event.usr)
+    return;
   enumPV = (ENUM_PV *)(event.usr);
-  enumPV->no_str = pvalue->no_str;
-  enumPV->strs = malloc(sizeof(char *) * (enumPV->no_str));
-  for (i = 0; i < enumPV->no_str; i++)
-    SDDS_CopyString(&enumPV->strs[i], pvalue->strs[i]);
+  if (event.status != ECA_NORMAL || !event.dbr) {
+    enumPV->no_str = 0;
+    enumPV->strs = NULL;
+    enumPV->flag = 1;
+    return;
+  }
+
+  /* Match the type requested in ca_array_get_callback(): DBR_CTRL_ENUM */
+  pvalue = (struct dbr_ctrl_enum *)(event.dbr);
+  n = (int)pvalue->no_str;
+  if (n < 0)
+    n = 0;
+  if (n > MAX_ENUM_STATES)
+    n = MAX_ENUM_STATES;
+
+  /* Replace any previous list (defensive: callbacks can be re-fired on reconnect). */
+  if (enumPV->strs) {
+    for (i = 0; i < enumPV->no_str; i++)
+      free(enumPV->strs[i]);
+    free(enumPV->strs);
+    enumPV->strs = NULL;
+  }
+
+  enumPV->no_str = n;
+  if (n) {
+    enumPV->strs = malloc(sizeof(char *) * n);
+    if (!enumPV->strs) {
+      enumPV->no_str = 0;
+      enumPV->flag = 1;
+      return;
+    }
+    for (i = 0; i < n; i++)
+      SDDS_CopyString(&enumPV->strs[i], pvalue->strs[i]);
+  }
   enumPV->flag = 1;
 }
 
