@@ -536,7 +536,8 @@ void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
 void rc_interrupt_handler();
 
-volatile int sigint = 0;
+static volatile sig_atomic_t terminateSignal = 0;
+static volatile sig_atomic_t sigint = 0;
 
 int main(int argc, char **argv) {
   SCANNED_ARG *s_arg;
@@ -600,7 +601,7 @@ int main(int argc, char **argv) {
   signal(SIGFPE, interrupt_handler);
   signal(SIGSEGV, interrupt_handler);
 #ifndef _WIN32
-  signal(SIGHUP, interrupt_handler);
+  signal(SIGHUP, sigint_interrupt_handler);
   signal(SIGQUIT, sigint_interrupt_handler);
   signal(SIGTRAP, interrupt_handler);
   signal(SIGBUS, interrupt_handler);
@@ -2716,15 +2717,38 @@ static char *replaceSlashesWithPlus(const char *text) {
 }
 
 void interrupt_handler(int sig) {
+  /* Fatal/abnormal signal: avoid non-async-signal-safe cleanup.
+     Use _exit() to terminate immediately.
+   */
+#if !defined(_WIN32)
+  {
+    const char msg[] = "sddslogger: fatal signal received, aborting\n";
+    /* write() is async-signal-safe */
+    write(2, msg, sizeof(msg) - 1);
+  }
+  _exit(128 + sig);
+#else
+  /* Best effort on Windows builds */
   exit(1);
+#endif
 }
 
 void sigint_interrupt_handler(int sig) {
+  static volatile sig_atomic_t seen = 0;
+
+  terminateSignal = sig;
   sigint = 1;
-  signal(SIGINT, interrupt_handler);
-  signal(SIGTERM, interrupt_handler);
+  /* If the user sends a second termination signal, exit immediately. */
+  if (seen) {
+#if !defined(_WIN32)
+    _exit(128 + sig);
+#else
+    exit(1);
+#endif
+  }
+  seen = 1;
 #ifndef _WIN32
-  signal(SIGQUIT, interrupt_handler);
+  /* SIGQUIT is a termination request in this program */
 #endif
 }
 
