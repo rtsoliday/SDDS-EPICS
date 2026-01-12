@@ -575,6 +575,7 @@ int main(int argc, char **argv) {
   long currentFile = 0;
   double t1, t2;
   short highTimePrecision = 0;
+  long fileCapacity = 0;
 
   argc = scanargs(&s_arg, argc, argv);
   if (argc == 1) {
@@ -609,12 +610,18 @@ int main(int argc, char **argv) {
   append = appendToPage = recover = erase = outRow = 0;
   initialOutputRow = NULL;
   outputRow = NULL;
-  input = tmalloc(sizeof(*input) * 40);
-  for (i = 0; i < 40; i++)
+
+  fileCapacity = 16;
+  input = tmalloc(sizeof(*input) * fileCapacity);
+  output = tmalloc(sizeof(*output) * fileCapacity);
+  for (i = 0; i < fileCapacity; i++) {
     input[i].filename = input[i].lastlink = NULL;
-  output = tmalloc(sizeof(*output) * 40);
-  input_page = tmalloc(sizeof(*input_page) * 40);
-  output_page = tmalloc(sizeof(*output_page) * 40);
+    output[i].filename = output[i].origOutputFile = NULL;
+    output[i].ReadbackIndex = NULL;
+  }
+
+  input_page = NULL;
+  output_page = NULL;
   SampleTimeInterval = DEFAULT_TIME_INTERVAL;
   LogInterval = 1;
   flushInterval = 1;
@@ -913,6 +920,25 @@ int main(int argc, char **argv) {
       }
     } else {
       if (fileSwitch == 0) {
+        if (numFiles >= fileCapacity) {
+          long newCapacity;
+          INPUTFILENAME *newInput;
+          OUTPUTFILENAME *newOutput;
+
+          newCapacity = fileCapacity * 2;
+          newInput = SDDS_Realloc(input, sizeof(*input) * newCapacity);
+          newOutput = SDDS_Realloc(output, sizeof(*output) * newCapacity);
+          if (!newInput || !newOutput)
+            SDDS_Bomb("memory allocation failure");
+          input = newInput;
+          output = newOutput;
+          for (i = fileCapacity; i < newCapacity; i++) {
+            input[i].filename = input[i].lastlink = NULL;
+            output[i].filename = output[i].origOutputFile = NULL;
+            output[i].ReadbackIndex = NULL;
+          }
+          fileCapacity = newCapacity;
+        }
         input[numFiles].filename = s_arg[i_arg].list[0];
         fileSwitch++;
       } else {
@@ -951,8 +977,7 @@ int main(int argc, char **argv) {
       SDDS_Bomb("Give one and only one input filename for -onePvPerFile mode");
     if (!(numFiles = setUpOnePvPerFileOutput(&input, &output, numFiles, onePvOutputDirectory)))
       SDDS_Bomb("Problem setting up for one-pv-per-file output");
-    if (!(output_page = malloc(sizeof(*output_page) * numFiles)))
-      SDDS_Bomb("Memory allocation failure");
+    fileCapacity = numFiles;
     SDDS_SetDefaultIOBufferSize(1000);
     minimal = 1;
     if (watchInput) {
@@ -982,6 +1007,10 @@ int main(int argc, char **argv) {
     }
   }
 #endif
+
+  if (!(input_page = tmalloc(sizeof(*input_page) * numFiles)) ||
+      !(output_page = tmalloc(sizeof(*output_page) * numFiles)))
+    SDDS_Bomb("Memory allocation failure");
 
   factor = 1.0 / LogInterval;
   if (totalTimeSet) {
@@ -2171,18 +2200,20 @@ long getScalarMonitorDataLocal(char ***DeviceName, char ***ReadMessage,
                           "ReadbackUnits", "ReadbackUnit", "Units", NULL))) {
     fprintf(stderr, "Warning: ReadbackUnits and Units columns both missing or not string type\n");
   }
-  switch (SDDS_CheckColumn(&inSet, ReadbackUnitsColumnName, NULL, SDDS_STRING, NULL)) {
-  case SDDS_CHECK_OKAY:
-    UnitsDefined = 1;
-    break;
-  case SDDS_CHECK_NONEXISTENT:
-    break;
-  case SDDS_CHECK_WRONGTYPE:
-  case SDDS_CHECK_WRONGUNITS:
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-    printf("Something wrong with column \"ReadbackUnits\".\n");
-    exit(1);
-    break;
+  if (ReadbackUnitsColumnName) {
+    switch (SDDS_CheckColumn(&inSet, ReadbackUnitsColumnName, NULL, SDDS_STRING, NULL)) {
+    case SDDS_CHECK_OKAY:
+      UnitsDefined = 1;
+      break;
+    case SDDS_CHECK_NONEXISTENT:
+      break;
+    case SDDS_CHECK_WRONGTYPE:
+    case SDDS_CHECK_WRONGUNITS:
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      printf("Something wrong with column \"ReadbackUnits\".\n");
+      exit(1);
+      break;
+    }
   }
 
   PrecisionDefined = 0;
