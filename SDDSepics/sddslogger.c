@@ -530,6 +530,7 @@ long setUpOnePvPerFileOutput(INPUTFILENAME **input, OUTPUTFILENAME **output, lon
 
 static int runSddsconvertRecover(const char *filename);
 static char *replaceSlashesWithPlus(const char *text);
+static char *dupTruncateString(const char *src, size_t maxLen);
 
 /*for datastrobe trigger */
 void datastrobeTriggerEventHandler(struct event_handler_args event);
@@ -960,8 +961,24 @@ int main(int argc, char **argv) {
 #ifdef USE_RUNCONTROL
   if (rcParam.PV) {
     rcParam.handle[0] = (char)0;
-    rcParam.Desc = (char *)realloc(rcParam.Desc, 41 * sizeof(char));
-    rcParam.PV = (char *)realloc(rcParam.PV, 41 * sizeof(char));
+    if (!rcParam.Desc)
+      SDDS_CopyString(&rcParam.Desc, "sddslogger");
+    if (SDDS_StringIsBlank(rcParam.PV))
+      SDDS_Bomb("invalid -runControlPV: string is blank");
+
+    /* Defensive: ensure inputs are NUL-terminated and within the 40-char runcontrol convention.
+     * Using realloc() to shrink does not guarantee NUL termination if the original string was longer.
+     */
+    {
+      char *pv = dupTruncateString(rcParam.PV, 40);
+      char *desc = dupTruncateString(rcParam.Desc, 40);
+      if (!pv || !desc)
+        SDDS_Bomb("memory allocation failure");
+      free(rcParam.PV);
+      free(rcParam.Desc);
+      rcParam.PV = pv;
+      rcParam.Desc = desc;
+    }
     rcParam.status = runControlInit(rcParam.PV,
                                     rcParam.Desc,
                                     rcParam.pingTimeout,
@@ -2758,6 +2775,24 @@ static char *replaceSlashesWithPlus(const char *text) {
   }
   result[length] = 0;
   return result;
+}
+
+static char *dupTruncateString(const char *src, size_t maxLen) {
+  size_t n;
+  char *dest;
+
+  if (!src)
+    src = "";
+  n = strlen(src);
+  if (n > maxLen)
+    n = maxLen;
+  dest = malloc(n + 1);
+  if (!dest)
+    return NULL;
+  if (n)
+    memcpy(dest, src, n);
+  dest[n] = '\0';
+  return dest;
 }
 
 void interrupt_handler(int sig) {
