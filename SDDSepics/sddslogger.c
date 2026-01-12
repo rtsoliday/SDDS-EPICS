@@ -2815,7 +2815,8 @@ static int runSddsconvertRecover(const char *filename) {
   return _spawnlp(_P_WAIT, "sddsconvert", "sddsconvert", "-recover", "-nowarnings", filename, NULL);
 #else
   pid_t pid;
-  int status;
+  int status = 0;
+  pid_t wpid;
   if (!filename)
     return -1;
   pid = fork();
@@ -2826,9 +2827,13 @@ static int runSddsconvertRecover(const char *filename) {
     _exit(127);
   }
   do {
-    if (waitpid(pid, &status, 0) >= 0)
+    wpid = waitpid(pid, &status, 0);
+    if (wpid >= 0)
       break;
   } while (errno == EINTR);
+
+  if (wpid < 0)
+    return -1;
   if (WIFEXITED(status))
     return WEXITSTATUS(status);
   return -1;
