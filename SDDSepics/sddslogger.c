@@ -1721,8 +1721,8 @@ int main(int argc, char **argv) {
         if (verbose) {
           printf("Step %ld---changes not outside deadbands---continuing\n", Step);
           fflush(stdout);
-          break;
         }
+        break;
       }
     }
     if (i != numFiles) {
