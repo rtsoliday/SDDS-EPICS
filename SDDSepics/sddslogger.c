@@ -1390,7 +1390,11 @@ int main(int argc, char **argv) {
   if (datastrobeTriggerPresent) {
     fprintf(stdout, "setup trigger...\n");
     fflush(stdout);
-    setupDatastrobeTriggerCallbacks(&datastrobeTrigger);
+    if (!setupDatastrobeTriggerCallbacks(&datastrobeTrigger)) {
+      fprintf(stderr, "error: failed to set up data strobe PV callbacks for %s\n",
+              datastrobeTrigger.PV ? datastrobeTrigger.PV : "(null)");
+      return (1);
+    }
   }
 
   PingTime = getTimeInSecs() - 2;
@@ -1742,9 +1746,11 @@ int main(int argc, char **argv) {
         }
         LogStep = 0;
         if (datastrobeTriggerPresent) {
+          epicsMutexLock(datastrobeTriggerMutex);
           datastrobeTrigger.datalogged = 1;
           datastrobeTrigger.triggered = 0;
           datastrobeTrigger.datastrobeMissed = 0;
+          epicsMutexUnlock(datastrobeTriggerMutex);
         }
         continue;
       } else if (onerrorindex == ONERROR_EXIT) {
@@ -2515,8 +2521,12 @@ void startMonitorFile(SDDS_DATASET *output_page, char *outputfile, long Precisio
                           NULL))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   for (i = 0; i < enumPVs; i++) {
-    if (!SDDS_SetArrayVararg(output_page, enumPV[i].PVname,
-                             SDDS_POINTER_ARRAY, enumPV[i].strs, enumPV[i].no_str))
+    long ok;
+    epicsMutexLock(enumPVMutex);
+    ok = SDDS_SetArrayVararg(output_page, enumPV[i].PVname,
+                             SDDS_POINTER_ARRAY, enumPV[i].strs, enumPV[i].no_str);
+    epicsMutexUnlock(enumPVMutex);
+    if (!ok)
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (disconnect && !SDDS_DisconnectFile(output_page))
@@ -2586,7 +2596,7 @@ long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
     if (done)
       return 0;
     ca_poll();
-    usleepSystemIndependent(100);
+    usleepSystemIndependent(100000);
     ntries--;
   }
   epicsMutexLock(enumPVMutex);
