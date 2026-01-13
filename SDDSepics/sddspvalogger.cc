@@ -3860,27 +3860,30 @@ long CheckInhibitPV(SDDS_TABLE *SDDS_table, PVA_OVERALL *pvaInhibit, LOGGER_DATA
         double waittime, timewaited = 0;
         if (rcParam.PV) {
           waittime = rcParam.pingTimeout / 1000.0 / 2.0;
-          while (timewaited < logger->inhibit_waittime) //TEST THIS
-          {
-            if (logger->inhibit_waittime - timewaited > waittime) {
-              if (pvaThreadSleep(waittime) == 1) {
+          /* Guard against zero/negative wait intervals (would cause infinite loop). */
+          if (waittime <= 0) {
+            if (pvaThreadSleep(logger->inhibit_waittime) == 1) {
+              return (-1);
+            }
+          } else {
+            while (timewaited < logger->inhibit_waittime) {
+              double remaining = logger->inhibit_waittime - timewaited;
+              double slice = remaining > waittime ? waittime : remaining;
+              if (pvaThreadSleep(slice) == 1) {
                 return (-1);
               }
-              //Ping run control if in use
-              if (PingRunControl() != 0) {
-                return (-1);
-              }
-            } else {
-              if (pvaThreadSleep(logger->inhibit_waittime - timewaited) == 1) {
-                return (-1);
+              timewaited += slice;
+              /* Ping run control periodically while waiting. */
+              if (timewaited + 1e-12 < logger->inhibit_waittime) {
+                if (PingRunControl() != 0) {
+                  return (-1);
+                }
               }
             }
-            timewaited += waittime;
           }
         }
       }
       return (1);
-      ;
     }
   }
   return (0);
