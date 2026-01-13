@@ -2182,6 +2182,32 @@ long VerifyPVTypes(PVA_OVERALL *pva, LOGGER_DATA *logger) {
           }
         }
       }
+
+      /*
+       * Re-validate scalarArray slice indices after ExpectElements may have been adjusted.
+       * Prevents out-of-bounds reads when applying ScalarArrayStartIndex/EndIndex.
+       */
+      if (logger->expectScalarArray[j] && (logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
+        if (logger->scalarArrayStartIndex[j] < 1 ||
+            logger->scalarArrayEndIndex[j] < logger->scalarArrayStartIndex[j] ||
+            logger->scalarArrayEndIndex[j] > logger->expectElements[j]) {
+          fprintf(stderr, "Error (sddspvalogger): Invalid ScalarArrayStartIndex/EndIndex for %s (start=%d, end=%d, ExpectElements=%d)\n",
+                  pva->pvaChannelNames[j].c_str(),
+                  (int)logger->scalarArrayStartIndex[j],
+                  (int)logger->scalarArrayEndIndex[j],
+                  (int)logger->expectElements[j]);
+          return (1);
+        }
+      }
+      if (logger->treatScalarArrayAsScalar[j] && (logger->scalarArrayStartIndex != NULL)) {
+        if (logger->scalarArrayStartIndex[j] < 1 || logger->scalarArrayStartIndex[j] > logger->expectElements[j]) {
+          fprintf(stderr, "Error (sddspvalogger): Invalid ScalarArrayStartIndex for scalar extraction for %s (start=%d, ExpectElements=%d)\n",
+                  pva->pvaChannelNames[j].c_str(),
+                  (int)logger->scalarArrayStartIndex[j],
+                  (int)logger->expectElements[j]);
+          return (1);
+        }
+      }
       logger->verifiedType[j] = true;
     }
   }
@@ -2339,6 +2365,8 @@ long ReadInputFiles(LOGGER_DATA *logger) {
   char **stringColumn;
   bool ExpectNumericExists = false;
   bool StorageTypeExists = false;
+  bool ScalarArrayStartIndexExists = false;
+  bool ScalarArrayEndIndexExists = false;
 
   if (!SDDS_InitializeInput(&SDDS_table, logger->inputfile)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -2487,11 +2515,37 @@ long ReadInputFiles(LOGGER_DATA *logger) {
   }
 
   if (SDDS_CHECK_OKAY == SDDS_CheckColumn(&SDDS_table, (char *)"ScalarArrayStartIndex", NULL, SDDS_ANY_INTEGER_TYPE, NULL)) {
+    ScalarArrayStartIndexExists = true;
     logger->scalarArrayStartIndex = SDDS_GetColumnInLong(&SDDS_table, (char *)"ScalarArrayStartIndex");
   }
-  
+
   if (SDDS_CHECK_OKAY == SDDS_CheckColumn(&SDDS_table, (char *)"ScalarArrayEndIndex", NULL, SDDS_ANY_INTEGER_TYPE, NULL)) {
+    ScalarArrayEndIndexExists = true;
     logger->scalarArrayEndIndex = SDDS_GetColumnInLong(&SDDS_table, (char *)"ScalarArrayEndIndex");
+  }
+
+  /* If user specifies slicing, require both columns so bounds are well-defined. */
+  if (ScalarArrayStartIndexExists != ScalarArrayEndIndexExists) {
+    fprintf(stderr, "Error (sddspvalogger): ScalarArrayStartIndex and ScalarArrayEndIndex must be provided together\n");
+    return (1);
+  }
+
+  /* Validate slice bounds against ExpectElements from the input file. */
+  if (ScalarArrayStartIndexExists && ScalarArrayEndIndexExists) {
+    for (n = 0; n < logger->pvCount; n++) {
+      if (logger->expectScalarArray[n]) {
+        if (logger->scalarArrayStartIndex[n] < 1 ||
+            logger->scalarArrayEndIndex[n] < logger->scalarArrayStartIndex[n] ||
+            logger->scalarArrayEndIndex[n] > logger->expectElements[n]) {
+          fprintf(stderr, "Error (sddspvalogger): Invalid ScalarArrayStartIndex/EndIndex for PV %s (start=%d, end=%d, ExpectElements=%d)\n",
+                  logger->controlName[n],
+                  (int)logger->scalarArrayStartIndex[n],
+                  (int)logger->scalarArrayEndIndex[n],
+                  (int)logger->expectElements[n]);
+          return (1);
+        }
+      }
+    }
   }
 
   // Mark single-element scalarArrays to be treated as scalars
