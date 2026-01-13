@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cerrno>
 #include <csignal>
+#include <cstdlib>
 
 #include "pvaSDDS.h"
 #include "pv/thread.h"
@@ -251,7 +252,8 @@ void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
 void rc_interrupt_handler();
 
-volatile int sigint = 0;
+static volatile sig_atomic_t sigint = 0;
+static volatile sig_atomic_t sigintSignal = 0;
 
 #define CLO_SAMPLEINTERVAL 0
 #define CLO_LOGINTERVAL 1
@@ -570,6 +572,9 @@ int main(int argc, char *argv[]) {
 
   //Main loop
   for (logger.step = 0; logger.step < logger.Nsteps && logger.step != logger.NstepsAdjusted; logger.step++) {
+    if (sigint) {
+      break;
+    }
     //Ping run control if in use
     if (PingRunControl() != 0) {
       break;
@@ -597,6 +602,9 @@ int main(int argc, char *argv[]) {
       if (pvaStrobe != NULL) {
         if (pvaThreadSleepWithPollingAndDataStrobe(pvaArray, 3, pvaStrobe, logger.monitorRandomTimedTrigger, logger.datastrobe_holdoff) != 0) //Pings run control every 5 seconds
         {
+          if (sigint) {
+            break;
+          }
           CloseFiles(SDDS_table, &pva, &logger);
           return (1);
         }
@@ -604,6 +612,9 @@ int main(int argc, char *argv[]) {
         timeToWait = targetTime - getLongDoubleTimeInSecs();
         if (pvaThreadSleepWithPolling(pvaArray, 3, targetTime) != 0) //Pings run control every 5 seconds
         {
+          if (sigint) {
+            break;
+          }
           CloseFiles(SDDS_table, &pva, &logger);
           return (1);
         }
@@ -623,6 +634,9 @@ int main(int argc, char *argv[]) {
         }
         if (logger.datastrobe_holdoff > 1e-7) {
           if (pvaThreadSleep(logger.datastrobe_holdoff) == 1) {
+            if (sigint) {
+              break;
+            }
             CloseFiles(SDDS_table, &pva, &logger);
             return (1);
           }
@@ -630,6 +644,9 @@ int main(int argc, char *argv[]) {
       } else {
         timeToWait = targetTime - getLongDoubleTimeInSecs();
         if (pvaThreadSleep(timeToWait) == 1) {
+          if (sigint) {
+            break;
+          }
           CloseFiles(SDDS_table, &pva, &logger);
           return (1);
         }
@@ -1818,11 +1835,18 @@ void AverageData(PVA_OVERALL *pva, LOGGER_DATA *logger) {
 #  include <thread>
 #  include <chrono>
 int nanosleep(const struct timespec *req, struct timespec *rem) {
-  long double ldSeconds;
-  long mSeconds;
-  ldSeconds = req->tv_sec + req->tv_nsec;
-  mSeconds = ldSeconds / 1000000;
-  std::this_thread::sleep_for(std::chrono::microseconds(mSeconds));
+  (void)rem;
+  if (!req) {
+    return (0);
+  }
+  /*
+   * Convert (tv_sec, tv_nsec) to microseconds.
+   * Note: tv_nsec is nanoseconds, not fractional seconds.
+   */
+  long long usec = (long long)req->tv_sec * 1000000LL + (long long)(req->tv_nsec / 1000L);
+  if (usec > 0) {
+    std::this_thread::sleep_for(std::chrono::microseconds(usec));
+  }
   return (0);
 }
 #endif
@@ -1832,13 +1856,23 @@ long pvaThreadSleep(long double seconds) {
   struct timespec remainingTime;
   long double targetTime;
 
+  if (sigint) {
+    return (1);
+  }
+
   if (seconds > 0) {
     targetTime = getLongDoubleTimeInSecs() + seconds;
     while (seconds > 5) {
+      if (sigint) {
+        return (1);
+      }
       delayTime.tv_sec = 5;
       delayTime.tv_nsec = 0;
       while ((nanosleep(&delayTime, &remainingTime) == -1) && (errno == EINTR)) {
         delayTime = remainingTime;
+        if (sigint) {
+          return (1);
+        }
       }
       if (PingRunControl() != 0) //Ping the run control once every 5 seconds
       {
@@ -1851,7 +1885,12 @@ long pvaThreadSleep(long double seconds) {
     delayTime.tv_nsec = (seconds - delayTime.tv_sec) * 1e9;
     while (nanosleep(&delayTime, &remainingTime) == -1 &&
            errno == EINTR)
-      delayTime = remainingTime;
+      {
+        delayTime = remainingTime;
+        if (sigint) {
+          return (1);
+        }
+      }
   }
   return (0);
 }
@@ -1871,8 +1910,14 @@ long pvaThreadSleepWithPolling(PVA_OVERALL **pva, long count, long double target
   if (seconds > 0) {
     PausePVAMonitoring(pva, count); //Pause monitoring because background events cause the CPU usage to be high if there are thousands of PVs.
     while (seconds > 0) {
+      if (sigint) {
+        return (1);
+      }
       while ((nanosleep(&delayTime, &remainingTime) == -1) && (errno == EINTR)) {
         delayTime = remainingTime;
+        if (sigint) {
+          return (1);
+        }
       }
       if (j % rcInterval == 0) {
         if (PingRunControl() != 0) //Ping the run control once every 5 seconds
@@ -1889,8 +1934,14 @@ long pvaThreadSleepWithPolling(PVA_OVERALL **pva, long count, long double target
   seconds = targetTime - getLongDoubleTimeInSecs();
   if (seconds > 0) {
     while (seconds > 0) {
+      if (sigint) {
+        return (1);
+      }
       while ((nanosleep(&delayTime, &remainingTime) == -1) && (errno == EINTR)) {
         delayTime = remainingTime;
+        if (sigint) {
+          return (1);
+        }
       }
       if (PollMonitoredPVA(pva, count) == -1) //Poll monitored PVs and extract values for those that changed
       {
@@ -1942,8 +1993,14 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
       fprintf(stderr, "Logger cannot keep up. Too many PVs and too short an interval. Consider removing the -monitor option.\n");
     }
     while (seconds > 0) {
+      if (sigint) {
+        return (1);
+      }
       while ((nanosleep(&delayTime, &remainingTime) == -1) && (errno == EINTR)) {
         delayTime = remainingTime;
+        if (sigint) {
+          return (1);
+        }
       }
       if (j % rcInterval == 0) {
         if (PingRunControl() != 0) //Ping the run control once every 5 seconds
@@ -1982,8 +2039,14 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
   }
 
   while (1) {
+    if (sigint) {
+      return (1);
+    }
     while ((nanosleep(&delayTime, &remainingTime) == -1) && (errno == EINTR)) {
       delayTime = remainingTime;
+      if (sigint) {
+        return (1);
+      }
     }
 
     if (triggerInterval > 0) {
@@ -2068,7 +2131,7 @@ long VerifyPVTypes(PVA_OVERALL *pva, LOGGER_DATA *logger) {
             fprintf(stderr, "Error (sddspvalogger): ScaleFactor limited to 1.0 for scalarArray type PVs\n");
             return (1);
           }
-          if ((logger->average) && ((logger->average[j] == 'y') || (logger->scaleFactor[j] == 'Y'))) {
+          if ((logger->average) && ((logger->average[j] == 'y') || (logger->average[j] == 'Y'))) {
             fprintf(stderr, "Error (sddspvalogger): Averaging not supported for scalarArray type PVs\n");
             return (1);
           }
@@ -2295,7 +2358,7 @@ long ReadInputFiles(LOGGER_DATA *logger) {
   if (SDDS_CHECK_OKAY == SDDS_CheckColumn(&SDDS_table, (char *)"StorageType", NULL, SDDS_STRING, NULL)) {
     StorageTypeExists = true;
   }
-  if ((ExpectNumericExists == false) && (StorageTypeExists = false)) {
+  if ((ExpectNumericExists == false) && (StorageTypeExists == false)) {
     fprintf(stderr, "Missing ExpectNumeric and StorageType in input file\n");
     return (1);
   }
@@ -3298,7 +3361,12 @@ long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg) {
         }
         logger->totalTimeSet = true;
         if (s_arg[i_arg].n_items == 3) {
-          if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) != 0) {
+          TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0);
+          if (TimeUnits < 0) {
+            fprintf(stderr, "unknown/ambiguous time units given for -time\n");
+            return (1);
+          }
+          if (TimeUnits != 0) {
             logger->TotalTime *= TimeUnitFactor[TimeUnits];
           }
         }
@@ -3692,16 +3760,23 @@ long CheckInputFileValidity(LOGGER_DATA *logger) {
 }
 
 void interrupt_handler(int sig) {
-  exit(1);
+  /*
+   * Async-signal-safe hard stop. We intentionally avoid exit(), stdio,
+   * malloc/free, and any other non-async-signal-safe work here.
+   */
+  _Exit(128 + sig);
 }
 
 void sigint_interrupt_handler(int sig) {
+  /*
+   * First signal requests graceful shutdown (checked in main loop).
+   * Subsequent signal forces an immediate hard stop.
+   */
+  if (sigint) {
+    _Exit(128 + sig);
+  }
   sigint = 1;
-  signal(SIGINT, interrupt_handler);
-  signal(SIGTERM, interrupt_handler);
-#ifndef _WIN32
-  signal(SIGQUIT, interrupt_handler);
-#endif
+  sigintSignal = sig;
 }
 
 void rc_interrupt_handler() {
