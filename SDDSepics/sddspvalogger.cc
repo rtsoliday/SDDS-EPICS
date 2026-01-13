@@ -703,7 +703,7 @@ int main(int argc, char *argv[]) {
     if (j == -1) {
       CloseFiles(SDDS_table, &pva, &logger);
       return (1);
-    } else if (j == 2) {
+    } else if (j == 1) {
       continue;
     }
 
@@ -1571,7 +1571,7 @@ long WriteAccessoryData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *l
                                          logger->timeofdayIndex, logger->StartHour + ((double)logger->currentTime - logger->StartTime) / 3600.0);
 */
         result = SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE,
-                                   logger->timeofdayIndex, logger->timeofdayIndex, logger->HourNow);
+                                   logger->timeofdayIndex, logger->HourNow);
         if (result == 0) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
           return (1);
@@ -1582,7 +1582,7 @@ long WriteAccessoryData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *l
                                          logger->dayofmonthIndex, logger->StartDay + ((double)logger->currentTime - logger->StartTime) / 86400.0);
 */
         result = SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE,
-                                   logger->dayofmonthIndex, logger->dayofmonthIndex, logger->DayNow);
+                                   logger->dayofmonthIndex, logger->DayNow);
         if (result == 0) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
           return (1);
