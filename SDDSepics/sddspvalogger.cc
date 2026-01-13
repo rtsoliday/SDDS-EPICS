@@ -3160,8 +3160,7 @@ long UpdateAndWritePages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *
   double nStart, nEnd;
 
   if (logger->onePv_OutputDirectory != NULL) {
-    n = logger->outputRow[0] % logger->flushInterval;
-    //n = logger->step % logger->flushInterval;
+    n = logger->step % logger->flushInterval;
     nStart = n * logger->filesPerStep;
     nEnd = nStart + logger->filesPerStep;
     if (nEnd > pva->numPVs) {
