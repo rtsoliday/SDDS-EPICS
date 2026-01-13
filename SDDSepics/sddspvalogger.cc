@@ -1,8 +1,11 @@
 
 #include <complex>
 #include <iostream>
+#include <vector>
+#include <string>
 #include <cerrno>
 #include <csignal>
+#include <cctype>
 #include <cstdlib>
 
 #include "pvaSDDS.h"
@@ -19,7 +22,117 @@
 #  include <winsock.h>
 #else
 #  include <unistd.h>
+#  include <sys/types.h>
+#  include <sys/wait.h>
 #endif
+
+static int runCommandNoShell(const char *command) {
+  if (!command) {
+    return 1;
+  }
+
+#ifdef _WIN32
+  int rc = system(command);
+  if (rc != 0) {
+    fprintf(stderr, "Warning (sddspvalogger): command failed (%d): %s\n", rc, command);
+  }
+  return rc;
+#else
+  std::vector<std::string> args;
+  const char *p = command;
+
+  while (*p) {
+    while (*p && isspace((unsigned char)*p)) {
+      p++;
+    }
+    if (!*p) {
+      break;
+    }
+
+    std::string token;
+    while (*p && !isspace((unsigned char)*p)) {
+      if (*p == '\'' || *p == '"') {
+        char quote = *p++;
+        while (*p && *p != quote) {
+          if (quote == '"' && *p == '\\' && p[1]) {
+            p++;
+          }
+          token.push_back(*p++);
+        }
+        if (*p != quote) {
+          fprintf(stderr, "Warning (sddspvalogger): unmatched quote in command: %s\n", command);
+          return 1;
+        }
+        p++;
+      } else if (*p == '\\' && p[1]) {
+        p++;
+        token.push_back(*p++);
+      } else {
+        token.push_back(*p++);
+      }
+    }
+
+    if (!token.empty()) {
+      args.push_back(token);
+    }
+  }
+
+  if (args.empty()) {
+    return 0;
+  }
+
+  std::vector<char *> argv;
+  argv.reserve(args.size() + 1);
+  for (size_t i = 0; i < args.size(); i++) {
+    char *s = strdup(args[i].c_str());
+    if (!s) {
+      fprintf(stderr, "Warning (sddspvalogger): strdup failed running command: %s\n", command);
+      for (size_t k = 0; k < argv.size(); k++) {
+        free(argv[k]);
+      }
+      return 1;
+    }
+    argv.push_back(s);
+  }
+  argv.push_back(NULL);
+
+  pid_t pid = fork();
+  if (pid == 0) {
+    execvp(argv[0], argv.data());
+    _exit(127);
+  }
+  if (pid < 0) {
+    fprintf(stderr, "Warning (sddspvalogger): fork failed running command: %s\n", command);
+    for (size_t k = 0; k < argv.size(); k++) {
+      free(argv[k]);
+    }
+    return 1;
+  }
+
+  int status = 0;
+  while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {
+    /* retry */
+  }
+
+  for (size_t k = 0; k < argv.size(); k++) {
+    free(argv[k]);
+  }
+
+  if (WIFEXITED(status)) {
+    int rc = WEXITSTATUS(status);
+    if (rc != 0) {
+      fprintf(stderr, "Warning (sddspvalogger): command failed (%d): %s\n", rc, command);
+    }
+    return rc;
+  }
+  if (WIFSIGNALED(status)) {
+    fprintf(stderr, "Warning (sddspvalogger): command terminated by signal %d: %s\n", WTERMSIG(status), command);
+    return 128 + WTERMSIG(status);
+  }
+  fprintf(stderr, "Warning (sddspvalogger): command ended unexpectedly: %s\n", command);
+  return 1;
+#endif
+}
 
 #define NTimeUnitNames 4
 static char *TimeUnitNames[NTimeUnitNames] = {
@@ -4492,7 +4605,7 @@ long GlitchLogicRoutines(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, PVA_OVERALL *
           if (logger->verbose) {
             fprintf(stdout, "Executing %s\n", executeScript[i]);
           }
-          system(executeScript[i]);
+          runCommandNoShell(executeScript[i]);
         }
         free(executeScript);
       }
