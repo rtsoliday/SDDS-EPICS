@@ -1947,7 +1947,7 @@ long pvaThreadSleepWithPolling(PVA_OVERALL **pva, long count, long double target
       {
         return (1);
       }
-      seconds = pauseTargetTime - getLongDoubleTimeInSecs();
+      seconds = targetTime - getLongDoubleTimeInSecs();
     }
   } else {
     if (PollMonitoredPVA(pva, count) == -1) //Poll monitored PVs and extract values for those that changed
