@@ -2270,7 +2270,7 @@ long VerifyFileIsAppendable(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DAT
       logger->stepIndex = SDDS_GetParameterIndex(SDDS_table, (char *)"Step");
       logger->timeofdayIndex = SDDS_GetParameterIndex(SDDS_table, (char *)"TimeOfDay");
       logger->dayofmonthIndex = SDDS_GetParameterIndex(SDDS_table, (char *)"DayOfMonth");
-      numColumns += 3;
+      numParameters += 3;
     }
   }
   for (j = 0; j < pva->numPVs; j++) {
