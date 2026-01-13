@@ -3859,7 +3859,7 @@ long CheckInhibitPV(SDDS_TABLE *SDDS_table, PVA_OVERALL *pvaInhibit, LOGGER_DATA
       if (logger->inhibit_waittime > 0) {
         double waittime, timewaited = 0;
         if (rcParam.PV) {
-          waittime = rcParam.pingTimeout * 1000 / 2.0;
+          waittime = rcParam.pingTimeout / 1000.0 / 2.0;
           while (timewaited < logger->inhibit_waittime) //TEST THIS
           {
             if (logger->inhibit_waittime - timewaited > waittime) {
