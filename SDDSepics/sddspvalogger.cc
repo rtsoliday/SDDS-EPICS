@@ -933,10 +933,19 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
       logger->outputRow[j] = 0;
       logger->outputPage[j] = -1;
       if (logger->mallocNeeded) {
-        replace_string(buffer, logger->readbackName[j], (char *)"/", (char *)"+");
-        len = strlen(logger->onePv_OutputDirectory) + strlen(buffer) + 6;
+        if (!logger->readbackName[j]) {
+          fprintf(stderr, "Error (sddspvalogger): ReadbackName is NULL for row %ld\n", j);
+          return (1);
+        }
+        std::string sanitizedName(logger->readbackName[j]);
+        for (size_t k = 0; k < sanitizedName.size(); k++) {
+          if (sanitizedName[k] == '/') {
+            sanitizedName[k] = '+';
+          }
+        }
+        len = strlen(logger->onePv_OutputDirectory) + sanitizedName.size() + 6;
         logger->onePv_outputfileOrig[j] = (char *)malloc(sizeof(char) * len);
-        snprintf(logger->onePv_outputfileOrig[j], len, "%s/%s", logger->onePv_OutputDirectory, buffer);
+        snprintf(logger->onePv_outputfileOrig[j], len, "%s/%s", logger->onePv_OutputDirectory, sanitizedName.c_str());
         if (access(logger->onePv_outputfileOrig[j], F_OK) != 0) {
           mode_t mode;
           mode = umask(0);
@@ -947,7 +956,7 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
             return (1);
           }
         }
-        snprintf(logger->onePv_outputfileOrig[j], len, "%s/%s/log", logger->onePv_OutputDirectory, buffer);
+        snprintf(logger->onePv_outputfileOrig[j], len, "%s/%s/log", logger->onePv_OutputDirectory, sanitizedName.c_str());
       }
       if (logger->generations) {
         if (logger->mallocNeeded == false) {
