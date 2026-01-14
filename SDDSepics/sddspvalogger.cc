@@ -1016,12 +1016,14 @@ long WriteHeaders(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger)
       if (logger->expectScalarArray[j] && !logger->treatScalarArrayAsScalar[j]) {
         logger->scalarsAsColumns = false;
         logger->scalarArraysAsColumns = true;
-        if (logger->expectElements[j] > logger->n_rows) {
-          if ((logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
-            logger->n_rows = logger->scalarArrayEndIndex[j] - logger->scalarArrayStartIndex[j] + 1;
-          } else {
-            logger->n_rows = logger->expectElements[j];
-          }
+        long candidateRows = 0;
+        if ((logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
+          candidateRows = (long)logger->scalarArrayEndIndex[j] - (long)logger->scalarArrayStartIndex[j] + 1;
+        } else {
+          candidateRows = (long)logger->expectElements[j];
+        }
+        if (candidateRows > logger->n_rows) {
+          logger->n_rows = (int32_t)candidateRows;
         }
       } else {
         logger->scalarsAsColumns = true;
