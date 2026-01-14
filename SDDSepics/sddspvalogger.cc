@@ -1999,10 +1999,12 @@ long WriteData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
             } else {
               if (logger->expectNumeric[j]) {
                 result = SetNumericArrayValues(sdds, (char *)logger->readbackName[j], logger->storageType[j],
-                                               logger->monitor ? pva->pvaData[j].monitorData[0].values : pva->pvaData[j].getData[0].values, (int32_t)(pva->pvaData[j].numGetElements));
+                                               logger->monitor ? pva->pvaData[j].monitorData[0].values : pva->pvaData[j].getData[0].values,
+                                               (int32_t)(logger->monitor ? pva->pvaData[j].numMonitorElements : pva->pvaData[j].numGetElements));
               } else {
                 result = SDDS_SetArrayVararg(sdds, (char *)logger->readbackName[j], SDDS_CONTIGUOUS_DATA,
-                                             logger->monitor ? pva->pvaData[j].monitorData[0].stringValues : pva->pvaData[j].getData[0].stringValues, (int32_t)(pva->pvaData[j].numGetElements));
+                                             logger->monitor ? pva->pvaData[j].monitorData[0].stringValues : pva->pvaData[j].getData[0].stringValues,
+                                             (int32_t)(logger->monitor ? pva->pvaData[j].numMonitorElements : pva->pvaData[j].numGetElements));
               }
             }
           }
