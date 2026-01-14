@@ -560,9 +560,8 @@ int main(int argc, char *argv[]) {
     return (1);
   }
 
-  //Setup circular buffer if needed
+  //Enable extra data needed for glitch logic
   if (pvaGlitch != NULL) {
-    AllocateCircularBuffers(&pva, &logger);
     pvaGlitch->includeAlarmSeverity = true;
   }
 
@@ -603,6 +602,11 @@ int main(int argc, char *argv[]) {
       (VerifyNumericScalarPVTypes(pvaStrobe) == 1) ||
       (VerifyNumericScalarPVTypes(pvaGlitch) == 1)) {
     return (1);
+  }
+
+  //Setup circular buffer (glitch capture) only after PV verification has finalized expectElements.
+  if (pvaGlitch != NULL) {
+    AllocateCircularBuffers(&pva, &logger);
   }
 
   //Allocate SDDS_table pointers
