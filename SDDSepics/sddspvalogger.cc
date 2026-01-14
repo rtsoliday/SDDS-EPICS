@@ -3187,10 +3187,19 @@ bool CheckGlitchPVA(PVA_OVERALL *pvaGlitch, LOGGER_DATA *logger) {
 bool PassesInhibitPVA(PVA_OVERALL *pvaInhibit, LOGGER_DATA *logger) {
   double value;
 
+  if (pvaInhibit == NULL) {
+    return true;
+  }
+
   if (pvaInhibit->isConnected[0] == true) {
-    value = pvaInhibit->pvaData[0].monitorData[0].values[0];
-    if (value > .1) {
-      return false;
+    if (pvaInhibit->pvaData[0].numMonitorReadings > 0 &&
+        pvaInhibit->pvaData[0].numMonitorElements > 0 &&
+        pvaInhibit->pvaData[0].monitorData != NULL &&
+        pvaInhibit->pvaData[0].monitorData[0].values != NULL) {
+      value = pvaInhibit->pvaData[0].monitorData[0].values[0];
+      if (value > .1) {
+        return false;
+      }
     }
   }
   return true;
