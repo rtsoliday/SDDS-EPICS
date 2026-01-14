@@ -884,6 +884,10 @@ int main(int argc, char *argv[]) {
       AverageData(&pva, &logger); //FIX THIS for enum values
     }
 
+    if (logger.logInterval <= 0) {
+      fprintf(stderr, "Error (sddspvalogger): internal error: logInterval=%ld (must be >= 1)\n", logger.logInterval);
+      return (1);
+    }
     if ((logger.step + 1) % logger.logInterval == 0) //FIX THIS check that the loginterval option really works
     {
       //Write column and parameter data
@@ -3985,6 +3989,11 @@ long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg) {
 long CheckCommandLineArgsValidity(LOGGER_DATA *logger) {
   if (!logger->inputfile) {
     fprintf(stderr, "no input file given\n");
+    return (1);
+  }
+
+  if (logger->logInterval < 1) {
+    fprintf(stderr, "value for -logInterval must be >= 1\n");
     return (1);
   }
 
