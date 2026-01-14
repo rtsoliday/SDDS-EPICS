@@ -3391,7 +3391,11 @@ long UpdateAndWritePages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *
   long nStart, nEnd;
 
   if (logger->onePv_OutputDirectory != NULL) {
-    n = logger->step % logger->flushInterval;
+    if (logger->flushInterval > 0) {
+      n = logger->step % logger->flushInterval;
+    } else {
+      n = 0;
+    }
     /*
      * Partition [0, numPVs) into flushInterval contiguous ranges using integer math.
      * This avoids gaps/overlaps that can happen with floating point boundaries.
@@ -3435,7 +3439,7 @@ long UpdateAndWritePages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *
         }
       }
     }
-  } else if ((logger->scalarsAsColumns) && (logger->outputRow[0] % logger->flushInterval == 0)) {
+  } else if ((logger->scalarsAsColumns) && (logger->flushInterval > 0) && (logger->outputRow[0] % logger->flushInterval == 0)) {
     if (!SDDS_UpdatePage(&(SDDS_table[0]), FLUSH_TABLE)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (1);
@@ -3764,6 +3768,10 @@ long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg) {
         if (s_arg[i_arg].n_items != 2 ||
             !(get_long(&(logger->flushInterval), s_arg[i_arg].list[1]))) {
           fprintf(stderr, "no value given for option -flushInterval\n");
+          return (1);
+        }
+        if (logger->flushInterval < 1) {
+          fprintf(stderr, "value for -flushInterval must be >= 1\n");
           return (1);
         }
         break;
@@ -4095,6 +4103,11 @@ long CheckCommandLineArgsValidity(LOGGER_DATA *logger) {
 
   if (logger->logInterval < 1) {
     fprintf(stderr, "value for -logInterval must be >= 1\n");
+    return (1);
+  }
+
+  if (logger->flushInterval < 1) {
+    fprintf(stderr, "value for -flushInterval must be >= 1\n");
     return (1);
   }
 
