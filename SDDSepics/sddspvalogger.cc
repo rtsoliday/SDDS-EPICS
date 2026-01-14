@@ -2360,6 +2360,34 @@ long VerifyPVTypes(PVA_OVERALL *pva, LOGGER_DATA *logger) {
           logger->expectElements[j] = minElements;
         }
       }
+
+      /*
+       * Truncation may invalidate user-provided slice indices that were previously
+       * validated against the pre-truncation element count.
+       */
+      for (j = 0; j < pva->numPVs; j++) {
+        if (logger->expectScalarArray[j] && (logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
+          if (logger->scalarArrayStartIndex[j] < 1 ||
+              logger->scalarArrayEndIndex[j] < logger->scalarArrayStartIndex[j] ||
+              logger->scalarArrayEndIndex[j] > logger->expectElements[j]) {
+            fprintf(stderr, "Error (sddspvalogger): Invalid ScalarArrayStartIndex/EndIndex for %s after truncation (start=%d, end=%d, ExpectElements=%d)\n",
+                    pva->pvaChannelNames[j].c_str(),
+                    (int)logger->scalarArrayStartIndex[j],
+                    (int)logger->scalarArrayEndIndex[j],
+                    (int)logger->expectElements[j]);
+            return (1);
+          }
+        }
+        if (logger->treatScalarArrayAsScalar[j] && (logger->scalarArrayStartIndex != NULL)) {
+          if (logger->scalarArrayStartIndex[j] < 1 || logger->scalarArrayStartIndex[j] > logger->expectElements[j]) {
+            fprintf(stderr, "Error (sddspvalogger): Invalid ScalarArrayStartIndex for scalar extraction for %s after truncation (start=%d, ExpectElements=%d)\n",
+                    pva->pvaChannelNames[j].c_str(),
+                    (int)logger->scalarArrayStartIndex[j],
+                    (int)logger->expectElements[j]);
+            return (1);
+          }
+        }
+      }
     }
   }
   return (0);
