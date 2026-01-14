@@ -748,10 +748,27 @@ int main(int argc, char *argv[]) {
         fprintf(stdout, "Getting PV values for step %ld\n", (long)(logger.step + 1));
       }
       if (pvaStrobe != NULL) {
-        if (WaitEventMonitoredPVA(pvaStrobe, 0, INT_MAX) == 1) //FIX this it should be pinging the run control
-        {
-          CloseFiles(SDDS_table, &pva, &logger);
-          return (1);
+        /*
+         * Don't block indefinitely: wait in bounded intervals so we can ping run control
+         * and respond to SIGINT.
+         * WaitEventMonitoredPVA returns: -1 no event, 0 event, 1 error.
+         */
+        while (1) {
+          long w = WaitEventMonitoredPVA(pvaStrobe, 0, 1.0);
+          if (w == 1) {
+            CloseFiles(SDDS_table, &pva, &logger);
+            return (1);
+          }
+          if (w == 0) {
+            break;
+          }
+          if (sigint) {
+            break;
+          }
+          if (PingRunControl() != 0) {
+            CloseFiles(SDDS_table, &pva, &logger);
+            return (1);
+          }
         }
         if (logger.datastrobe_holdoff > 1e-7) {
           if (pvaThreadSleep(logger.datastrobe_holdoff) == 1) {
