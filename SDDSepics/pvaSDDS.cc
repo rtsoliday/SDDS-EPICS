@@ -561,13 +561,14 @@ std::string convertToProperRequestFormat(const std::vector<std::string>& input) 
 }
 
 long GetPVAValues(PVA_OVERALL **pva, long count) {
-  long i, ii, num = 0, n;
+  long i, ii, n;
   epics::pvData::Status status;
   epics::pvaClient::PvaClientChannelArray pvaClientChannelArray;
   std::ostringstream pvaFields;
 
   for (n = 0; n < count; n++) {
     if (pva[n] != NULL) {
+      long numNotConnected = 0;
       std::vector<bool> isInternalGetIssued(pva[n]->numInternalPVs, false);
       std::vector<long> InternalGetIndex(pva[n]->numInternalPVs, 0);
       pva[n]->isInternalConnected = pva[n]->pvaClientMultiChannelPtr[0]->getIsConnected();
@@ -634,16 +635,16 @@ long GetPVAValues(PVA_OVERALL **pva, long count) {
             try {
               pva[n]->pvaClientGetPtr[i]->issueGet();
             } catch (std::exception &e) {
-              num++;
+              numNotConnected++;
               pva[n]->isConnected[i] = false;
             }
           }
         } else {
           //Not connected
-          num++;
+          numNotConnected++;
         }
       }
-      pva[n]->numNotConnected = num;
+      pva[n]->numNotConnected = numNotConnected;
     }
   }
   for (n = 0; n < count; n++) {
