@@ -779,8 +779,21 @@ int main(int argc, char *argv[]) {
     //using the data strobe feature.
     logger.currentTime = getLongDoubleTimeInSecs();
     if (pvaStrobe != NULL) {
-      if (logger.datastrobe_is_time)
-        logger.currentTime = pvaStrobe->pvaData[0].monitorData[0].values[0];
+      if (logger.datastrobe_is_time) {
+        /*
+         * The strobe PV may be connected but not yet have delivered a monitor event,
+         * or it may be disconnected. Guard against dereferencing missing data.
+         */
+        if (pvaStrobe->numPVs > 0 &&
+            pvaStrobe->isConnected[0] &&
+            pvaStrobe->pvaData != NULL &&
+            pvaStrobe->pvaData[0].numMonitorReadings > 0 &&
+            pvaStrobe->pvaData[0].numMonitorElements > 0 &&
+            pvaStrobe->pvaData[0].monitorData != NULL &&
+            pvaStrobe->pvaData[0].monitorData[0].values != NULL) {
+          logger.currentTime = pvaStrobe->pvaData[0].monitorData[0].values[0];
+        }
+      }
     } else {
       //Calculate when next step should be
       if (timeToWait > 0) {
