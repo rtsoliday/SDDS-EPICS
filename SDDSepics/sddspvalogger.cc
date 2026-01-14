@@ -2223,6 +2223,7 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
   static long double lastTriggerTime = 0, thisTriggerTime = 0, triggerInterval = -1;
   static int step = 0;
   long double targetTime, seconds;
+  bool predictiveWaitRan = false;
 
   interval = .001L;
   rcInterval = 5 / interval;
@@ -2236,9 +2237,10 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
     initStrobeValue = pvaST->pvaData[0].monitorData[0].values[0];
   }
 
-  //Never goes in this loop because triggerInterval is -1. Looks like a bug
+  //Doesn’t run until triggerInterval has been learned (after two triggers)
   //Sit in a waiting loop till .5 seconds before we expect the trigger
   if ((randomTime == false) && (triggerInterval > 0)) {
+    predictiveWaitRan = true;
     PausePVAMonitoring(pva, count);                                                  //Pause monitoring because background events cause the CPU usage to be high if there are thousands of PVs.
     targetTime = lastTriggerTime + triggerInterval - .6 - (.00025 * pva[0]->numPVs); //the .00025sec per PV extra time is due to the extra time needed to resume PVA monitoring
     seconds = targetTime - getLongDoubleTimeInSecs();
@@ -2270,24 +2272,29 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
     }
   }
 
-  //Check to see if we missed the trigger. Perhaps our waiting loop was too long. This could be because something got hung up on the previous loop
-  numUpdated = PollMonitoredPVA(pvaST);
-  if (numUpdated == -1) {
-    return (1);
-  }
-  if ((numUpdated == 1) && (pvaST->isConnected[0])) {
-    if (initStrobeValue != pvaST->pvaData[0].monitorData[0].values[0]) {
-      lastTriggerTime = 0;
-      thisTriggerTime = 0;
-      triggerInterval = -1;
-      step = 0;
-      numUpdated = PollMonitoredPVA(pva, count);
-      fprintf(stderr, "Logger missed the strobe PV updating. It may be overloaded or an issue with the file system\n");
-      if (numUpdated == -1) //Poll monitored PVs and extract values for those that changed
-      {
-        return (1);
+  /*
+   * Check to see if we missed the trigger.
+   * This check is only meaningful if we did a predictive wait based on a known trigger interval.
+   */
+  if (predictiveWaitRan) {
+    numUpdated = PollMonitoredPVA(pvaST);
+    if (numUpdated == -1) {
+      return (1);
+    }
+    if ((numUpdated == 1) && (pvaST->isConnected[0])) {
+      if (initStrobeValue != pvaST->pvaData[0].monitorData[0].values[0]) {
+        lastTriggerTime = 0;
+        thisTriggerTime = 0;
+        triggerInterval = -1;
+        step = 0;
+        numUpdated = PollMonitoredPVA(pva, count);
+        fprintf(stderr, "Logger missed the strobe PV updating. It may be overloaded or an issue with the file system\n");
+        if (numUpdated == -1) //Poll monitored PVs and extract values for those that changed
+        {
+          return (1);
+        }
+        return (0);
       }
-      return (0);
     }
   }
 
