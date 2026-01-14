@@ -3029,10 +3029,33 @@ bool PassesConditionsPVA(PVA_OVERALL *pvaConditions, LOGGER_DATA *logger) {
   if (pvaConditions != NULL) {
     for (j = 0; j < pvaConditions->numPVs; j++) {
       if (pvaConditions->isConnected[j] == true) {
+        bool haveValue = false;
         if (logger->monitor) {
-          value = pvaConditions->pvaData[j].monitorData[0].values[0];
+          if (pvaConditions->pvaData[j].numMonitorReadings > 0 &&
+              pvaConditions->pvaData[j].numMonitorElements > 0 &&
+              pvaConditions->pvaData[j].monitorData != NULL &&
+              pvaConditions->pvaData[j].monitorData[0].values != NULL) {
+            value = pvaConditions->pvaData[j].monitorData[0].values[0];
+            haveValue = true;
+          }
         } else {
-          value = pvaConditions->pvaData[j].getData[0].values[0];
+          if (pvaConditions->pvaData[j].numGetReadings > 0 &&
+              pvaConditions->pvaData[j].numGetElements > 0 &&
+              pvaConditions->pvaData[j].getData != NULL &&
+              pvaConditions->pvaData[j].getData[0].values != NULL) {
+            value = pvaConditions->pvaData[j].getData[0].values[0];
+            haveValue = true;
+          }
+        }
+
+        if (!haveValue) {
+          /* Treat missing data like a failed condition (avoid dereferencing before readings exist). */
+          if (logger->conditions_HoldoffTimeDefined) {
+            if (logger->conditions_holdoffTime[j] > maxHoldoff) {
+              maxHoldoff = logger->conditions_holdoffTime[j];
+            }
+          }
+          continue;
         }
         if (logger->conditions_ScaleFactorDefined) {
           value *= logger->conditions_scaleFactor[j];
