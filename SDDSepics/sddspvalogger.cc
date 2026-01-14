@@ -446,7 +446,7 @@ Global Options:\n\
   [-monthlyFiles[=rowlimit=<number>][,timelimit=<secs>][,timetag][,verbose]]\n\
   [-strictPVverification]\n\
   [-truncateWaveforms]\n\
-  [-runControlPV=string=<string>,pingTimeout=<value>]\n\
+  [-runControlPV=string=<string>,pingTimeout=<seconds>]\n\
   [-runControlDescription=string=<string>]\n\
   [-verbose]\n\
 Logger Options:\n\
@@ -3802,6 +3802,10 @@ long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg) {
           fprintf(stderr, "bad -runControlPV syntax\n");
           return (1);
         }
+        /*
+         * User supplies pingTimeout in seconds; runcontrol expects milliseconds
+         * (see runControlInit() documentation in runcontrol library).
+         */
         rcParam.pingTimeout *= 1000;
         if (rcParam.pingTimeout < 0) {
           fprintf(stderr, "Ping timeout for run control PV should be >= 0.");
