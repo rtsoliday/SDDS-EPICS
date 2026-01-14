@@ -615,9 +615,13 @@ int main(int argc, char *argv[]) {
     if (pva.numPVs > 40) {
       logger.doDisconnect = true;
     }
-    logger.filesPerStep = 1.0 * pva.numPVs / logger.flushInterval;
     if (logger.verbose) {
-      fprintf(stdout, "Will write %ld to %ld files each sample interval\n", (long)(logger.filesPerStep), (long)(logger.filesPerStep) + 1);
+      long minFiles = 0, maxFiles = 0;
+      if (logger.flushInterval > 0) {
+        minFiles = pva.numPVs / logger.flushInterval;
+        maxFiles = minFiles + ((pva.numPVs % logger.flushInterval) ? 1 : 0);
+      }
+      fprintf(stdout, "Will write %ld to %ld files each sample interval\n", minFiles, maxFiles);
     }
   } else {
     SDDS_table = (SDDS_TABLE *)malloc(sizeof(SDDS_TABLE));
@@ -3253,13 +3257,19 @@ long StartPages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
 
 long UpdateAndWritePages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
   long j, n;
-  double nStart, nEnd;
+  long nStart, nEnd;
 
   if (logger->onePv_OutputDirectory != NULL) {
     n = logger->step % logger->flushInterval;
-    nStart = n * logger->filesPerStep;
-    nEnd = nStart + logger->filesPerStep;
-    if (nEnd > pva->numPVs) {
+    /*
+     * Partition [0, numPVs) into flushInterval contiguous ranges using integer math.
+     * This avoids gaps/overlaps that can happen with floating point boundaries.
+     */
+    if (logger->flushInterval > 0) {
+      nStart = (n * pva->numPVs) / logger->flushInterval;
+      nEnd = ((n + 1) * pva->numPVs) / logger->flushInterval;
+    } else {
+      nStart = 0;
       nEnd = pva->numPVs;
     }
     for (j = 0; j < pva->numPVs; j++) {
