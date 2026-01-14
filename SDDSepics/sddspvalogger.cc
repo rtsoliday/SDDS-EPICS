@@ -4152,8 +4152,8 @@ long CheckInhibitPV(SDDS_TABLE *SDDS_table, PVA_OVERALL *pvaInhibit, LOGGER_DATA
         logger->step--;
       }
       if (logger->inhibit_waittime > 0) {
-        double waittime, timewaited = 0;
         if (rcParam.PV) {
+          double waittime, timewaited = 0;
           waittime = rcParam.pingTimeout / 1000.0 / 2.0;
           /* Guard against zero/negative wait intervals (would cause infinite loop). */
           if (waittime <= 0) {
@@ -4175,6 +4175,11 @@ long CheckInhibitPV(SDDS_TABLE *SDDS_table, PVA_OVERALL *pvaInhibit, LOGGER_DATA
                 }
               }
             }
+          }
+        } else {
+          /* No run control configured: still sleep to avoid spinning. */
+          if (pvaThreadSleep(logger->inhibit_waittime) == 1) {
+            return (-1);
           }
         }
       }
