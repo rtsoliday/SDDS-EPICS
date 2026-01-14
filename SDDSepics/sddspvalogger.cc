@@ -2648,12 +2648,15 @@ long VerifyFileIsAppendable(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DAT
   }
   if (SDDS_ParameterCount(SDDS_table) != numParameters) {
     fprintf(stderr, "Error: Unable to append to output file. Unexpected parameters exist\n");
+    return (1);
   }
   if (SDDS_ColumnCount(SDDS_table) != numColumns) {
     fprintf(stderr, "Error: Unable to append to output file. Unexpected columns exist\n");
+    return (1);
   }
   if (SDDS_ArrayCount(SDDS_table) != numArrays) {
     fprintf(stderr, "Error: Unable to append to output file. Unexpected arrays exist\n");
+    return (1);
   }
 
   if (!SDDS_Terminate(SDDS_table)) {
