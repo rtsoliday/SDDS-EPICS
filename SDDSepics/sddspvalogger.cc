@@ -3307,8 +3307,19 @@ long CloseFiles(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
 long InitiateRunControl() {
   if (rcParam.PV) {
     rcParam.handle[0] = (char)0;
-    rcParam.Desc = (char *)realloc(rcParam.Desc, 41 * sizeof(char));
-    rcParam.PV = (char *)realloc(rcParam.PV, 41 * sizeof(char));
+    {
+      char *newDesc = (char *)realloc(rcParam.Desc, 41 * sizeof(char));
+      char *newPV = (char *)realloc(rcParam.PV, 41 * sizeof(char));
+      if (!newDesc || !newPV) {
+        fprintf(stderr, "Error (sddspvalogger): unable to allocate memory for run control strings\n");
+        return (1);
+      }
+      rcParam.Desc = newDesc;
+      rcParam.PV = newPV;
+      /* Ensure NUL termination even if the original strings were longer than 40 chars. */
+      rcParam.Desc[40] = 0;
+      rcParam.PV[40] = 0;
+    }
     rcParam.status = runControlInit(rcParam.PV,
                                     rcParam.Desc,
                                     rcParam.pingTimeout,
