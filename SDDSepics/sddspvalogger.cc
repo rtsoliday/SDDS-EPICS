@@ -368,6 +368,14 @@ void rc_interrupt_handler();
 static volatile sig_atomic_t sigint = 0;
 static volatile sig_atomic_t sigintSignal = 0;
 
+static void InstallTerminationSignalHandlers(void) {
+  signal(SIGINT, sigint_interrupt_handler);
+  signal(SIGTERM, sigint_interrupt_handler);
+#ifndef _WIN32
+  signal(SIGQUIT, sigint_interrupt_handler);
+#endif
+}
+
 #define CLO_SAMPLEINTERVAL 0
 #define CLO_LOGINTERVAL 1
 #define CLO_FLUSHINTERVAL 2
@@ -525,6 +533,12 @@ int main(int argc, char *argv[]) {
   if (ReadCommandLineArgs(&logger, argc, s_arg) != 0) {
     return (1);
   }
+
+  /*
+   * Ensure graceful shutdown on Ctrl-C/termination regardless of whether
+   * run control is enabled.
+   */
+  InstallTerminationSignalHandlers();
 
   //Setup various PVA group pointers
   if (logger.CondFile) {
