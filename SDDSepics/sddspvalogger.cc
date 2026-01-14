@@ -1908,13 +1908,17 @@ long WriteData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
             return (1);
           }
         } else if (logger->expectScalarArray[j]) {
+          int32_t ee = logger->expectElements[j];
+          if ((logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
+            ee = logger->scalarArrayEndIndex[j] - logger->scalarArrayStartIndex[j] + 1;
+          }
           if (logger->scalarArraysAsColumns) {
             if (logger->expectNumeric[j]) {
               result = SDDS_SetColumnFromDoubles(sdds, SDDS_SET_BY_INDEX, logger->emptyColumn,
-                                      logger->expectElements[j], logger->elementIndex[j]);
+                                      ee, logger->elementIndex[j]);
             } else {
               result = SDDS_SetColumn(sdds, SDDS_SET_BY_INDEX, logger->emptyStringColumn,
-                                      logger->expectElements[j], logger->elementIndex[j]);
+                                      ee, logger->elementIndex[j]);
             }
           } else {
             if (logger->expectNumeric[j]) {
@@ -3216,6 +3220,9 @@ long StartPages(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
     for (j = 0; j < pva->numPVs; j++) {
       if (logger->expectScalarArray[j] && !logger->treatScalarArrayAsScalar[j]) {
         rows = logger->expectElements[j];
+        if ((logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
+          rows = logger->scalarArrayEndIndex[j] - logger->scalarArrayStartIndex[j] + 1;
+        }
         if (logger->doDisconnect && !SDDS_ReconnectFile(&(SDDS_table[j]))) {
           SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
           return (1);
@@ -4611,13 +4618,19 @@ long WriteGlitchPage(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logg
             return (1);
           }
         } else {
+          int32_t start = 1;
+          int32_t ee = logger->expectElements[i];
+          if ((logger->scalarArrayStartIndex != NULL) && (logger->scalarArrayEndIndex != NULL)) {
+            start = logger->scalarArrayStartIndex[i];
+            ee = logger->scalarArrayEndIndex[i] - logger->scalarArrayStartIndex[i] + 1;
+          }
           if (logger->scalarArraysAsColumns) {
             if (logger->expectNumeric[i]) {
               result = SDDS_SetColumn(sdds, SDDS_SET_BY_INDEX,
-                                      logger->circularbufferDouble[i][n], logger->expectElements[i], logger->elementIndex[i]);
+                                      logger->circularbufferDouble[i][n] + (start - 1), ee, logger->elementIndex[i]);
             } else {
               result = SDDS_SetColumn(sdds, SDDS_SET_BY_INDEX,
-                                      logger->circularbufferString[i][n], logger->expectElements[i], logger->elementIndex[i]);
+                                      logger->circularbufferString[i][n] + (start - 1), ee, logger->elementIndex[i]);
             }
             if (result == 0) {
               SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -4626,10 +4639,10 @@ long WriteGlitchPage(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logg
           } else {
             if (logger->expectNumeric[i]) {
               result = SDDS_SetArrayVararg(sdds, (char *)logger->readbackName[i], SDDS_CONTIGUOUS_DATA,
-                                           logger->circularbufferDouble[i][n], logger->expectElements[i]);
+                                           logger->circularbufferDouble[i][n] + (start - 1), ee);
             } else {
               result = SDDS_SetArrayVararg(sdds, (char *)logger->readbackName[i], SDDS_CONTIGUOUS_DATA,
-                                           logger->circularbufferString[i][n], logger->expectElements[i]);
+                                           logger->circularbufferString[i][n] + (start - 1), ee);
             }
             if (result == 0) {
               SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
