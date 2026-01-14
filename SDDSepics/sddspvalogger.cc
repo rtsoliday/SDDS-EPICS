@@ -1433,8 +1433,21 @@ void StoreDataIntoCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
         if (logger->treatScalarArrayAsScalar[i] && (logger->scalarArrayStartIndex != NULL)) {
           elemIdx = logger->scalarArrayStartIndex[i] - 1;
         }
+        long elementsAvail = logger->monitor ? pva->pvaData[i].numMonitorElements : pva->pvaData[i].numGetElements;
+        bool elemInRange = (elementsAvail > 0) && (elemIdx >= 0) && (elemIdx < elementsAvail);
         if (logger->expectNumeric[i]) {
-          value = logger->monitor ? pva->pvaData[i].monitorData[0].values[elemIdx] : pva->pvaData[i].getData[0].values[elemIdx];
+          value = 0;
+          if (elemInRange) {
+            if (logger->monitor) {
+              if (pva->pvaData[i].monitorData && pva->pvaData[i].monitorData[0].values) {
+                value = pva->pvaData[i].monitorData[0].values[elemIdx];
+              }
+            } else {
+              if (pva->pvaData[i].getData && pva->pvaData[i].getData[0].values) {
+                value = pva->pvaData[i].getData[0].values[elemIdx];
+              }
+            }
+          }
           if (logger->scaleFactor) {
             value *= logger->scaleFactor[i];
           }
@@ -1444,8 +1457,20 @@ void StoreDataIntoCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
             free(logger->circularbufferString[i][j][0]);
             logger->circularbufferString[i][j][0] = NULL;
           }
+          const char *src = "";
+          if (elemInRange) {
+            if (logger->monitor) {
+              if (pva->pvaData[i].monitorData && pva->pvaData[i].monitorData[0].stringValues && pva->pvaData[i].monitorData[0].stringValues[elemIdx]) {
+                src = pva->pvaData[i].monitorData[0].stringValues[elemIdx];
+              }
+            } else {
+              if (pva->pvaData[i].getData && pva->pvaData[i].getData[0].stringValues && pva->pvaData[i].getData[0].stringValues[elemIdx]) {
+                src = pva->pvaData[i].getData[0].stringValues[elemIdx];
+              }
+            }
+          }
           cp_str(&(logger->circularbufferString[i][j][0]),
-                 logger->monitor ? pva->pvaData[i].monitorData[0].stringValues[elemIdx] : pva->pvaData[i].getData[0].stringValues[elemIdx]);
+                 (char *)src);
         }
       } else if (logger->expectScalarArray[i]) {
         if (logger->expectNumeric[i]) {
@@ -1838,31 +1863,79 @@ long WriteData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logger) {
           if (logger->treatScalarArrayAsScalar[j] && (logger->scalarArrayStartIndex != NULL)) {
             elemIdx = logger->scalarArrayStartIndex[j] - 1;
           }
+          long elementsAvail = logger->monitor ? pva->pvaData[j].numMonitorElements : pva->pvaData[j].numGetElements;
+          bool elemInRange = (elementsAvail > 0) && (elemIdx >= 0) && (elemIdx < elementsAvail);
           if (logger->scalarsAsColumns) {
             if (logger->expectNumeric[j]) {
               if ((logger->logInterval > 1) && (logger->average) && ((logger->average[j] == 'y') || (logger->average[j] == 'Y'))) {
                 value = logger->averagedValues[j];
               } else {
-                value = logger->monitor ? pva->pvaData[j].monitorData[0].values[elemIdx] : pva->pvaData[j].getData[0].values[elemIdx];
+                value = 0;
+                if (elemInRange) {
+                  if (logger->monitor) {
+                    if (pva->pvaData[j].monitorData && pva->pvaData[j].monitorData[0].values) {
+                      value = pva->pvaData[j].monitorData[0].values[elemIdx];
+                    }
+                  } else {
+                    if (pva->pvaData[j].getData && pva->pvaData[j].getData[0].values) {
+                      value = pva->pvaData[j].getData[0].values[elemIdx];
+                    }
+                  }
+                }
                 if (logger->scaleFactor) {
                   value *= logger->scaleFactor[j];
                 }
               }
               result = SetNumericRowValue(sdds, logger->outputRow[n], logger->elementIndex[j], logger->storageType[j], value);
             } else {
+              const char *src = "";
+              if (elemInRange) {
+                if (logger->monitor) {
+                  if (pva->pvaData[j].monitorData && pva->pvaData[j].monitorData[0].stringValues && pva->pvaData[j].monitorData[0].stringValues[elemIdx]) {
+                    src = pva->pvaData[j].monitorData[0].stringValues[elemIdx];
+                  }
+                } else {
+                  if (pva->pvaData[j].getData && pva->pvaData[j].getData[0].stringValues && pva->pvaData[j].getData[0].stringValues[elemIdx]) {
+                    src = pva->pvaData[j].getData[0].stringValues[elemIdx];
+                  }
+                }
+              }
               result = SetStringRowValue(sdds, logger->outputRow[n], logger->elementIndex[j], logger->storageType[j], 
-                                           logger->monitor ? pva->pvaData[j].monitorData[0].stringValues[elemIdx] : pva->pvaData[j].getData[0].stringValues[elemIdx]);
+                                           (char *)src);
             }
           } else {
             if (logger->expectNumeric[j]) {
-              value = logger->monitor ? pva->pvaData[j].monitorData[0].values[elemIdx] : pva->pvaData[j].getData[0].values[elemIdx];
+              value = 0;
+              if (elemInRange) {
+                if (logger->monitor) {
+                  if (pva->pvaData[j].monitorData && pva->pvaData[j].monitorData[0].values) {
+                    value = pva->pvaData[j].monitorData[0].values[elemIdx];
+                  }
+                } else {
+                  if (pva->pvaData[j].getData && pva->pvaData[j].getData[0].values) {
+                    value = pva->pvaData[j].getData[0].values[elemIdx];
+                  }
+                }
+              }
               if (logger->scaleFactor) {
                 value *= logger->scaleFactor[j];
               }
               result = SetNumericParameterValue(sdds, logger->elementIndex[j], logger->storageType[j], value);
             } else {
+              const char *src = "";
+              if (elemInRange) {
+                if (logger->monitor) {
+                  if (pva->pvaData[j].monitorData && pva->pvaData[j].monitorData[0].stringValues && pva->pvaData[j].monitorData[0].stringValues[elemIdx]) {
+                    src = pva->pvaData[j].monitorData[0].stringValues[elemIdx];
+                  }
+                } else {
+                  if (pva->pvaData[j].getData && pva->pvaData[j].getData[0].stringValues && pva->pvaData[j].getData[0].stringValues[elemIdx]) {
+                    src = pva->pvaData[j].getData[0].stringValues[elemIdx];
+                  }
+                }
+              }
               result = SetStringParameterValue(sdds, logger->elementIndex[j], logger->storageType[j], 
-                                                logger->monitor ? pva->pvaData[j].monitorData[0].stringValues[elemIdx] : pva->pvaData[j].getData[0].stringValues[elemIdx]);
+                                                (char *)src);
             }
           }
           if (result == 0) {
