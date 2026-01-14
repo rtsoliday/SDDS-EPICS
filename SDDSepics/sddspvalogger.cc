@@ -3552,6 +3552,10 @@ long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg) {
           fprintf(stderr, "no value given for option -sampleInterval\n");
           return (1);
         }
+        if (logger->sampleInterval <= 0) {
+          fprintf(stderr, "value for -sampleInterval must be > 0\n");
+          return (1);
+        }
         if (s_arg[i_arg].n_items == 3) {
           if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) >= 0)
             logger->sampleInterval *= TimeUnitFactor[TimeUnits];
@@ -3559,6 +3563,10 @@ long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg) {
             fprintf(stderr, "unknown/ambiguous time units given for -sampleInterval\n");
             return (1);
           }
+        }
+        if (logger->sampleInterval <= 0) {
+          fprintf(stderr, "value for -sampleInterval must be > 0\n");
+          return (1);
         }
         break;
       case CLO_LOGINTERVAL:
