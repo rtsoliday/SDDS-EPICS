@@ -1421,7 +1421,7 @@ void StoreDataIntoCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
           if (elementsToCopy > logger->expectElements[i])
             elementsToCopy = logger->expectElements[i];
           for (k = 0; k < logger->expectElements[i]; k++) {
-            logger->circularbufferDouble[i][j][k] = logger->emptyColumn[k];
+            logger->circularbufferDouble[i][j][k] = 0;
           }
           if (logger->monitor) {
             for (k = 0; k < elementsToCopy; k++) {
@@ -1470,7 +1470,7 @@ void StoreDataIntoCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
       } else if (logger->expectScalarArray[i]) {
         if (logger->expectNumeric[i]) {
           for (k = 0; k < logger->expectElements[i]; k++) {
-            logger->circularbufferDouble[i][j][k] = logger->emptyColumn[k];
+            logger->circularbufferDouble[i][j][k] = 0;
           }
         } else {
           for (k = 0; k < logger->expectElements[i]; k++) {
