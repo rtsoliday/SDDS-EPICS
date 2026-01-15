@@ -4473,6 +4473,7 @@ long SetupPVs(PVA_OVERALL *pva, PVA_OVERALL *pvaConditions, PVA_OVERALL *pvaStro
   if (logger->onerrorindex == ONERROR_EXIT) {
     if ((pva->numNotConnected > 0) ||
         ((pvaConditions != NULL) && (pvaConditions->numNotConnected)) ||
+        ((pvaGlitch != NULL) && (pvaGlitch->numNotConnected)) ||
         ((pvaStrobe != NULL) && (pvaStrobe->numNotConnected))) {
       fprintf(stdout, "Exiting due to PV connection error.\n");
       return (1);
