@@ -2101,6 +2101,44 @@ void AverageData(PVA_OVERALL *pva, LOGGER_DATA *logger) {
         }
         break;
       }
+      case epics::pvData::scalarArray: {
+        /*
+         * Support averaging for scalarArray PVs that are treated as scalars.
+         * Without this, averagedValues stays 0 and WriteData() outputs 0 for these PVs.
+         */
+        if (logger->treatScalarArrayAsScalar && logger->treatScalarArrayAsScalar[j]) {
+          if (logger->scalarsAsColumns) {
+            if (logger->expectNumeric[j]) {
+              if ((logger->average[j] == 'y') || (logger->average[j] == 'Y')) {
+                int32_t elemIdx = 0;
+                if (logger->scalarArrayStartIndex != NULL) {
+                  elemIdx = logger->scalarArrayStartIndex[j] - 1;
+                }
+                long elementsAvail = logger->monitor ? pva->pvaData[j].numMonitorElements : pva->pvaData[j].numGetElements;
+                bool elemInRange = (elementsAvail > 0) && (elemIdx >= 0) && (elemIdx < elementsAvail);
+                value = 0;
+                if (elemInRange) {
+                  if (logger->monitor) {
+                    if (pva->pvaData[j].monitorData && pva->pvaData[j].monitorData[0].values) {
+                      value = pva->pvaData[j].monitorData[0].values[elemIdx];
+                    }
+                  } else {
+                    if (pva->pvaData[j].getData && pva->pvaData[j].getData[0].values) {
+                      value = pva->pvaData[j].getData[0].values[elemIdx];
+                    }
+                  }
+                }
+                value = value / logger->logInterval;
+                if (logger->scaleFactor) {
+                  value *= logger->scaleFactor[j];
+                }
+                logger->averagedValues[j] += value;
+              }
+            }
+          }
+        }
+        break;
+      }
       default: {
       }
       }
