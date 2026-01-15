@@ -4827,7 +4827,7 @@ long WriteGlitchPage(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *logg
       result = SDDS_SetParameters(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE,
                                   logger->caErrorsIndex, (int32_t)(logger->circularbufferDouble[pva->numPVs][n][0]),
                                   logger->timeIndex, (double)(logger->circularbufferLongDouble[n]),
-                                  logger->stepIndex, (int32_t)count,
+                                  logger->stepIndex, (int32_t)(count - stepOffset),
                                   logger->timeofdayIndex, (float)(logger->circularbufferDouble[pva->numPVs + 1][n][0]),
                                   logger->dayofmonthIndex, (float)(logger->circularbufferDouble[pva->numPVs + 2][n][0]),
                                   -1);
