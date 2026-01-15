@@ -1650,15 +1650,18 @@ long WriteAccessoryData(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, LOGGER_DATA *l
       }
     } else {
       int32_t cIndex, tIndex;
+      int32_t caErrorsValue;
       if (logger->onePv_OutputDirectory != NULL) {
         cIndex = logger->caErrorsIndexP;
         tIndex = logger->timeIndexP;
+        caErrorsValue = pva->isConnected[n] ? 0 : 1;
       } else {
         cIndex = logger->caErrorsIndex;
         tIndex = logger->timeIndex;
+        caErrorsValue = pva->numNotConnected;
       }
       result = SDDS_SetParameter(sdds, SDDS_SET_BY_INDEX | SDDS_PASS_BY_VALUE,
-                                 cIndex, pva->numNotConnected);
+                                 cIndex, caErrorsValue);
       if (result == 0) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
         return (1);
