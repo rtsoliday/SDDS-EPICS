@@ -1388,6 +1388,13 @@ void AllocateCircularBuffers(PVA_OVERALL *pva, LOGGER_DATA *logger) {
   logger->circularbufferDouble = (double ***)malloc(sizeof(double **) * (logger->pvCount + 3));
   logger->circularbufferString = (char ****)malloc(sizeof(char ***) * logger->pvCount);
   for (i = 0; i < logger->pvCount; i++) {
+    if (logger->expectElements[i] < 1) {
+      /*
+       * Defensive clamp: ExpectElements should be validated when reading the input file.
+       * This guard prevents zero/negative allocations and later out-of-bounds writes.
+       */
+      logger->expectElements[i] = 1;
+    }
     logger->circularbufferDouble[i] = (double **)malloc(sizeof(double *) * logger->circularbuffer_length);
     logger->circularbufferString[i] = (char ***)malloc(sizeof(char **) * logger->circularbuffer_length);
     for (j = 0; j < logger->circularbuffer_length; j++) {
@@ -2752,6 +2759,25 @@ long ReadInputFiles(LOGGER_DATA *logger) {
     } else {
       fprintf(stderr, "ExpectFieldType column only accepts scalar or scalarArray\n");
       return (1);
+    }
+
+    /*
+     * Validate/normalize ExpectElements early.
+     * - Scalars are always treated as 1 element in this program (used in circular buffer allocation).
+     * - Scalar arrays must have ExpectElements >= 1.
+     */
+    if (logger->expectScalar[n]) {
+      if (logger->expectElements[n] != 1) {
+        fprintf(stderr, "Warning (sddspvalogger): ExpectElements=%d for scalar PV %s; using 1\n",
+                (int)logger->expectElements[n], logger->controlName[n]);
+        logger->expectElements[n] = 1;
+      }
+    } else if (logger->expectScalarArray[n]) {
+      if (logger->expectElements[n] < 1) {
+        fprintf(stderr, "Error (sddspvalogger): ExpectElements must be >= 1 for scalarArray PV %s (got %d)\n",
+                logger->controlName[n], (int)logger->expectElements[n]);
+        return (1);
+      }
     }
     free(stringColumn[n]);
   }
