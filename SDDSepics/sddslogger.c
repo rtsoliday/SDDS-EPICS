@@ -553,6 +553,7 @@ void rc_interrupt_handler();
 
 static volatile sig_atomic_t terminateSignal = 0;
 static volatile sig_atomic_t sigint = 0;
+static int rcExited = 0;
 
 int main(int argc, char **argv) {
   SCANNED_ARG *s_arg;
@@ -2083,6 +2084,7 @@ int main(int argc, char **argv) {
     runControlLogMessage(rcParam.handle, rcParam.message, MAJOR_ALARM, &(rcParam.rcInfo));
     switch (runControlExit(rcParam.handle, &(rcParam.rcInfo))) {
     case RUNCONTROL_OK:
+      rcExited = 1;
       break;
     case RUNCONTROL_ERROR:
       fprintf(stderr, "Error exiting run control.\n");
@@ -2977,11 +2979,12 @@ void rc_interrupt_handler() {
 #endif
   if (ca) {
 #ifdef USE_RUNCONTROL
-    if (rcParam.PV) {
+    if (rcParam.PV && !rcExited) {
       rcParam.status = runControlExit(rcParam.handle, &(rcParam.rcInfo));
       if (rcParam.status != RUNCONTROL_OK) {
         fprintf(stderr, "Error during exiting run control.\n");
       }
+      rcExited = 1;
     }
 #endif
     ca_task_exit();
