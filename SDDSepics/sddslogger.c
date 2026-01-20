@@ -518,6 +518,7 @@ long getScalarMonitorDataLocal(char ***DeviceName, char ***ReadMessage,
                                int32_t **Average, int32_t **DoublePrecision);
 void getStringValuesOfEnumPV(struct event_handler_args event);
 long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOTime);
+long WaitForEnumCallbacks(ENUM_PV *enumPV, long enumPVs, double pendIOTime);
 
 void startMonitorFile(SDDS_DATASET *output_page, char *outputfile, long Precision,
                       long n_variables, char **ReadbackNames, char **DeviceNames, char **ReadbackUnits,
@@ -1250,18 +1251,12 @@ int main(int argc, char **argv) {
           fprintf(stderr, "error: unable to establish callback.\n");
           return (1);
         }
-        ca_poll();
-        {
-          int done;
-          epicsMutexLock(enumPVMutex);
-          done = input[i].enumPV[input[i].enumPVs].flag;
-          epicsMutexUnlock(enumPVMutex);
-          if (!done &&
-              CheckEnumCACallbackStatus(&input[i].enumPV[input[i].enumPVs], pendIOtime))
-          return (1);
-        }
         input[i].enumPVs++;
       }
+    }
+    if (input[i].enumPVs) {
+      if (WaitForEnumCallbacks(input[i].enumPV, input[i].enumPVs, pendIOtime))
+        return (1);
     }
   }
   if (verbose)
@@ -2584,10 +2579,10 @@ void getStringValuesOfEnumPV(struct event_handler_args event) {
 }
 
 long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
-  long ntries; /*try 10 times per second*/
+  long ntries; /*try 10 times*/
 
   ca_poll();
-  ntries = (long)(pendIOtime * 10);
+  ntries = (long)(pendIOtime * 100);
   while (ntries) {
     int done;
     epicsMutexLock(enumPVMutex);
@@ -2596,7 +2591,7 @@ long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
     if (done)
       return 0;
     ca_poll();
-    usleepSystemIndependent(100000);
+    usleepSystemIndependent(1000);
     ntries--;
   }
   epicsMutexLock(enumPVMutex);
@@ -2606,6 +2601,42 @@ long CheckEnumCACallbackStatus(ENUM_PV *enumPV, double pendIOtime) {
   }
   epicsMutexUnlock(enumPVMutex);
   fprintf(stderr, "callback failed for enumeric PV %s\n", enumPV->PVname);
+  return 1;
+}
+
+long WaitForEnumCallbacks(ENUM_PV *enumPV, long enumPVs, double pendIOtime) {
+  long ntries;
+
+  if (!enumPV || enumPVs <= 0)
+    return 0;
+
+  ca_poll();
+  ntries = (long)(pendIOtime * 100);
+  while (ntries) {
+    long i;
+    long remaining = 0;
+    epicsMutexLock(enumPVMutex);
+    for (i = 0; i < enumPVs; i++) {
+      if (!enumPV[i].flag)
+        remaining++;
+    }
+    epicsMutexUnlock(enumPVMutex);
+    if (!remaining)
+      return 0;
+    ca_poll();
+    usleepSystemIndependent(1000);
+    ntries--;
+  }
+
+  {
+    long i;
+    epicsMutexLock(enumPVMutex);
+    for (i = 0; i < enumPVs; i++) {
+      if (!enumPV[i].flag)
+        fprintf(stderr, "callback failed for enumeric PV %s\n", enumPV[i].PVname);
+    }
+    epicsMutexUnlock(enumPVMutex);
+  }
   return 1;
 }
 
