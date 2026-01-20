@@ -1230,24 +1230,38 @@ int main(int argc, char **argv) {
 #endif
 
   for (i = 0; i < numFiles; i++) {
+    long enumCount = 0;
+    for (j = 0; j < input[i].n_variables; j++) {
+      if (ca_field_type(input[i].channelID[j]) == DBR_ENUM)
+        enumCount++;
+    }
+    input[i].enumPVs = 0;
+    if (enumCount) {
+      input[i].enumPV = tmalloc(sizeof(*(input[i].enumPV)) * enumCount);
+      if (!input[i].enumPV)
+        SDDS_Bomb("memory allocation failure");
+    } else {
+      input[i].enumPV = NULL;
+    }
     for (j = 0; j < input[i].n_variables; j++) {
       /*get the string values of enumerated pv*/
       if (ca_field_type(input[i].channelID[j]) == DBR_ENUM) {
-        input[i].enumPV = SDDS_Realloc(input[i].enumPV, sizeof(*(input[i].enumPV)) * (input[i].enumPVs + 1));
-        input[i].enumPV[input[i].enumPVs].flag = 0;
-        input[i].enumPV[input[i].enumPVs].no_str = 0;
-        input[i].enumPV[input[i].enumPVs].strs = NULL;
-        input[i].enumPV[input[i].enumPVs].PVname = NULL;
+        ENUM_PV *enumPV;
+        enumPV = &input[i].enumPV[input[i].enumPVs];
+        enumPV->flag = 0;
+        enumPV->no_str = 0;
+        enumPV->strs = NULL;
+        enumPV->PVname = NULL;
         length = strlen(input[i].ReadbackNames[j]);
-        input[i].enumPV[input[i].enumPVs].PVname = malloc(sizeof(char) * (length + 20));
-        strcpy(input[i].enumPV[input[i].enumPVs].PVname, input[i].ReadbackNames[j]);
-        strcat(input[i].enumPV[input[i].enumPVs].PVname, "String");
+        enumPV->PVname = malloc(sizeof(char) * (length + 20));
+        strcpy(enumPV->PVname, input[i].ReadbackNames[j]);
+        strcat(enumPV->PVname, "String");
         /*
-                SDDS_CopyString(&input[i].enumPV[input[i].enumPVs].PVname,input[i].ReadbackNames[j]); */
+                SDDS_CopyString(&enumPV->PVname,input[i].ReadbackNames[j]); */
 
         if (ca_array_get_callback(DBR_CTRL_ENUM, ca_element_count(input[i].channelID[j]),
                                   input[i].channelID[j], getStringValuesOfEnumPV,
-                                  (void *)&input[i].enumPV[input[i].enumPVs]) != ECA_NORMAL) {
+                                  (void *)enumPV) != ECA_NORMAL) {
           fprintf(stderr, "error: unable to establish callback.\n");
           return (1);
         }
