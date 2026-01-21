@@ -47,6 +47,8 @@
 typedef std::unordered_multimap<std::string, long> Mymap;
 typedef std::unordered_multimap<std::string, long>::iterator MymapIterator;
 
+static uint32_t GetElementCountFromNelm(PVA_OVERALL *pva, long index, uint32_t currentCount);
+
 /*
   Allocate memory for the pva structure.
   repeats is currently only used for "get" requests where you plan to do statistics over a few readings.
@@ -802,7 +804,7 @@ long ExtractScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVFiel
     if (pva->pvaData[index].numMonitorReadings == 0) {
       pva->pvaData[index].fieldType = scalarArrayConstPtr->getType(); //should always be epics::pvData::scalar
       pva->pvaData[index].scalarType = scalarArrayConstPtr->getElementType();
-      pva->pvaData[index].numMonitorElements = pvScalarArrayPtr->getLength();
+      pva->pvaData[index].numMonitorElements = GetElementCountFromNelm(pva, index, pvScalarArrayPtr->getLength());
     } else {
       if (pva->pvaData[index].nonnumeric) {
         for (long k = 0; k < pva->pvaData[index].numMonitorElements; k++) {
@@ -816,7 +818,7 @@ long ExtractScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVFiel
     if (pva->pvaData[index].numGetReadings == 0) {
       pva->pvaData[index].fieldType = scalarArrayConstPtr->getType(); //should always be epics::pvData::scalar
       pva->pvaData[index].scalarType = scalarArrayConstPtr->getElementType();
-      pva->pvaData[index].numGetElements = pvScalarArrayPtr->getLength();
+      pva->pvaData[index].numGetElements = GetElementCountFromNelm(pva, index, pvScalarArrayPtr->getLength());
     } else if (pva->limitGetReadings) {
       i = 0;
     }
@@ -837,13 +839,27 @@ long ExtractScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVFiel
         pva->pvaData[index].monitorData[0].values = (double *)malloc(sizeof(double) * pva->pvaData[index].numMonitorElements);
         pva->pvaData[index].numeric = true;
       }
-      std::copy(dataVector.begin(), dataVector.begin() + pva->pvaData[index].numMonitorElements, pva->pvaData[index].monitorData[0].values);
+      long count = pva->pvaData[index].numMonitorElements;
+      long have = dataVector.size();
+      long copyCount = (count < have ? count : have);
+      if (copyCount > 0)
+        std::copy(dataVector.begin(), dataVector.begin() + copyCount, pva->pvaData[index].monitorData[0].values);
+      for (long k = copyCount; k < count; k++) {
+        pva->pvaData[index].monitorData[0].values[k] = 0;
+      }
     } else {
       if (pva->pvaData[index].getData[i].values == NULL) {
         pva->pvaData[index].getData[i].values = (double *)malloc(sizeof(double) * pva->pvaData[index].numGetElements);
         pva->pvaData[index].numeric = true;
       }
-      std::copy(dataVector.begin(), dataVector.begin() + pva->pvaData[index].numGetElements, pva->pvaData[index].getData[i].values);
+      long count = pva->pvaData[index].numGetElements;
+      long have = dataVector.size();
+      long copyCount = (count < have ? count : have);
+      if (copyCount > 0)
+        std::copy(dataVector.begin(), dataVector.begin() + copyCount, pva->pvaData[index].getData[i].values);
+      for (long k = copyCount; k < count; k++) {
+        pva->pvaData[index].getData[i].values[k] = 0;
+      }
     }
     break;
   }
@@ -896,18 +912,32 @@ long ExtractScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVFiel
         pva->pvaData[index].monitorData[0].stringValues = (char **)malloc(sizeof(char *) * pva->pvaData[index].numMonitorElements);
         pva->pvaData[index].nonnumeric = true;
       }
-      for (long k = 0; k < pva->pvaData[index].numMonitorElements; k++) {
+      long count = pva->pvaData[index].numMonitorElements;
+      long have = dataVector.size();
+      long copyCount = (count < have ? count : have);
+      for (long k = 0; k < copyCount; k++) {
         pva->pvaData[index].monitorData[0].stringValues[k] = (char *)malloc(sizeof(char) * (dataVector[k].length() + 1));
         strcpy(pva->pvaData[index].monitorData[0].stringValues[k], dataVector[k].c_str());
+      }
+      for (long k = copyCount; k < count; k++) {
+        pva->pvaData[index].monitorData[0].stringValues[k] = (char *)malloc(sizeof(char));
+        pva->pvaData[index].monitorData[0].stringValues[k][0] = 0;
       }
     } else {
       if (pva->pvaData[index].getData[i].stringValues == NULL) {
         pva->pvaData[index].getData[i].stringValues = (char **)malloc(sizeof(char *) * pva->pvaData[index].numGetElements);
         pva->pvaData[index].nonnumeric = true;
       }
-      for (long k = 0; k < pva->pvaData[index].numGetElements; k++) {
+      long count = pva->pvaData[index].numGetElements;
+      long have = dataVector.size();
+      long copyCount = (count < have ? count : have);
+      for (long k = 0; k < copyCount; k++) {
         pva->pvaData[index].getData[i].stringValues[k] = (char *)malloc(sizeof(char) * (dataVector[k].length() + 1));
         strcpy(pva->pvaData[index].getData[i].stringValues[k], dataVector[k].c_str());
+      }
+      for (long k = copyCount; k < count; k++) {
+        pva->pvaData[index].getData[i].stringValues[k] = (char *)malloc(sizeof(char));
+        pva->pvaData[index].getData[i].stringValues[k][0] = 0;
       }
     }
     break;
@@ -2390,6 +2420,42 @@ bool IsEnumFieldType(PVA_OVERALL *pva, long index) {
   else
     return false;
 }
+static uint32_t GetElementCountFromNelm(PVA_OVERALL *pva, long index, uint32_t currentCount) {
+  if (currentCount != 0)
+    return currentCount;
+  if (!pva)
+    return currentCount;
+  if (index < 0 || index >= pva->numPVs)
+    return currentCount;
+  if (pva->pvaProvider[index].compare("ca") != 0)
+    return currentCount;
+  if (!pva->pvaClientPtr)
+    return currentCount;
+
+  std::string baseName = pva->pvaChannelNamesTop[pva->pvaData[index].L2Ptr];
+  size_t dotPos = baseName.find('.');
+  if (dotPos != std::string::npos)
+    baseName = baseName.substr(0, dotPos);
+  std::string nelmName = baseName + ".NELM";
+
+  try {
+    epics::pvaClient::PvaClientChannelPtr channel = pva->pvaClientPtr->channel(nelmName, "ca", 1.0);
+    epics::pvaClient::PvaClientGetPtr getPtr = channel->createGet();
+    getPtr->issueGet();
+    epics::pvData::Status status = getPtr->waitGet();
+    if (!status.isSuccess())
+      return currentCount;
+    epics::pvaClient::PvaClientGetDataPtr getData = getPtr->getData();
+    epics::pvData::PVStructurePtr pvStructurePtr = getData->getPVStructure();
+    epics::pvData::PVFieldPtr pvField = pvStructurePtr->getSubField("value");
+    if (!pvField)
+      return currentCount;
+    epics::pvData::PVScalarPtr pvScalarPtr = std::tr1::static_pointer_cast<epics::pvData::PVScalar>(pvField);
+    return (uint32_t)pvScalarPtr->getAs<uint32_t>();
+  } catch (std::exception &e) {
+    return currentCount;
+  }
+}
 uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
   std::string id;
   epics::pvData::PVStructurePtr pvStructurePtr, pvStructurePtrA, pvStructurePtrB;
@@ -2410,10 +2476,11 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
     if (pvStructurePtr->getPVFields()[0]->getFieldName() == "value") {
       switch (pvStructurePtr->getPVFields()[0]->getField()->getType()) {
       case epics::pvData::scalar: {
-	return 1;
+    	return 1;
       }
       case epics::pvData::scalarArray: {
-	return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[0])->getLength();
+    	return GetElementCountFromNelm(pva, index,
+    	                               std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[0])->getLength());
       }
       default: {
 	std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[0]->getField()->getType() << std::endl;
@@ -2433,7 +2500,8 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
 	  return 1;
 	}
 	case epics::pvData::scalarArray: {
-	  return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[i])->getLength();
+    return GetElementCountFromNelm(pva, index,
+                                   std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtr->getPVFields()[i])->getLength());
 	}
 	default: {
 	  std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getPVFields()[i]->getField()->getType() << std::endl;
@@ -2456,7 +2524,8 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
 		return 1;
 	      }
 	      case epics::pvData::scalarArray: {
-		return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrA->getPVFields()[i])->getLength();
+    return GetElementCountFromNelm(pva, index,
+                                   std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrA->getPVFields()[i])->getLength());
 	      }
 	      default: {
 		std::cerr << "ERROR: Need code to handle " << pvStructurePtrA->getPVFields()[i]->getField()->getType() << std::endl;
@@ -2476,7 +2545,8 @@ uint32_t GetElementCount(PVA_OVERALL *pva, long index) {
 		      return 1;
 		    }
 		    case epics::pvData::scalarArray: {
-		      return std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrB->getPVFields()[i])->getLength();
+          return GetElementCountFromNelm(pva, index,
+                                         std::tr1::static_pointer_cast<const epics::pvData::PVScalarArray>(pvStructurePtrB->getPVFields()[i])->getLength());
 		    }
 		    default: {
 		      std::cerr << "ERROR: Need code to handle " << pvStructurePtrB->getPVFields()[i]->getField()->getType() << std::endl;
