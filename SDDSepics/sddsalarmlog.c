@@ -20,6 +20,7 @@
 #include "SDDSepics.h"
 #include <cadef.h>
 #include <alarm.h>
+#include <epicsMutex.h>
 /* If you get an error compiling this next few lines it
    means that the number or elements in alarmSeverityString
    and/or alarmStatusString have to change to match those
@@ -56,10 +57,27 @@ const char *alarmStatusString[] = {
   "READ_ACCESS",
   "WRITE_ACCESS"};
 
+static const char *GetAlarmSeverityString(short severity) {
+  if (severity < 0 || severity >= ALARM_NSEV)
+    return "UNKNOWN";
+  return alarmSeverityString[severity];
+}
+
+static const char *GetAlarmStatusString(short status) {
+  if (status < 0 || status >= ALARM_NSTATUS)
+    return "UNKNOWN";
+  return alarmStatusString[status];
+}
+
 #include <time.h>
+#include <ctype.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
+#ifndef _WIN32
+#  include <unistd.h>
+#endif
 
 #if defined(__BORLANDC__)
 #  define tzset _tzset
@@ -210,15 +228,17 @@ typedef struct
   chid channelID, relatedChannelID;
   long lastSeverity, lastRow, lastStatus, relatedIsSame;
   double lastChangeTime;
-  /* values to be passed to LogEventToFile from RelatedValueEventHandler */
-  long index;
-  double theTime, Hour, HourIOC, duration;
-  short statusIndex, severityIndex;
   /* used with channel access routines to give index via callback: */
   long usrValue;
   /* bit decoder array index */
   int32_t bdaIndex;
 } CHANNEL_INFO;
+
+typedef struct {
+  long index;
+  double theTime, Hour, HourIOC, duration;
+  short statusIndex, severityIndex;
+} PENDING_EVENT;
 
 long GetControlNames(char *file, char ***name0, char ***relatedName0, char ***description0, int32_t **bitDecoderIndex0);
 long SetupLogFile(SDDS_DATASET *logSet, char *output, char *input,
@@ -249,6 +269,8 @@ static long logfileRow = 0, logfileRows = 0, logfileRowsWritten = 0;
 static double startTime, startHour, hourOffset = 0, timeZoneOffsetInHours = 0;
 static short alarmsOccurred = 0;
 static double HourAdjust = 0, HourIOCAdjust = 0;
+
+static epicsMutexId logMutex = NULL;
 
 static unsigned long CondMode = 0;
 static char **CondDeviceName = NULL, **CondReadMessage = NULL, *CondFile = NULL;
@@ -282,7 +304,9 @@ void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
 void rc_interrupt_handler();
 
-volatile int sigint = 0;
+static volatile sig_atomic_t sigint = 0;
+static volatile sig_atomic_t terminateSignal = 0;
+static volatile sig_atomic_t shuttingDown = 0;
 
 int main(int argc, char **argv) {
   SCANNED_ARG *s_arg;
@@ -304,6 +328,8 @@ int main(int argc, char **argv) {
   PV_VALUE InhibitPV;
   double LastHour, HourNow, Hour;
   long i;
+  int exitCode = 0;
+  int logOpen = 0;
 
   struct stat filestat;
   struct stat input_filestat;
@@ -341,6 +367,12 @@ int main(int argc, char **argv) {
     return (1);
   }
 #endif
+
+  logMutex = epicsMutexCreate();
+  if (!logMutex) {
+    fprintf(stderr, "Unable to create logging mutex\n");
+    return (1);
+  }
 
   signal(SIGINT, sigint_interrupt_handler);
   signal(SIGTERM, sigint_interrupt_handler);
@@ -630,6 +662,7 @@ int main(int argc, char **argv) {
                     relatedName, controlNames, outputMode, commentParameter, commentText,
                     comments))
     SDDS_Bomb("unable to set up log output file");
+  logOpen = 1;
 
   if (offsetTimeOfDay && (startHour * 3600.0 + timeDuration - 24.0 * 3600.0) > 0.5 * timeDuration)
     hourOffset = 24;
@@ -669,18 +702,23 @@ int main(int argc, char **argv) {
   if (rcParam.PV) {
     if (runControlPingWhileSleep(0)) {
       fprintf(stderr, "Problem pinging the run control record.\n");
-      return (1);
+      exitCode = 1;
+      goto cleanup;
     }
     strcpy(rcParam.message, "Running");
     rcParam.status = runControlLogMessage(rcParam.handle, rcParam.message, NO_ALARM, &(rcParam.rcInfo));
     if (rcParam.status != RUNCONTROL_OK) {
       fprintf(stderr, "Unable to write status message and alarm severity\n");
-      return (1);
+      exitCode = 1;
+      goto cleanup;
     }
   }
 #endif
   if (sigint)
-    return (1);
+    {
+      exitCode = 1;
+      goto cleanup;
+    }
 
   /* zeroTime is when the clock for this run starts, as opposed to startTime, which is when
    * this run or the run for which this is a continuation opened the output file 
@@ -692,9 +730,12 @@ int main(int argc, char **argv) {
     HourNow = getHourOfDay();
     if ((dailyFiles && HourNow < LastHour)) {
       /* must start a new file */
+      epicsMutexLock(logMutex);
       if (!SDDS_Terminate(&logDataset)) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-        return (1);
+        epicsMutexUnlock(logMutex);
+        exitCode = 1;
+        goto cleanup;
       }
       outputFile = MakeDailyGenerationFilename(rootName, generationsDigits, generationsDelimiter, 0);
       if (dailyFilesVerbose)
@@ -711,6 +752,7 @@ int main(int argc, char **argv) {
 
       theTime = getTimeInSecs();
       Hour = (theTime) / 3600.0 + HourAdjust;
+      epicsMutexUnlock(logMutex);
       for (i = 0; i < controlNames; i++) {
         chInfo[i].lastRow = -2;
         LogEventToFile(i, theTime, Hour, Hour, theTime - chInfo[i].lastChangeTime,
@@ -728,7 +770,8 @@ int main(int argc, char **argv) {
     if (inhibit && QueryInhibitDataCollection(InhibitPV, &inhibitID, InhibitPendIOTime, 0)) {
       if (verbose)
         fprintf(stderr, "Inhibit PV %s is non zero. Exiting\n", InhibitPV.name);
-      return (0);
+      exitCode = 0;
+      goto cleanup;
     }
     if (verbose)
       fprintf(stderr, "%ld total alarms with %.2f seconds left to run\n", logfileRow, timeLeft);
@@ -740,7 +783,8 @@ int main(int argc, char **argv) {
     if (rcParam.PV) {
       if (runControlPingWhileSleep(pendEventTime)) {
         fprintf(stderr, "Problem pinging the run control record.\n");
-        return (1);
+        exitCode = 1;
+        goto cleanup;
       }
     } else {
       oag_ca_pend_event(pendEventTime, &sigint);
@@ -749,16 +793,25 @@ int main(int argc, char **argv) {
     oag_ca_pend_event(pendEventTime, &sigint);
 #endif
     if (sigint)
-      return (1);
+      {
+        exitCode = 1;
+        goto cleanup;
+      }
 
+    epicsMutexLock(logMutex);
     if (alarmsOccurred)
       updatePages++;
-    if (alarmsOccurred && !SDDS_UpdatePage(&logDataset, FLUSH_TABLE)) {
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-      return (1);
+    if (alarmsOccurred) {
+      if (!SDDS_UpdatePage(&logDataset, FLUSH_TABLE)) {
+        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+        epicsMutexUnlock(logMutex);
+        exitCode = 1;
+        goto cleanup;
+      }
     }
     alarmsOccurred = 0;
     logfileRowsWritten = logfileRow;
+    epicsMutexUnlock(logMutex);
     if (watchInput) {
       if (stat(inputFile, &filestat) != 0)
         break;
@@ -777,10 +830,19 @@ int main(int argc, char **argv) {
   if (verbose)
     fprintf(stderr, "%ld total alarms\n", logfileRow);
 
-  if (!updatePages && !SDDS_UpdatePage(&logDataset, FLUSH_TABLE)) {
-    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-    return (1);
+cleanup:
+  if (logOpen) {
+    shuttingDown = 1;
+    epicsMutexLock(logMutex);
+    if ((alarmsOccurred || !updatePages) && !SDDS_UpdatePage(&logDataset, FLUSH_TABLE)) {
+      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+      exitCode = 1;
+    }
+    if (!SDDS_Terminate(&logDataset))
+      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+    epicsMutexUnlock(logMutex);
   }
+
   if (CondFile) {
     if (CondDeviceName) {
       for (i = 0; i < conditions; i++)
@@ -805,42 +867,57 @@ int main(int argc, char **argv) {
     if (CondCHID)
       free(CondCHID);
   }
-  if (!SDDS_Terminate(&logDataset))
-    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-  return 0;
+  return exitCode;
 }
 
 void LogUnconnectedEvents(void) {
   long i;
   double theTime, Hour;
-  Hour = startHour + ((theTime = getTimeInSecs()) - startTime) / 3600.0 - hourOffset;
+  theTime = getTimeInSecs();
+  Hour = startHour + (theTime - startTime) / 3600.0 - hourOffset;
   for (i = 0; i < controlNames; i++) {
     if (ca_state(chInfo[i].channelID) != cs_conn) {
-      fprintf(stderr, "Warning: the following channel did not connect: %s\n",
-              chInfo[i].controlName);
+      const char *controlName;
+      epicsMutexLock(logMutex);
+      controlName = chInfo[i].controlName;
       chInfo[i].lastRow = -1;      /* indicates nothing logged prior to this */
-      chInfo[i].lastSeverity = -1; /* will result in logging of a NO_ALARM event if one occurs next due to 
+      chInfo[i].lastSeverity = -1; /* will result in logging of a NO_ALARM event if one occurs next due to
                                     * connection of the channel.  See EventHandler().
                                     */
+      chInfo[i].lastStatus = -1;
       chInfo[i].lastChangeTime = theTime;
+      epicsMutexUnlock(logMutex);
+      fprintf(stderr, "Warning: the following channel did not connect: %s\n",
+              controlName);
       /* log this "event" as a TIMEOUT with INVALID status */
       LogEventToFile(i, chInfo[i].lastChangeTime, Hour, Hour, theTime - startTime,
                      TIMEOUT_ALARM, INVALID_ALARM, "");
     }
-    if (chInfo[i].relatedControlName &&
-        !chInfo[i].relatedIsSame && ca_state(chInfo[i].relatedChannelID) != cs_conn) {
-      fprintf(stderr, "Warning: the following channel did not connect: %s\n",
-              chInfo[i].controlName);
-      LogEventToFile(i, chInfo[i].lastChangeTime, Hour, Hour, theTime - startTime,
-                     TIMEOUT_ALARM, INVALID_ALARM, chInfo[i].relatedControlName);
+    {
+      char *relatedControlName;
+      long relatedIsSame;
+      const char *controlName;
+      epicsMutexLock(logMutex);
+      relatedControlName = chInfo[i].relatedControlName;
+      relatedIsSame = chInfo[i].relatedIsSame;
+      controlName = chInfo[i].controlName;
+      epicsMutexUnlock(logMutex);
+      if (relatedControlName && !relatedIsSame && ca_state(chInfo[i].relatedChannelID) != cs_conn) {
+        fprintf(stderr, "Warning: the following channel did not connect: %s\n",
+                controlName);
+        LogEventToFile(i, theTime, Hour, Hour, theTime - startTime,
+                       TIMEOUT_ALARM, INVALID_ALARM, relatedControlName);
+      }
     }
   }
   ca_pend_event(0.0001);
 }
 
 int decimalToBinary(const char* decimal, int binary[], int arraySize) {
-    // First, convert the decimal string to an integer value
-    long num = strtol(decimal, NULL, 10);
+  // First, convert the decimal string to an integer value
+  char *endptr = NULL;
+  errno = 0;
+  long num = strtol(decimal, &endptr, 10);
 
     // Initialize the binary array to zeroes
     for (int i = 0; i < arraySize; i++) {
@@ -848,9 +925,20 @@ int decimalToBinary(const char* decimal, int binary[], int arraySize) {
     }
 
     // Validate conversion
-    if (num < 0) {
-        printf("Conversion error or negative number detected.\n");
+    if (endptr == decimal) {
+      fprintf(stderr, "Conversion error or non-numeric string detected.\n");
+      return 1;
+    }
+    while (endptr && *endptr) {
+      if (!isspace((unsigned char)*endptr)) {
+        fprintf(stderr, "Conversion error or non-numeric string detected.\n");
         return 1;
+      }
+      endptr++;
+    }
+    if (errno == ERANGE || num < 0) {
+      fprintf(stderr, "Conversion error or negative number detected.\n");
+      return 1;
     }
 
     // Convert to binary and store in the array
@@ -862,7 +950,7 @@ int decimalToBinary(const char* decimal, int binary[], int arraySize) {
 
     // Handle potential error if the number is too large for the array
     if (num > 0) {
-      printf("The number is too large for the provided array. Increase the array size.\n");
+      fprintf(stderr, "The number is too large for the provided array. Increase the array size.\n");
       return 1;
     }
     return 0;
@@ -875,6 +963,18 @@ void EventHandler(struct event_handler_args event) {
   short statusIndex, severityIndex, logEvent;
   TS_STAMP *tsStamp;
   int binary[32], logged;
+  long lastRow;
+  short lastSeverity, lastStatus;
+
+  if (shuttingDown)
+    return;
+
+  if (event.status != ECA_NORMAL || !event.dbr) {
+#ifdef DEBUG
+    fprintf(stderr, "EventHandler: callback error status=%d dbr=%p\n", (int)event.status, event.dbr);
+#endif
+    return;
+  }
 
   /* Hour = startHour + ((theTime=getTimeInSecs())-startTime)/3600.0 - hourOffset; */
   Hour = (theTime = getTimeInSecs()) / 3600.0 + HourAdjust;
@@ -892,49 +992,51 @@ void EventHandler(struct event_handler_args event) {
 #ifdef DEBUG
   fprintf(stderr, "EventHandler : index = %ld, status = %ld, severity = %ld\n",
           index, statusIndex, severityIndex);
-  fprintf(stderr, "chInfo pointer: %x\n", (unsigned long)chInfo);
-  fprintf(stderr, "pv name pointer = %x\n", chInfo[index].controlName);
+  fprintf(stderr, "chInfo pointer: %p\n", (void *)chInfo);
+  fprintf(stderr, "pv name pointer = %p\n", (void *)chInfo[index].controlName);
   fprintf(stderr, "event: pv=%s  status=%s  severity=%s\n",
-          chInfo[index].controlName, alarmStatusString[statusIndex],
-          alarmSeverityString[severityIndex]);
+      chInfo[index].controlName, GetAlarmStatusString(statusIndex),
+      GetAlarmSeverityString(severityIndex));
 #endif
-  if (chInfo[index].lastRow == -2 && (severityIndex == INVALID_ALARM || severityIndex == NO_ALARM)) {
+  epicsMutexLock(logMutex);
+  lastRow = chInfo[index].lastRow;
+  lastSeverity = chInfo[index].lastSeverity;
+  lastStatus = chInfo[index].lastStatus;
+  epicsMutexUnlock(logMutex);
+
+  if (lastRow == -2 && (severityIndex == INVALID_ALARM || severityIndex == NO_ALARM)) {
     /* Channel valid but with no previous callbacks received--most valid channels come through here. */
     /* Don't log initial invalid or no-alarm state.  */
+    epicsMutexLock(logMutex);
     chInfo[index].lastRow = -1; /* indicates initial callback received but nothing logged */
     chInfo[index].lastSeverity = severityIndex;
     chInfo[index].lastStatus = statusIndex;
+    epicsMutexUnlock(logMutex);
 #ifdef DEBUG
     fprintf(stderr, "event ignored: condition 1\n");
 #endif
     return;
   }
-  if (chInfo[index].lastRow == -1 && severityIndex == NO_ALARM && chInfo[index].lastSeverity == INVALID_ALARM) {
+  if (lastRow == -1 && severityIndex == NO_ALARM && lastSeverity == INVALID_ALARM) {
     /* Don't log initial NO_ALARM "alarm" following INVALID_ALARM.  However, record the NO_ALARM
      * severity for future use.
      */
+    epicsMutexLock(logMutex);
     chInfo[index].lastSeverity = severityIndex;
     chInfo[index].lastStatus = statusIndex;
+    epicsMutexUnlock(logMutex);
 #ifdef DEBUG
     fprintf(stderr, "event ignored: condition 2\n");
 #endif
     return;
   }
-  if (chInfo[index].logPending && chInfo[index].severityIndex > severityIndex) {
-    /* a write is pending for a more severe alarm, so ignore this one. */
-#ifdef DEBUG
-    fprintf(stderr, "write pending: event is not being logged.\n");
-#endif
-    return;
-  }
-
   logEvent = 1;
   if (outputMode & REQBOTHCHANGE) {
-    logEvent = chInfo[index].lastSeverity != severityIndex && chInfo[index].lastStatus != statusIndex;
+    logEvent = lastSeverity != severityIndex && lastStatus != statusIndex;
   } else if (outputMode & REQSTATUSCHANGE) {
-    logEvent = chInfo[index].lastStatus != statusIndex;
+    logEvent = lastStatus != statusIndex;
   } else if (outputMode & REQSEVERITYCHANGE) {
-    logEvent = chInfo[index].lastSeverity != severityIndex;
+    logEvent = lastSeverity != severityIndex;
   }
   if (logEvent) {
 #ifdef DEBUG
@@ -944,23 +1046,37 @@ void EventHandler(struct event_handler_args event) {
       /* save values pertinent to this alarm.
        */
       long status;
-      chInfo[index].logPending = 1;
-      chInfo[index].index = index;
-      chInfo[index].theTime = theTime;
-      chInfo[index].Hour = Hour;
-      chInfo[index].HourIOC = HourIOC;
-      chInfo[index].duration = theTime - chInfo[index].lastChangeTime;
-      chInfo[index].statusIndex = statusIndex;
-      chInfo[index].severityIndex = severityIndex;
+      PENDING_EVENT *pending = (PENDING_EVENT *)malloc(sizeof(*pending));
+      if (!pending) {
+        LogEventToFile(index, theTime, Hour, HourIOC,
+                       theTime - chInfo[index].lastChangeTime, statusIndex, severityIndex,
+                       "allocation failure for related value");
+        return;
+      }
+      pending->index = index;
+      pending->theTime = theTime;
+      pending->Hour = Hour;
+      pending->HourIOC = HourIOC;
+      pending->duration = theTime - chInfo[index].lastChangeTime;
+      pending->statusIndex = statusIndex;
+      pending->severityIndex = severityIndex;
+      epicsMutexLock(logMutex);
+      chInfo[index].logPending++;
+      epicsMutexUnlock(logMutex);
       /* set up a callback to get the related value and write it out */
       if ((status = ca_get_callback(DBR_STRING, chInfo[index].relatedChannelID,
-                                    RelatedValueEventHandler, (void *)&chInfo[index].usrValue)) != ECA_NORMAL) {
+                                    RelatedValueEventHandler, (void *)pending)) != ECA_NORMAL) {
         fprintf(stderr, "warning: unable to establish callback for control name %s (related value for %s): %s\n",
                 chInfo[index].relatedControlName, chInfo[index].controlName,
                 ca_message(status));
         LogEventToFile(index, theTime, Hour, HourIOC,
                        theTime - chInfo[index].lastChangeTime, statusIndex, severityIndex,
                        (char *)ca_message(status));
+        epicsMutexLock(logMutex);
+        if (chInfo[index].logPending > 0)
+          chInfo[index].logPending--;
+        epicsMutexUnlock(logMutex);
+        free(pending);
       }
 #ifdef DEBUG
       fprintf(stderr, "Callback set up for related value\n");
@@ -978,12 +1094,21 @@ void EventHandler(struct event_handler_args event) {
                          chInfo[index].relatedControlName ? (char *)(dbrValue->value) : NULL);
           fprintf(stderr, "BidDecoderArray is invalid for %s\n", chInfo[index].controlName);
         } else {
-          for (int i = 31, j = 0; i >= 0; i--, j++) {
-            if (binary[i]) {
-              LogEventToFile(index, theTime, Hour, HourIOC,
-                             theTime - chInfo[index].lastChangeTime, statusIndex, severityIndex,
-                             globalBDA[chInfo[index].bdaIndex].bitDescriptions[j]);
-              logged = 1;
+          int maxBits = globalBDA[chInfo[index].bdaIndex].bitLength;
+          if (maxBits > 32)
+            maxBits = 32;
+          /* decimalToBinary() right-aligns bits in binary[0..31].
+           * Map bitDescriptions[0..maxBits-1] to those bits in MSB->LSB order.
+           */
+          if (maxBits > 0) {
+            int startIndex = 32 - maxBits;
+            for (int bit = 0; bit < maxBits; bit++) {
+              if (binary[startIndex + bit]) {
+                LogEventToFile(index, theTime, Hour, HourIOC,
+                               theTime - chInfo[index].lastChangeTime, statusIndex, severityIndex,
+                               globalBDA[chInfo[index].bdaIndex].bitDescriptions[bit]);
+                logged = 1;
+              }
             }
           }
         }
@@ -995,26 +1120,42 @@ void EventHandler(struct event_handler_args event) {
       }
     }
   } else {
+    epicsMutexLock(logMutex);
     chInfo[index].lastSeverity = severityIndex;
     chInfo[index].lastStatus = statusIndex;
+    epicsMutexUnlock(logMutex);
   }
 }
 
 void RelatedValueEventHandler(struct event_handler_args event) {
   long index;
-  index = *((long *)event.usr);
+  PENDING_EVENT *pending;
+  if (shuttingDown)
+    return;
+  if (event.status != ECA_NORMAL || !event.dbr)
+    return;
+  pending = (PENDING_EVENT *)event.usr;
+  index = pending->index;
 #ifdef DEBUG
   fprintf(stderr, "RelatedValueEventHandler called with index %ld\n", index);
 #endif
-  LogEventToFile(index, chInfo[index].theTime, chInfo[index].Hour, chInfo[index].HourIOC,
-                 chInfo[index].duration,
-                 chInfo[index].statusIndex, chInfo[index].severityIndex,
+  LogEventToFile(index, pending->theTime, pending->Hour, pending->HourIOC,
+                 pending->duration,
+                 pending->statusIndex, pending->severityIndex,
                  (char *)(event.dbr));
+  epicsMutexLock(logMutex);
+  if (chInfo[index].logPending > 0)
+    chInfo[index].logPending--;
+  epicsMutexUnlock(logMutex);
+  free(pending);
   return;
 }
 
 void LogEventToFile(long index, double theTime, double Hour, double HourIOC, double duration,
                     short statusIndex, short severityIndex, char *relatedValueString) {
+  if (shuttingDown)
+    return;
+  epicsMutexLock(logMutex);
   alarmsOccurred = 1;
   while (logfileRows - 2 < logfileRow - logfileRowsWritten) {
 #ifdef DEBUGSDDS
@@ -1045,8 +1186,8 @@ void LogEventToFile(long index, double theTime, double Hour, double HourIOC, dou
       (outputMode & EXPLICIT &&
        !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
                           iControlName, chInfo[index].controlName,
-                          iAlarmStatus, alarmStatusString[statusIndex],
-                          iAlarmSeverity, alarmSeverityString[severityIndex],
+                          iAlarmStatus, GetAlarmStatusString(statusIndex),
+                          iAlarmSeverity, GetAlarmSeverityString(severityIndex),
                           -1)) ||
       (outputMode & EXPLICIT && outputMode & DESCRIPTIONS &&
        !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
@@ -1069,7 +1210,7 @@ void LogEventToFile(long index, double theTime, double Hour, double HourIOC, dou
   chInfo[index].lastSeverity = severityIndex;
   chInfo[index].lastStatus = statusIndex;
   logfileRow++;
-  chInfo[index].logPending = 0;
+  epicsMutexUnlock(logMutex);
 }
 
 long InitiateConnections(char **cName, char **relatedName, char **description, int32_t *bitDecoderIndex, long cNames, CHANNEL_INFO **chInfo0) {
@@ -1372,9 +1513,11 @@ long GetControlNames(char *file, char ***name0, char ***relatedName0, char ***de
         relatedName[names + i] = newRelatedName[i];
       if (doBitDecoderArray) {
         bitDecoderIndex[names + i] = -1;
-        for (k = 0; k < j; k++) {
-          if (strcmp(newBitDecoderArray[i], (&inSet)->layout.array_definition[k].name) == 0) {
-            bitDecoderIndex[names + i] = k;
+        if (newBitDecoderArray[i] && !SDDS_StringIsBlank(newBitDecoderArray[i])) {
+          for (k = 0; k < j; k++) {
+            if (strcmp(newBitDecoderArray[i], (&inSet)->layout.array_definition[k].name) == 0) {
+              bitDecoderIndex[names + i] = k;
+            }
           }
         }
       }
@@ -1546,16 +1689,36 @@ long GetLogFileIndices(SDDS_DATASET *outSet, unsigned long mode) {
 }
 
 void interrupt_handler(int sig) {
+  /* Fatal/abnormal signal: avoid non-async-signal-safe cleanup.
+     Use _exit() to terminate immediately.
+   */
+#ifndef _WIN32
+  {
+    const char msg[] = "sddsalarmlog: fatal signal received, aborting\n";
+    /* write() is async-signal-safe */
+    write(2, msg, sizeof(msg) - 1);
+  }
+  _exit(128 + sig);
+#else
+  /* Best effort on Windows builds */
   exit(1);
+#endif
 }
 
 void sigint_interrupt_handler(int sig) {
+  static volatile sig_atomic_t seen = 0;
+
+  terminateSignal = sig;
   sigint = 1;
-  signal(SIGINT, interrupt_handler);
-  signal(SIGTERM, interrupt_handler);
+  /* If the user sends a second termination signal, exit immediately. */
+  if (seen) {
 #ifndef _WIN32
-  signal(SIGQUIT, interrupt_handler);
+    _exit(128 + sig);
+#else
+    exit(1);
 #endif
+  }
+  seen = 1;
 }
 
 void rc_interrupt_handler() {
