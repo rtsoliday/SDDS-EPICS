@@ -50,7 +50,7 @@ Glitch Logger Options:
 \item \textbf{switches:}
 \begin{itemize}
   \item {\tt -pendIOtime=<value>} --- maximum time to wait for PV responses.
-  \item {\tt -watchInput} --- reload the input file when it changes.
+  \item {\tt -watchInput} --- watches the input file and exits if it changes (including changes to a symlink target). If \verb|-triggerFile| is in use, the trigger file is also watched. This option does not reload files in-place; instead it is intended for use with an external supervisor script that restarts the logger when a change is detected. When used in conjunction with the run control feature, an automated script can be used to restart the logger cleanly.
   \item {\tt -monitorMode=[randomTimedTrigger]} --- use monitor mode; optional value randomizes trigger timing.
   \item {\tt -append} --- append to an existing output file.
   \item {\tt -overwrite} --- overwrite an existing output file.
