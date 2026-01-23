@@ -49,6 +49,8 @@ typedef std::unordered_multimap<std::string, long>::iterator MymapIterator;
 
 static uint32_t GetElementCountFromNelm(PVA_OVERALL *pva, long index, uint32_t currentCount);
 
+static long ExtractUnionValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldPtr PVFieldPtr, bool monitorMode);
+
 /*
   Allocate memory for the pva structure.
   repeats is currently only used for "get" requests where you plan to do statistics over a few readings.
@@ -959,6 +961,39 @@ long ExtractScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVFiel
   return (0);
 }
 
+static long ExtractUnionValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldPtr PVFieldPtr, bool monitorMode) {
+  epics::pvData::PVUnionPtr pvUnionPtr;
+  epics::pvData::PVFieldPtr selectedField;
+
+  pvUnionPtr = std::tr1::static_pointer_cast<epics::pvData::PVUnion>(PVFieldPtr);
+  selectedField = pvUnionPtr->get();
+
+  if (!selectedField) {
+    std::cerr << "ERROR: union has no selected field" << std::endl;
+    return (1);
+  }
+
+  switch (selectedField->getField()->getType()) {
+  case epics::pvData::scalar: {
+    return ExtractScalarValue(pva, index, selectedField, monitorMode);
+  }
+  case epics::pvData::scalarArray: {
+    return ExtractScalarArrayValue(pva, index, selectedField, monitorMode);
+  }
+  case epics::pvData::structure: {
+    return ExtractStructureValue(pva, index, selectedField, monitorMode);
+  }
+  case epics::pvData::union_: {
+    /* Nested unions are allowed; recurse. */
+    return ExtractUnionValue(pva, index, selectedField, monitorMode);
+  }
+  default: {
+    std::cerr << "ERROR: Need code to handle union selected field type " << selectedField->getField()->getType() << std::endl;
+    return (1);
+  }
+  }
+}
+
 long ExtractNTScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVStructurePtr pvStructurePtr, bool monitorMode) {
   long j, fieldCount;
   epics::pvData::PVFieldPtrArray PVFieldPtrArray;
@@ -1099,6 +1134,12 @@ long ExtractStructureValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldP
       }
       break;
     }
+    case epics::pvData::union_: {
+      if (ExtractUnionValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+        return (1);
+      }
+      break;
+    }
     default: {
       std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getSubField(afterDot)->getField()->getType() << std::endl;
       return (1);
@@ -1124,6 +1165,13 @@ long ExtractStructureValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldP
   }
   case epics::pvData::structure: {
     if (ExtractStructureValue(pva, index, PVFieldPtrArray[0], monitorMode)) {
+      return (1);
+    }
+    return (0);
+    break;
+  }
+  case epics::pvData::union_: {
+    if (ExtractUnionValue(pva, index, PVFieldPtrArray[0], monitorMode)) {
       return (1);
     }
     return (0);
@@ -1193,6 +1241,12 @@ long ExtractPVAValuesOld(PVA_OVERALL *pva) {
         }
         case epics::pvData::structure: {
           if (ExtractStructureValue(pva, i, PVFieldPtrArray[0], monitorMode)) {
+            return (1);
+          }
+          break;
+        }
+        case epics::pvData::union_: {
+          if (ExtractUnionValue(pva, i, PVFieldPtrArray[0], monitorMode)) {
             return (1);
           }
           break;
@@ -1311,6 +1365,12 @@ long ExtractPVAValues(PVA_OVERALL *pva) {
               }
               break;
             }
+            case epics::pvData::union_: {
+              if (ExtractUnionValue(pva, i, pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot), monitorMode)) {
+                return (1);
+              }
+              break;
+            }
             default: {
               std::cerr << "ERROR: Need code to handle " << pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot)->getField()->getType() << std::endl;
               return (1);
@@ -1334,6 +1394,12 @@ long ExtractPVAValues(PVA_OVERALL *pva) {
         }
         case epics::pvData::structure: {
           if (ExtractStructureValue(pva, i, PVFieldPtrArray[0], monitorMode)) {
+            return (1);
+          }
+          break;
+        }
+        case epics::pvData::union_: {
+          if (ExtractUnionValue(pva, i, PVFieldPtrArray[0], monitorMode)) {
             return (1);
           }
           break;
