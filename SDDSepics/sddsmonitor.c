@@ -388,6 +388,7 @@ const char *alarmStatusString[] = {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <math.h>
 
 #ifdef _WIN32
 #  include <windows.h>
@@ -691,6 +692,19 @@ typedef struct
   RUNCONTROL_INFO rcInfo;
 } RUNCONTROL_PARAM;
 RUNCONTROL_PARAM rcParam;
+
+static char *copyTruncatedString(const char *input, size_t maxLen)
+{
+  char *output;
+
+  if (!input)
+    input = "";
+  if (!(output = (char *)malloc(maxLen + 1)))
+    SDDS_Bomb("memory allocation failure");
+  strncpy(output, input, maxLen);
+  output[maxLen] = '\0';
+  return output;
+}
 #endif
 
 #define DEFAULT_TIME_INTERVAL 1.0
@@ -729,7 +743,8 @@ void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
 void rc_interrupt_handler();
 
-volatile int sigint = 0;
+static volatile sig_atomic_t terminateSignal = 0;
+static volatile sig_atomic_t sigint = 0;
 
 int main(int argc, char **argv) {
   SCANNED_ARG *s_arg;
@@ -778,6 +793,8 @@ int main(int argc, char **argv) {
   int32_t glitchBefore, glitchAfter, glitchBaseline;
   long row = 0, triggerCount, glitchBeforeCounter, glitchAfterCounter;
   long writeBeforeBuffer, afterBufferPending, bufferlength;
+  long beforeRows;
+  DATANODE *scanNode;
 
   long alarmTrigChannels;
 
@@ -835,7 +852,7 @@ int main(int argc, char **argv) {
   signal(SIGFPE, interrupt_handler);
   signal(SIGSEGV, interrupt_handler);
 #ifndef _WIN32
-  signal(SIGHUP, interrupt_handler);
+  signal(SIGHUP, sigint_interrupt_handler);
   signal(SIGQUIT, sigint_interrupt_handler);
   signal(SIGTRAP, interrupt_handler);
   signal(SIGBUS, interrupt_handler);
@@ -894,11 +911,15 @@ int main(int argc, char **argv) {
           else
             bomb("unknown/ambiguous time units given for -interval", NULL);
         }
+        if (TimeInterval <= 0)
+          bomb("invalid -interval value (must be > 0)", NULL);
         break;
       case CLO_UPDATEINTERVAL:
         if (s_arg[i_arg].n_items != 2 ||
             !(get_long(&updateInterval, s_arg[i_arg].list[1])))
           bomb("no value given for option -updateinterval", NULL);
+        if (updateInterval <= 0)
+          bomb("invalid -updateinterval value (must be > 0)", NULL);
         break;
       case CLO_STEPS:
         if (s_arg[i_arg].n_items != 2 ||
@@ -960,9 +981,10 @@ int main(int argc, char **argv) {
           bomb("no value given for option -time", NULL);
         totalTimeSet = 1;
         if (s_arg[i_arg].n_items == 3) {
-          if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) != 0) {
+          if ((TimeUnits = match_string(s_arg[i_arg].list[2], TimeUnitNames, NTimeUnitNames, 0)) >= 0)
             TotalTime *= TimeUnitFactor[TimeUnits];
-          }
+          else
+            bomb("unknown/ambiguous time units given for -time", NULL);
         }
         break;
       case CLO_ONCAERROR:
@@ -1270,8 +1292,18 @@ int main(int argc, char **argv) {
 #ifdef USE_RUNCONTROL
   if (rcParam.PV) {
     rcParam.handle[0] = (char)0;
-    rcParam.Desc = (char *)realloc(rcParam.Desc, 41 * sizeof(char));
-    rcParam.PV = (char *)realloc(rcParam.PV, 41 * sizeof(char));
+
+    /*
+       scanItemList() returns pointers to parsed argument strings; they are not
+       safe to realloc() and may be longer than the runcontrol record allows.
+       Make owned, bounded, NUL-terminated copies.
+    */
+    rcParam.PV = copyTruncatedString(rcParam.PV, 40);
+    if (!rcParam.Desc)
+      rcParam.Desc = copyTruncatedString(outputfile ? outputfile : "sddsmonitor", 40);
+    else
+      rcParam.Desc = copyTruncatedString(rcParam.Desc, 40);
+
     rcParam.status = runControlInit(rcParam.PV,
                                     rcParam.Desc,
                                     rcParam.pingTimeout,
@@ -1391,8 +1423,10 @@ int main(int argc, char **argv) {
       CondCHID[i] = NULL;
   }
 
-  if (!n_variables)
-    fprintf(stderr, "error: no data in input file");
+  if (!n_variables) {
+    fprintf(stderr, "error: no data in input file\n");
+    return (1);
+  }
 
   if (!(values = (double *)malloc(sizeof(double) * n_variables)) ||
       !(baselineValues = (double *)malloc(sizeof(double) * n_variables)))
@@ -1591,7 +1625,12 @@ int main(int argc, char **argv) {
           fputs("Type <cr> to read, q to quit:\n", singleShot == SS_STDOUTPROMPT ? stdout : stderr);
           fflush(singleShot == SS_STDOUTPROMPT ? stdout : stderr);
         }
-        fgets(answer, ANSWER_LENGTH, stdin);
+        if (!fgets(answer, ANSWER_LENGTH, stdin)) {
+          /* EOF or read error: act like user requested quit */
+          SDDS_UpdatePage(&output_page, FLUSH_TABLE);
+          SDDS_Terminate(&output_page);
+          return (0);
+        }
         if (answer[0] == 'q' || answer[0] == 'Q') {
           SDDS_UpdatePage(&output_page, FLUSH_TABLE);
           SDDS_Terminate(&output_page);
@@ -1845,19 +1884,34 @@ int main(int argc, char **argv) {
     afterBufferPending = 0;
 
     /* make copies of control-names and messages for convenient use with CA routine */
-    if (!(glitchControlName = malloc(sizeof(*glitchControlName) * glitchChannels)) ||
-        !(glitchControlMessage = malloc(sizeof(*glitchControlMessage) * glitchChannels)) ||
-        !(glitchValue = malloc(sizeof(*glitchValue) * glitchChannels)) ||
-        !(glitchCHID = malloc(sizeof(*glitchCHID) * glitchChannels)) ||
-        !(triggered = malloc(sizeof(*triggered) * glitchChannels)) ||
-        !(alarmed = malloc(sizeof(*alarmed) * alarmTrigChannels)))
-      SDDS_Bomb("memory allocation failure (glitch data copies)");
-    for (iGlitch = 0; iGlitch < glitchChannels; iGlitch++) {
-      glitchCHID[iGlitch] = NULL;
-      if (!SDDS_CopyString(glitchControlName + iGlitch, glitchRequest[iGlitch].controlName) ||
-          !SDDS_CopyString(glitchControlMessage + iGlitch, glitchRequest[iGlitch].message))
+    glitchControlName = NULL;
+    glitchControlMessage = NULL;
+    glitchValue = NULL;
+    glitchCHID = NULL;
+    triggered = NULL;
+    alarmed = NULL;
+
+    if (glitchChannels > 0) {
+      if (!(glitchControlName = malloc(sizeof(*glitchControlName) * glitchChannels)) ||
+          !(glitchControlMessage = malloc(sizeof(*glitchControlMessage) * glitchChannels)) ||
+          !(glitchValue = malloc(sizeof(*glitchValue) * glitchChannels)) ||
+          !(glitchCHID = malloc(sizeof(*glitchCHID) * glitchChannels)) ||
+          !(triggered = malloc(sizeof(*triggered) * glitchChannels)))
         SDDS_Bomb("memory allocation failure (glitch data copies)");
+      for (iGlitch = 0; iGlitch < glitchChannels; iGlitch++) {
+        glitchCHID[iGlitch] = NULL;
+        if (!SDDS_CopyString(glitchControlName + iGlitch, glitchRequest[iGlitch].controlName) ||
+            !SDDS_CopyString(glitchControlMessage + iGlitch, glitchRequest[iGlitch].message))
+          SDDS_Bomb("memory allocation failure (glitch data copies)");
+      }
     }
+    if (alarmTrigChannels > 0) {
+      if (!(alarmed = malloc(sizeof(*alarmed) * alarmTrigChannels)))
+        SDDS_Bomb("memory allocation failure (alarm trigger data copies)");
+    }
+
+    if (glitchChannels == 0)
+      baselineStarted = 1;
 
     holdoffTime = holdoffCount = SDDSFlushNeeded = 0;
     lastConditionsFailed = 0;
@@ -1922,7 +1976,11 @@ int main(int argc, char **argv) {
           fputs("Type <cr> to read, q to quit:\n", singleShot == SS_STDOUTPROMPT ? stdout : stderr);
           fflush(singleShot == SS_STDOUTPROMPT ? stdout : stderr);
         }
-        fgets(answer, ANSWER_LENGTH, stdin);
+        if (!fgets(answer, ANSWER_LENGTH, stdin)) {
+          /* EOF or read error: act like user requested quit */
+          SDDS_Terminate(&output_page);
+          return (0);
+        }
         if (answer[0] == 'q' || answer[0] == 'Q') {
           SDDS_Terminate(&output_page);
           return (0);
@@ -2098,16 +2156,21 @@ int main(int argc, char **argv) {
         Node->values[j] = values[j];
       Node->hasdata = 1;
 
-      CAerrors = ReadScalarValues(glitchControlName, glitchControlMessage, NULL,
-                                  glitchValue, glitchChannels, glitchCHID, pendIOtime);
+      if (glitchBeforeCounter < glitchBefore)
+        glitchBeforeCounter++;
+
+      if (glitchChannels > 0) {
+        CAerrors = ReadScalarValues(glitchControlName, glitchControlMessage, NULL,
+                                    glitchValue, glitchChannels, glitchCHID, pendIOtime);
+      } else {
+        CAerrors = 0;
+      }
       if (!CAerrors) {
         if (!baselineStarted) {
           for (iGlitch = 0; iGlitch < glitchChannels; iGlitch++)
             glitchRequest[iGlitch].baselineValue = glitchValue[iGlitch];
           baselineStarted = 1;
         }
-        if (glitchBeforeCounter < glitchBefore)
-          glitchBeforeCounter++;
         if (verbose) {
           for (iGlitch = 0; iGlitch < glitchChannels; iGlitch++) {
             if (!glitchRequest[iGlitch].triggerMode) {
@@ -2208,6 +2271,16 @@ int main(int argc, char **argv) {
 
         /* act on trigger */
         if (writeBeforeBuffer && triggerCount) {
+          beforeRows = 0;
+          scanNode = firstNode;
+          for (i = 0; i < bufferlength; i++) {
+            if (scanNode->hasdata)
+              beforeRows++;
+            scanNode = scanNode->next;
+          }
+          if (beforeRows < 1)
+            beforeRows = 1;
+
           glitchAfterCounter = 0;
           row = 0;
           glitchNode = Node;
@@ -2221,7 +2294,7 @@ int main(int argc, char **argv) {
               SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
             SDDSFlushNeeded = 0;
           }
-          if (!SDDS_StartTable(&output_page, (glitchBeforeCounter + glitchAfter + 1)) ||
+            if (!SDDS_StartTable(&output_page, (beforeRows + glitchAfter)) ||
               !SDDS_CopyString(&PageTimeStamp, makeTimeStamp(getTimeInSecs())) ||
               !SDDS_SetParameters(&output_page, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE,
                                   "PageTimeStamp", PageTimeStamp, NULL))
@@ -2258,10 +2331,10 @@ int main(int argc, char **argv) {
               if (SetValuesFromIndex(&output_page, row, ReadbackIndex, Node->values, n_variables, Precision)) {
                 SDDS_Bomb("Something wrong with subroutine SetValuesFromIndex.");
               }
+              row++;
             }
             Node->hasdata = 0;
             Node = Node->next;
-            row++;
           } while (Node != glitchNode->next);
           Node = glitchNode->next;
           if (!SDDS_UpdatePage(&output_page, FLUSH_TABLE))
@@ -2291,8 +2364,10 @@ int main(int argc, char **argv) {
               }
             }
           }
-          if (holdoffTime > holdoffCount * TimeInterval)
-            holdoffCount = holdoffTime / TimeInterval;
+          if (holdoffTime > holdoffCount * TimeInterval) {
+            if (TimeInterval > 0)
+              holdoffCount = (long)ceil(holdoffTime / TimeInterval);
+          }
         } else if (glitchAfterCounter < glitchAfter && afterBufferPending) {
           /* continue collecting data in circular buffer after trigger */
           if (verbose) {
@@ -2455,8 +2530,8 @@ long IsGlitch(double value, double baseline, unsigned long flags,
     break;
   }
 
-  if ((flags & GLITCH_FRACTION && diff / (baseline + 1e-300) > fraction) ||
-      diff > delta) {
+  if (((flags & GLITCH_FRACTION) && diff / (baseline + 1e-300) > fraction) ||
+      ((flags & GLITCH_DELTA) && diff > delta)) {
     return (1);
   }
   return (0);
@@ -2622,12 +2697,6 @@ void alarmTriggerEventHandler(struct event_handler_args event) {
   }
   if (i == alarmTrigRequest[index].severityIndices)
     return;
-  for (i = 0; i < alarmTrigRequest[index].severityIndices; i++) {
-    if (alarmTrigRequest[index].severity == alarmTrigRequest[index].severityIndex[i])
-      break;
-  }
-  if (i == alarmTrigRequest[index].severityIndices)
-    return;
   for (i = 0; i < alarmTrigRequest[index].statusIndices; i++) {
     if (alarmTrigRequest[index].status == alarmTrigRequest[index].statusIndex[i])
       break;
@@ -2692,16 +2761,36 @@ void startMonitorFile(SDDS_DATASET *output_page, char *outputfile, GLITCH_REQUES
 }
 
 void interrupt_handler(int sig) {
+  /* Fatal/abnormal signal: avoid non-async-signal-safe cleanup.
+     Use _exit() to terminate immediately.
+   */
+#if !defined(_WIN32)
+  {
+    const char msg[] = "sddsmonitor: fatal signal received, aborting\n";
+    /* write() is async-signal-safe */
+    write(2, msg, sizeof(msg) - 1);
+  }
+  _exit(128 + sig);
+#else
+  /* Best effort on Windows builds */
   exit(1);
+#endif
 }
 
 void sigint_interrupt_handler(int sig) {
+  static volatile sig_atomic_t seen = 0;
+
+  terminateSignal = sig;
   sigint = 1;
-  signal(SIGINT, interrupt_handler);
-  signal(SIGTERM, interrupt_handler);
-#ifndef _WIN32
-  signal(SIGQUIT, interrupt_handler);
+  /* If the user sends a second termination signal, exit immediately. */
+  if (seen) {
+#if !defined(_WIN32)
+    _exit(128 + sig);
+#else
+    exit(1);
 #endif
+  }
+  seen = 1;
 }
 
 void rc_interrupt_handler() {
