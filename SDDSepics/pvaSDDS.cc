@@ -50,6 +50,10 @@ typedef std::unordered_multimap<std::string, long>::iterator MymapIterator;
 static uint32_t GetElementCountFromNelm(PVA_OVERALL *pva, long index, uint32_t currentCount);
 
 static long ExtractUnionValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldPtr PVFieldPtr, bool monitorMode);
+static long ExtractByPath(PVA_OVERALL *pva, long index, epics::pvData::PVStructurePtr root, const std::string &path, bool monitorMode);
+static long PutByPath(PVA_OVERALL *pva, long index, epics::pvData::PVStructurePtr root, const std::string &path);
+
+static bool ParseIndexedToken(const std::string &token, std::string &name, long &arrayIndex, bool &hasIndex);
 
 /*
   Allocate memory for the pva structure.
@@ -345,6 +349,12 @@ void ConnectPVA(PVA_OVERALL *pva, double pendIOTime) {
       } else {
         namesTmp[j] = pva->pvaChannelNames[j].substr(0, pos);
         subnames[j] = pva->pvaChannelNames[j].substr(pos + 1);
+        /* If the user requests an indexed array element (e.g. dimension[0].size),
+           request the unindexed field over the network and apply indexing client-side. */
+        pos = subnames[j].find_first_of("[(@");
+        if (pos != std::string::npos) {
+          subnames[j] = subnames[j].substr(0, pos);
+        }
       }
     } else {
       namesTmp[j] = pva->pvaChannelNames[j];
@@ -994,6 +1004,247 @@ static long ExtractUnionValue(PVA_OVERALL *pva, long index, epics::pvData::PVFie
   }
 }
 
+static bool ParseIndexedToken(const std::string &token, std::string &name, long &arrayIndex, bool &hasIndex) {
+  size_t lb = token.find_first_of("[(");
+  if (lb == std::string::npos) {
+    size_t at = token.find('@');
+    if (at == std::string::npos) {
+      name = token;
+      hasIndex = false;
+      return true;
+    }
+    if (token.find('@', at + 1) != std::string::npos) {
+      return false;
+    }
+    name = token.substr(0, at);
+    std::string indexText = token.substr(at + 1);
+    if (name.empty() || indexText.empty()) {
+      return false;
+    }
+    char *endp = NULL;
+    long v = strtol(indexText.c_str(), &endp, 10);
+    if ((endp == indexText.c_str()) || (endp == NULL) || (*endp != '\0')) {
+      return false;
+    }
+    arrayIndex = v;
+    hasIndex = true;
+    return true;
+  }
+
+  char openCh = token[lb];
+  char closeCh = (openCh == '[' ? ']' : ')');
+  size_t rb = token.find(closeCh, lb + 1);
+  if (rb == std::string::npos) {
+    return false;
+  }
+  if (rb + 1 != token.size()) {
+    /* Only support a single trailing [index] on the token. */
+    return false;
+  }
+
+  name = token.substr(0, lb);
+  std::string indexText = token.substr(lb + 1, rb - lb - 1);
+  if (indexText.empty()) {
+    return false;
+  }
+  char *endp = NULL;
+  long v = strtol(indexText.c_str(), &endp, 10);
+  if ((endp == indexText.c_str()) || (endp == NULL) || (*endp != '\0')) {
+    return false;
+  }
+  arrayIndex = v;
+  hasIndex = true;
+  return true;
+}
+
+static long ExtractByPath(PVA_OVERALL *pva, long index, epics::pvData::PVStructurePtr root, const std::string &path, bool monitorMode) {
+  if (!root) {
+    std::cerr << "ERROR: NULL root structure" << std::endl;
+    return (1);
+  }
+  if (path.empty()) {
+    std::cerr << "Error: sub-field is not specific enough" << std::endl;
+    return (1);
+  }
+
+  epics::pvData::PVFieldPtr current = root;
+  std::string remaining = path;
+  while (!remaining.empty()) {
+    std::string token;
+    size_t dot = remaining.find('.');
+    if (dot == std::string::npos) {
+      token = remaining;
+      remaining.clear();
+    } else {
+      token = remaining.substr(0, dot);
+      remaining = remaining.substr(dot + 1);
+    }
+
+    std::string fieldName;
+    long arrayIndex = 0;
+    bool hasIndex = false;
+    if (!ParseIndexedToken(token, fieldName, arrayIndex, hasIndex)) {
+      std::cerr << "Error: invalid indexed field syntax: " << token << std::endl;
+      return (1);
+    }
+    if (fieldName.empty()) {
+      std::cerr << "Error: invalid field name in path: " << token << std::endl;
+      return (1);
+    }
+
+    if (!current || current->getField()->getType() != epics::pvData::structure) {
+      std::cerr << "Error: path element is not a structure while resolving: " << fieldName << std::endl;
+      return (1);
+    }
+    epics::pvData::PVStructurePtr currentStruct = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(current);
+    epics::pvData::PVFieldPtr next = currentStruct->getSubField(fieldName);
+    if (!next) {
+      std::cerr << "Error: sub-field does not exist for " << pva->pvaChannelNames[index] << std::endl;
+      return (1);
+    }
+    current = next;
+
+    if (hasIndex) {
+      if (arrayIndex < 0) {
+        std::cerr << "Error: negative index in " << token << std::endl;
+        return (1);
+      }
+      if (current->getField()->getType() != epics::pvData::structureArray) {
+        std::cerr << "ERROR: indexed access requires structureArray for " << token << std::endl;
+        return (1);
+      }
+      epics::pvData::PVStructureArrayPtr arrayPtr = std::tr1::static_pointer_cast<epics::pvData::PVStructureArray>(current);
+      epics::pvData::PVStructureArray::const_svector elements = arrayPtr->view();
+      if ((size_t)arrayIndex >= elements.size()) {
+        std::cerr << "Error: index out of range in " << token << " (have " << elements.size() << ")" << std::endl;
+        return (1);
+      }
+      if (!elements[(size_t)arrayIndex]) {
+        std::cerr << "Error: NULL structure array element in " << token << std::endl;
+        return (1);
+      }
+      current = elements[(size_t)arrayIndex];
+    }
+  }
+
+  if (!current) {
+    std::cerr << "Error: sub-field does not exist for " << pva->pvaChannelNames[index] << std::endl;
+    return (1);
+  }
+  switch (current->getField()->getType()) {
+  case epics::pvData::scalar:
+    return ExtractScalarValue(pva, index, current, monitorMode);
+  case epics::pvData::scalarArray:
+    return ExtractScalarArrayValue(pva, index, current, monitorMode);
+  case epics::pvData::union_:
+    return ExtractUnionValue(pva, index, current, monitorMode);
+  case epics::pvData::structure: {
+    std::cerr << "Error: sub-field is not specific enough" << std::endl;
+    return (1);
+  }
+  case epics::pvData::structureArray: {
+    std::cerr << "Error: structureArray requires an index and a member (e.g. dimension[0].size, dimension(0).size, or dimension@0.size)" << std::endl;
+    return (1);
+  }
+  default:
+    std::cerr << "ERROR: Need code to handle " << current->getField()->getType() << std::endl;
+    return (1);
+  }
+}
+
+static long PutByPath(PVA_OVERALL *pva, long index, epics::pvData::PVStructurePtr root, const std::string &path) {
+  if (!root) {
+    std::cerr << "ERROR: NULL root structure" << std::endl;
+    return (1);
+  }
+  if (path.empty()) {
+    std::cerr << "Error: sub-field is not specific enough" << std::endl;
+    return (1);
+  }
+
+  epics::pvData::PVFieldPtr current = root;
+  std::string remaining = path;
+  while (!remaining.empty()) {
+    std::string token;
+    size_t dot = remaining.find('.');
+    if (dot == std::string::npos) {
+      token = remaining;
+      remaining.clear();
+    } else {
+      token = remaining.substr(0, dot);
+      remaining = remaining.substr(dot + 1);
+    }
+
+    std::string fieldName;
+    long arrayIndex = 0;
+    bool hasIndex = false;
+    if (!ParseIndexedToken(token, fieldName, arrayIndex, hasIndex)) {
+      std::cerr << "Error: invalid indexed field syntax: " << token << std::endl;
+      return (1);
+    }
+    if (fieldName.empty()) {
+      std::cerr << "Error: invalid field name in path: " << token << std::endl;
+      return (1);
+    }
+
+    if (!current || current->getField()->getType() != epics::pvData::structure) {
+      std::cerr << "Error: path element is not a structure while resolving: " << fieldName << std::endl;
+      return (1);
+    }
+    epics::pvData::PVStructurePtr currentStruct = std::tr1::static_pointer_cast<epics::pvData::PVStructure>(current);
+    epics::pvData::PVFieldPtr next = currentStruct->getSubField(fieldName);
+    if (!next) {
+      std::cerr << "Error: sub-field does not exist for " << pva->pvaChannelNames[index] << std::endl;
+      return (1);
+    }
+    current = next;
+
+    if (hasIndex) {
+      if (arrayIndex < 0) {
+        std::cerr << "Error: negative index in " << token << std::endl;
+        return (1);
+      }
+      if (current->getField()->getType() != epics::pvData::structureArray) {
+        std::cerr << "ERROR: indexed access requires structureArray for " << token << std::endl;
+        return (1);
+      }
+      epics::pvData::PVStructureArrayPtr arrayPtr = std::tr1::static_pointer_cast<epics::pvData::PVStructureArray>(current);
+      epics::pvData::PVStructureArray::const_svector elements = arrayPtr->view();
+      if ((size_t)arrayIndex >= elements.size()) {
+        std::cerr << "Error: index out of range in " << token << " (have " << elements.size() << ")" << std::endl;
+        return (1);
+      }
+      if (!elements[(size_t)arrayIndex]) {
+        std::cerr << "Error: NULL structure array element in " << token << std::endl;
+        return (1);
+      }
+      current = elements[(size_t)arrayIndex];
+    }
+  }
+
+  if (!current) {
+    std::cerr << "Error: sub-field does not exist for " << pva->pvaChannelNames[index] << std::endl;
+    return (1);
+  }
+  switch (current->getField()->getType()) {
+  case epics::pvData::scalar:
+    return PutScalarValue(pva, index, current);
+  case epics::pvData::scalarArray:
+    return PutScalarArrayValue(pva, index, current);
+  case epics::pvData::structure: {
+    std::cerr << "Error: sub-field is not specific enough" << std::endl;
+    return (1);
+  }
+  case epics::pvData::structureArray: {
+    std::cerr << "Error: structureArray requires an index and a member (e.g. dimension[0].size, dimension(0).size, or dimension@0.size)" << std::endl;
+    return (1);
+  }
+  default:
+    std::cerr << "ERROR: Need code to handle " << current->getField()->getType() << std::endl;
+    return (1);
+  }
+}
+
 long ExtractNTScalarArrayValue(PVA_OVERALL *pva, long index, epics::pvData::PVStructurePtr pvStructurePtr, bool monitorMode) {
   long j, fieldCount;
   epics::pvData::PVFieldPtrArray PVFieldPtrArray;
@@ -1110,38 +1361,45 @@ long ExtractStructureValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldP
       fprintf(stderr, "Error: sub-field is not specific enough\n");
       return (1);
     }
-    pvFieldPtr =  pvStructurePtr->getSubField(afterDot);
+    if (afterDot.find_first_of("[(@") != std::string::npos) {
+      return ExtractByPath(pva, index, pvStructurePtr, afterDot, monitorMode);
+    }
+    pvFieldPtr = pvStructurePtr->getSubField(afterDot);
     if (pvFieldPtr == NULL) {
       fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[index].c_str());
       return (1);
     }
-    switch (pvStructurePtr->getSubField(afterDot)->getField()->getType()) {
+    switch (pvFieldPtr->getField()->getType()) {
     case epics::pvData::scalar: {
-      if (ExtractScalarValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+      if (ExtractScalarValue(pva, index, pvFieldPtr, monitorMode)) {
         return (1);
       }
       break;
     }
     case epics::pvData::scalarArray: {
-      if (ExtractScalarArrayValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+      if (ExtractScalarArrayValue(pva, index, pvFieldPtr, monitorMode)) {
         return (1);
       }
       break;
     }
     case epics::pvData::structure: {
-      if (ExtractStructureValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+      if (ExtractStructureValue(pva, index, pvFieldPtr, monitorMode)) {
         return (1);
       }
       break;
     }
     case epics::pvData::union_: {
-      if (ExtractUnionValue(pva, index, pvStructurePtr->getSubField(afterDot), monitorMode)) {
+      if (ExtractUnionValue(pva, index, pvFieldPtr, monitorMode)) {
         return (1);
       }
       break;
     }
+    case epics::pvData::structureArray: {
+      std::cerr << "Error: structureArray requires an index and a member (e.g. dimension[0].size, dimension(0).size, or dimension@0.size)" << std::endl;
+      return (1);
+    }
     default: {
-      std::cerr << "ERROR: Need code to handle " << pvStructurePtr->getSubField(afterDot)->getField()->getType() << std::endl;
+      std::cerr << "ERROR: Need code to handle " << pvFieldPtr->getField()->getType() << std::endl;
       return (1);
     }
     }
@@ -1175,6 +1433,11 @@ long ExtractStructureValue(PVA_OVERALL *pva, long index, epics::pvData::PVFieldP
       return (1);
     }
     return (0);
+    break;
+  }
+  case epics::pvData::structureArray: {
+    std::cerr << "Error: structureArray requires an index and a member (e.g. dimension[0].size, dimension(0).size, or dimension@0.size)" << std::endl;
+    return (1);
     break;
   }
   default: {
@@ -1346,6 +1609,12 @@ long ExtractPVAValues(PVA_OVERALL *pva) {
               fprintf(stderr, "Error: sub-field does not exist for %s\n", pva->pvaChannelNames[i].c_str());
               return (1);
             }
+            if (afterDot.find_first_of("[(@") != std::string::npos) {
+              if (ExtractByPath(pva, i, pva->pvaClientGetPtr[i]->getData()->getPVStructure(), afterDot, monitorMode)) {
+                return (1);
+              }
+              continue;
+            }
             switch (pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot)->getField()->getType()) {
             case epics::pvData::scalar: {
               if (ExtractScalarValue(pva, i, pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot), monitorMode)) {
@@ -1370,6 +1639,10 @@ long ExtractPVAValues(PVA_OVERALL *pva) {
                 return (1);
               }
               break;
+            }
+            case epics::pvData::structureArray: {
+              std::cerr << "Error: structureArray requires an index and a member (e.g. dimension[0].size, dimension(0).size, or dimension@0.size)" << std::endl;
+              return (1);
             }
             default: {
               std::cerr << "ERROR: Need code to handle " << pva->pvaClientGetPtr[i]->getData()->getPVStructure()->getSubField(afterDot)->getField()->getType() << std::endl;
@@ -1403,6 +1676,18 @@ long ExtractPVAValues(PVA_OVERALL *pva) {
             return (1);
           }
           break;
+        }
+        case epics::pvData::structureArray: {
+          size_t pos = pva->pvaChannelNames[i].find('.');
+          if (pos != std::string::npos) {
+            afterDot = pva->pvaChannelNames[i].substr(pos + 1);
+            if (ExtractByPath(pva, i, pva->pvaClientGetPtr[i]->getData()->getPVStructure(), afterDot, monitorMode)) {
+              return (1);
+            }
+            break;
+          }
+          std::cerr << "Error: structureArray requires an index and a member (e.g. dimension[0].size, dimension(0).size, or dimension@0.size)" << std::endl;
+          return (1);
         }
         default: {
           std::cerr << "ERROR: Need code to handle " << PVFieldPtrArray[0]->getField()->getType() << std::endl;
@@ -1955,6 +2240,18 @@ long PutPVAValues(PVA_OVERALL *pva) {
             return (1);
           }
           break;
+        }
+        case epics::pvData::structureArray: {
+          size_t pos = pva->pvaChannelNames[i].find('.');
+          if (pos != std::string::npos) {
+            std::string afterDot = pva->pvaChannelNames[i].substr(pos + 1);
+            if (PutByPath(pva, i, pva->pvaClientPutPtr[i]->getData()->getPVStructure(), afterDot)) {
+              return (1);
+            }
+            break;
+          }
+          std::cerr << "Error: structureArray requires an index and a member (e.g. dimension[0].size, dimension(0).size, or dimension@0.size)" << std::endl;
+          return (1);
         }
         default: {
           std::cerr << "ERROR: Need code to handle " << PVFieldPtrArray[0]->getField()->getType() << std::endl;
