@@ -877,6 +877,16 @@ int main(int argc, char *argv[]) {
 
     //Check to see if we pass the conditions test
     if (PassesConditionsPVA(pvaConditions, &logger) == false) {
+      /*
+       * Ensure fixed-row-count tables are flushed periodically even when
+       * conditions skip logging. Without this, onePvPerFile+scalarsAsColumns
+       * can hit the fixed row limit before UpdateAndWritePages() is called.
+       */
+      if (logger.onePv_OutputDirectory != NULL && logger.scalarsAsColumns && (logger.flushInterval > 0)) {
+        if (UpdateAndWritePages(SDDS_table, &pva, &logger) == 1) {
+          return (1);
+        }
+      }
       continue;
     }
 
