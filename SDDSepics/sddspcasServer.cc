@@ -241,15 +241,15 @@ exServer::exServer(const char *const pvPrefix,
     //
     // Install canonical (root) name
     //
-    sprintf(pvAlias, pNameFmtStr, pvPrefix, pPVI->getName());
+    snprintf(pvAlias, sizeof(pvAlias), pNameFmtStr, pvPrefix, pPVI->getName());
     this->installAliasName(*pPVI, pvAlias);
 
     //
     // Install numbered alias names
     //
     for (i = 0u; i < aliasCount; i++) {
-      sprintf(pvAlias, pAliasFmtStr, pvPrefix,
-              pPVI->getName(), i);
+      snprintf(pvAlias, sizeof(pvAlias), pAliasFmtStr, pvPrefix,
+           pPVI->getName(), i);
       this->installAliasName(*pPVI, pvAlias);
     }
   }
@@ -706,7 +706,7 @@ void exServer::ReadPVInputFile() {
     } else {
       for (j = 0; j < rows; j++) {
         this->ReadbackUnits[pvListNElem - rows + j] = (char *)malloc(2 * sizeof(char));
-        sprintf(this->ReadbackUnits[pvListNElem - rows + j], " ");
+        snprintf(this->ReadbackUnits[pvListNElem - rows + j], 2, " ");
       }
     }
 
@@ -741,7 +741,7 @@ void exServer::ReadPVInputFile() {
     } else {
       for (j = 0; j < rows; j++) {
         this->Types[pvListNElem - rows + j] = (char *)malloc(7 * sizeof(char));
-        sprintf(this->Types[pvListNElem - rows + j], "double");
+        snprintf(this->Types[pvListNElem - rows + j], 7, "double");
       }
     }
 
@@ -798,7 +798,7 @@ void exServer::ReadMasterPVFile(const char *const pvPrefix) {
 
   //Check for conflicts
   for (unsigned int n = 0; n < pvListNElem; n++) {
-    sprintf(pvAlias, pNameFmtStr, pvPrefix, this->ControlName[n]);
+    snprintf(pvAlias, sizeof(pvAlias), pNameFmtStr, pvPrefix, this->ControlName[n]);
     if (strchr(pvAlias, '.') != NULL) {
       fprintf(stderr, "error: PV extensions are not allowed (%s)\n", pvAlias);
       exit(1);
@@ -858,7 +858,7 @@ void exServer::ReadMasterSDDSpcasPVFile(const char *const pvPrefix) {
       }
     }
     for (unsigned int n = 0; n < pvListNElem; n++) {
-      sprintf(pvAlias, pNameFmtStr, pvPrefix, this->ControlName[n]);
+      snprintf(pvAlias, sizeof(pvAlias), pNameFmtStr, pvPrefix, this->ControlName[n]);
       if (strchr(pvAlias, '.') != NULL) {
         fprintf(stderr, "error: PV extensions are not allowed (%s)\n", pvAlias);
         exit(1);
@@ -902,7 +902,7 @@ void exServer::AppendMasterSDDSpcasPVFile(const char *const pvPrefix) {
   }
 
   for (unsigned int n = 0; n < pvListNElem; n++) {
-    sprintf(pvAlias, pNameFmtStr, pvPrefix, this->ControlName[n]);
+    snprintf(pvAlias, sizeof(pvAlias), pNameFmtStr, pvPrefix, this->ControlName[n]);
     if (!SDDS_SetRowValues(&SDDS_masterlist, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, rowsPresent, "rec_name", pvAlias, "host_name", hostname, NULL)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       exit(1);
@@ -1056,8 +1056,8 @@ unsigned exServer::addPVs(const std::vector<SddspcasPvDef> &defs) {
     if (d.controlName.empty())
       continue;
 
-    sprintf(pvAlias40, pNameFmtStr40, this->pvPrefix.c_str(), d.controlName.c_str());
-    sprintf(pvAlias20, pNameFmtStr20, this->pvPrefix.c_str(), d.controlName.c_str());
+    snprintf(pvAlias40, sizeof(pvAlias40), pNameFmtStr40, this->pvPrefix.c_str(), d.controlName.c_str());
+    snprintf(pvAlias20, sizeof(pvAlias20), pNameFmtStr20, this->pvPrefix.c_str(), d.controlName.c_str());
 
     if (strchr(pvAlias20, '.') != NULL) {
       fprintf(stderr, "warning: PV extensions are not allowed (%s); skipping\n", pvAlias20);

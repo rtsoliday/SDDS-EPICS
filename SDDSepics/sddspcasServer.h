@@ -56,8 +56,10 @@ struct SddspcasPvDef {
 //
 #define epicsAssertAuthor "Jeff Hill johill@lanl.gov"
 #if defined(__clang__)
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wclass-memaccess"
+#  if __has_warning("-Wclass-memaccess")
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wclass-memaccess"
+#  endif
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wclass-memaccess"
@@ -66,7 +68,9 @@ struct SddspcasPvDef {
 #include "gddAppFuncTable.h"
 
 #if defined(__clang__)
-#  pragma clang diagnostic pop
+#  if __has_warning("-Wclass-memaccess")
+#    pragma clang diagnostic pop
+#  endif
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic pop
 #endif

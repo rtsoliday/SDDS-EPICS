@@ -34,9 +34,36 @@ ifneq ($(OS),Windows)
     NEEDS_READLINE := $(shell nm $(LIBCOM_A) 2>/dev/null | grep -q "U rl_readline_name" && echo yes)
   endif
 
-  ifeq ($(NEEDS_READLINE),yes)
-    READLINE_LIBS = -lreadline
-  endif
+	ifeq ($(NEEDS_READLINE),yes)
+		# Prefer a standalone readline over the system libedit shim on macOS
+		ifeq ($(OS),Darwin)
+			ifneq ($(wildcard /opt/local/lib/libreadline.a),)
+				READLINE_LIBS = /opt/local/lib/libreadline.a
+			else ifneq ($(wildcard /opt/local/lib/libreadline.dylib),)
+				READLINE_LIBS = /opt/local/lib/libreadline.dylib
+			else ifneq ($(wildcard /opt/homebrew/opt/readline/lib/libreadline.dylib),)
+				READLINE_LIBS = /opt/homebrew/opt/readline/lib/libreadline.dylib
+			else ifneq ($(wildcard /usr/local/opt/readline/lib/libreadline.dylib),)
+				READLINE_LIBS = /usr/local/opt/readline/lib/libreadline.dylib
+			else
+				READLINE_LIBS = -lreadline
+			endif
+			# Readline on macOS needs termcap/ncurses
+			ifneq ($(wildcard /opt/local/lib/libncurses.a),)
+				NCURSES_LIBS = /opt/local/lib/libncurses.a
+			else ifneq ($(wildcard /opt/local/lib/libncurses.dylib),)
+				NCURSES_LIBS = /opt/local/lib/libncurses.dylib
+			else ifneq ($(wildcard /opt/homebrew/opt/ncurses/lib/libncurses.dylib),)
+				NCURSES_LIBS = /opt/homebrew/opt/ncurses/lib/libncurses.dylib
+			else ifneq ($(wildcard /usr/local/opt/ncurses/lib/libncurses.dylib),)
+				NCURSES_LIBS = /usr/local/opt/ncurses/lib/libncurses.dylib
+			else
+				NCURSES_LIBS = -lncurses
+			endif
+		else
+			READLINE_LIBS = -lreadline
+		endif
+	endif
 endif
 
 PROD = MV20image2sdds sddssnapshot sddscontrollaw sddscaramp sddsgencontrolbits sddslogTurnByTurnDAQ \
@@ -135,8 +162,8 @@ ifeq ($(OS), Linux)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccess.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
+	$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
+	$(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(NCURSES_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
@@ -153,8 +180,8 @@ ifeq ($(OS), Darwin)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccess.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
+	$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
+	$(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(NCURSES_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
