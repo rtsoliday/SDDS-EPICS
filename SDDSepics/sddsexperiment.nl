@@ -181,6 +181,7 @@
         long call_between_measuring = 0;
         long call_before_cycle = 0;
 	long call_after_cycle = 0;
+	long call_after_experiment = 0;
         STRING counter_column_name = NULL;
 #end 
 
