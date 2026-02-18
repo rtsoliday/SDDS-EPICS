@@ -213,6 +213,7 @@ static unsigned long globalFlags;
 #define BEFORE_SETTING 0x0008UL
 #define BEFORE_CYCLE 0x0010UL
 #define AFTER_CYCLE 0x0020UL
+#define AFTER_EXPERIMENT 0x0040UL
 /*#define NAMELIST_BUFLEN 65536 */
 
 static char *outputRootname;
@@ -1643,6 +1644,11 @@ void do_experiment(EXECUTESPEC *Execute, VARIABLE_DATA *VariableData, long Varia
   fflush(FPINFO);
 #endif
   reset_initial_variable_values(counter, counters, flags, pendIOtime);
+#ifdef DEBUG
+    fprintf(FPINFO, "making calls after reset initial variables.\n");
+    fflush(FPINFO);
+#endif
+  make_cycle_calls(counter, counters, flags, AFTER_EXPERIMENT);
   free(counter);
   counter_global = NULL;
   counters_global = 0;
@@ -2267,7 +2273,8 @@ void make_cycle_calls(COUNTER *counter, long counters, long flags, long before_o
   for (i = counters - 1; i >= 0; i--) {
     for (j = 0; j < counter->SystemCalls; j++) {
       if ((before_or_after & BEFORE_CYCLE && counter->SystemCallData[j]->SystemCallSpec.call_before_cycle) ||
-          (before_or_after & AFTER_CYCLE && counter->SystemCallData[j]->SystemCallSpec.call_after_cycle)) {
+          (before_or_after & AFTER_CYCLE && counter->SystemCallData[j]->SystemCallSpec.call_after_cycle) ||
+	  (before_or_after & AFTER_EXPERIMENT && counter->SystemCallData[j]->SystemCallSpec.call_after_experiment)) {
         oag_ca_pend_event(counter->SystemCallData[j]->SystemCallSpec.pre_command_pause, &sigint);
         if (flags & FL_VERBOSE) {
           if (before_or_after & BEFORE_CYCLE)
@@ -2278,6 +2285,11 @@ void make_cycle_calls(COUNTER *counter, long counters, long flags, long before_o
             fprintf(FPINFO, "%s command %s\n",
                     flags & FL_DRY_RUN ? "Pretending to execute after cycle" : "Executing",
                     counter->SystemCallData[j]->SystemCallSpec.command);
+	   if (before_or_after & AFTER_EXPERIMENT)
+            fprintf(FPINFO, "%s command %s\n",
+                    flags & FL_DRY_RUN ? "Pretending to execute after cycle" : "Executing",
+                    counter->SystemCallData[j]->SystemCallSpec.command);
+	  
           fflush(FPINFO);
         }
         if (!(flags & FL_DRY_RUN)) {
