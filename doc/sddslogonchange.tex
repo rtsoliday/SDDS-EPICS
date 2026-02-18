@@ -1,7 +1,7 @@
 % sddslogonchange: log PV values only when they change.
 \begin{sddsprog}{sddslogonchange}
 \item \textbf{description:}
-\verb+sddslogonchange+ records only the values of process variables that change. This reduces the output file size if process variables do not change often.
+\verb+sddslogonchange+ records only the values of process variables that change. This reduces the output file size if process variables do not change often. Both numeric and string PVs are supported; string PVs are detected automatically during connection and logged using string comparison instead of numeric tolerance. Waveform (array) PVs are also supported; when any element of a waveform changes, all elements are logged as individual rows with a \texttt{WaveformIndex} column identifying the element index. Waveform PVs require \texttt{ExpectFieldType} set to \texttt{scalarArray} in the input file.
 \item \textbf{examples:}
 Process variable setpoints from the storage ring are monitored
 with the command below.
@@ -61,6 +61,8 @@ The input file is an SDDS file with only one data column required:
     \item {\tt Description} --- Optional string column.
     \item {\tt RelatedControlName} --- Optional string column.
     \item {\tt Tolerance} --- Optional numeric column which contains a tolerance value to avoid logging small changes.
+    \item {\tt ExpectFieldType} --- Optional string column. Set to \texttt{scalarArray} for waveform PVs. If a PV is detected as an array at connection time and this column is not set to \texttt{scalarArray}, the program will exit with an error. Used as a fallback when the PV is offline.
+    \item {\tt ExpectElements} --- Optional numeric column specifying the expected waveform element count. Used as a fallback for offline waveform PVs; overridden by the actual element count when the PV connects.
   \end{itemize}
 
   \item \textbf{output file:}\par
@@ -97,7 +99,10 @@ The output file contains parameters, arrays, and columns.
   \begin{itemize}
     \item {\bf Columns}
     \item {\tt ControlNameIndex} --- Index of the ControlName array.
-    \item {\tt Value} --- Value of the process variable.
+    \item {\tt Value} --- Value of the process variable (numeric PVs; 0 for string PVs).
+    \item {\tt StringValue} --- String value of the process variable (string PVs; empty for numeric PVs).
+    \item {\tt WaveformIndex} --- Element index for waveform PVs (0 to N-1); -1 for scalar PVs.
+    \item {\tt WaveformLength} --- Total element count for waveform PVs; 0 for scalar PVs.
     \item {\tt Time} --- Time stamp of the change in value.
     \item {\tt PreviousRow} --- Previous row with an identical ControlNameIndex value.
     \item {\tt AlarmStatusIndex} --- Optional

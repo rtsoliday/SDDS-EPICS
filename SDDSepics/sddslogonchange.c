@@ -343,6 +343,8 @@ static double pendEventTime = DEFAULT_PEND_EVENT;
 typedef struct
 {
   short logPending;
+  short isString;
+  short isArray;
   char *controlName, *description;
   char *relatedControlName;
   chid channelID, relatedChannelID;
@@ -357,9 +359,12 @@ typedef struct
   long usrValue;
   double value;
   double tolerance;
+  char stringValue[MAX_STRING_SIZE];
+  long elementCount;
+  double *waveformValues;
 } CHANNEL_INFO;
 
-long GetControlNames(char *file, char ***name0, char ***readbackName0, char ***readbackUnits0, char ***relatedName0, char ***description0, double **tolerance0);
+long GetControlNames(char *file, char ***name0, char ***readbackName0, char ***readbackUnits0, char ***relatedName0, char ***description0, double **tolerance0, short **expectNumeric0, char ***expectFieldType0, int32_t **expectElements0);
 long SetupLogFile(SDDS_DATASET *logSet, char *output, char *input,
                   char **controlName, char **readbackName, char **readbackUnits, char **description, char **relatedName,
                   long controlNames, unsigned long mode,
@@ -369,12 +374,18 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
                          long controlNames, unsigned long mode,
                          char **commentParameter, char **commentText, long comments);
 long InitiateConnections(char **cName, char **relatedName, char **description,
-                         long cNames, double *tolerances, CHANNEL_INFO **chInfo, double toleranceMinLimit);
+                         long cNames, double *tolerances, CHANNEL_INFO **chInfo, double toleranceMinLimit,
+                         double connectTimeout, short *expectNumeric, char **expectFieldType, int32_t *expectElements);
 void EventHandler(struct event_handler_args event);
+void StringEventHandler(struct event_handler_args event);
+void WaveformEventHandler(struct event_handler_args event);
 void RelatedValueEventHandler(struct event_handler_args event);
+long SetupEventCallbacks(void);
 void LogUnconnectedEvents(void);
 void LogEventToFile(long index, double theTime, double theTimeWS, double Hour, double HourIOC, double duration,
                     short statusIndex, short severityIndex, char *relatedValueString);
+void LogWaveformEventToFile(long index, long actualCount, double theTime, double theTimeWS, double Hour, double HourIOC, double duration,
+                            short statusIndex, short severityIndex);
 long CheckForRequiredElements(char *filename, unsigned long mode);
 long CheckLogOnChangeLogFile(char *filename, double *StartTime, double *StartDay, double *StartHour,
                              double *StartJulianDay, double *StartMonth,
@@ -387,7 +398,8 @@ static SDDS_DATASET logDataset;
 static long iControlNameIndex = -1, iAlarmStatusIndex = -1, iAlarmSeverityIndex = -1,
             iHour = -1, iControlName = -1, iAlarmStatus = -1, iAlarmSeverity = -1, iDuration = -1, iPreviousRow = -1,
             iDescription = -1, iRelatedName = -1, iRelatedValueString = -1,
-            iHourIOC = -1, iValue = -1, iTime = -1, iTimeWS = -1;
+            iHourIOC = -1, iValue = -1, iTime = -1, iTimeWS = -1, iStringValue = -1,
+            iWaveformIndex = -1, iWaveformLength = -1;
 static long logfileRow = 0;
 static double startTime, startHour, hourOffset = 0, timeZoneOffset = 0;
 static short eventOccurred = 0;
@@ -432,6 +444,9 @@ int main(int argc, char **argv) {
   SCANNED_ARG *s_arg;
   char *inputFile, *outputFile, *outputFileOrig, **controlName, **readbackName, **readbackUnits, **description, **relatedName, *linkname;
   double *tolerances;
+  short *expectNumeric;
+  char **expectFieldType;
+  int32_t *expectElements;
   char **commentParameter, **commentText, *generationsDelimiter;
   long comments, inhibit = 0;
   double timeDuration, endTime, timeLeft, theTimeWS, connectTimeout, nonConnectsHandled, zeroTime;
@@ -765,10 +780,14 @@ int main(int argc, char **argv) {
   readbackUnits = NULL;
   readbackName = NULL;
   tolerances = NULL;
+  expectNumeric = NULL;
+  expectFieldType = NULL;
+  expectElements = NULL;
   if ((controlNames = GetControlNames(inputFile, &controlName,
                                       &readbackName, &readbackUnits,
                                       &relatedName, &description,
-                                      &tolerances)) <= 0)
+                                      &tolerances, &expectNumeric,
+                                      &expectFieldType, &expectElements)) <= 0)
     SDDS_Bomb("unable to get ControlName data from input file");
   if (readbackName)
     outputMode |= READBACKNAME;
@@ -780,6 +799,19 @@ int main(int argc, char **argv) {
     outputMode |= RELATEDVALUES;
   if (tolerances)
     outputMode |= TOLERANCES;
+
+  if (!InitiateConnections(controlName, relatedName, description, controlNames, tolerances, &chInfo, toleranceMinLimit, connectTimeout, expectNumeric, expectFieldType, expectElements))
+    SDDS_Bomb("unable to connect to PVs");
+
+  /* Check that waveform PVs are not used with sddslogger mode */
+  if (sddslogger) {
+    for (i = 0; i < controlNames; i++) {
+      if (chInfo[i].isArray) {
+        fprintf(stderr, "error: waveform PV %s is not supported in sddslogger mode\n", controlName[i]);
+        return (1);
+      }
+    }
+  }
 
 #if DEBUG
   fprintf(stderr, "Setting up log file\n");
@@ -821,7 +853,7 @@ int main(int argc, char **argv) {
     }
   }
 #endif
-  if (!InitiateConnections(controlName, relatedName, description, controlNames, tolerances, &chInfo, toleranceMinLimit))
+  if (!SetupEventCallbacks())
     SDDS_Bomb("unable to establish callbacks for PVs");
 
 #ifdef USE_RUNCONTROL
@@ -957,9 +989,17 @@ void LogUnconnectedEvents(void) {
                                     */
     chInfo[i].lastChangeTime = theTimeWS;
     chInfo[i].lastChangeTimeWS = theTimeWS;
-    /* log this "event" as a TIMEOUT with INVALID status */
-    LogEventToFile(i, theTimeWS, theTimeWS, Hour, Hour, theTimeWS - startTime,
-                   TIMEOUT_ALARM, INVALID_ALARM, "");
+    if (chInfo[i].isArray) {
+      memset(chInfo[i].waveformValues, 0, chInfo[i].elementCount * sizeof(double));
+      LogWaveformEventToFile(i, chInfo[i].elementCount, theTimeWS, theTimeWS, Hour, Hour, theTimeWS - startTime,
+                             TIMEOUT_ALARM, INVALID_ALARM);
+    } else {
+      if (chInfo[i].isString)
+        chInfo[i].stringValue[0] = '\0';
+      /* log this "event" as a TIMEOUT with INVALID status */
+      LogEventToFile(i, theTimeWS, theTimeWS, Hour, Hour, theTimeWS - startTime,
+                     TIMEOUT_ALARM, INVALID_ALARM, "");
+    }
   }
   ca_pend_event(0.0001);
 }
@@ -1087,6 +1127,192 @@ void EventHandler(struct event_handler_args event) {
   }
 }
 
+void StringEventHandler(struct event_handler_args event) {
+  struct dbr_time_string *dbrValue;
+  double Hour, theTime, theTimeWS, HourIOC;
+  long index;
+  short statusIndex, severityIndex, logEvent;
+  TS_STAMP *tsStamp;
+
+  if (disableLog) {
+    return;
+  }
+  Hour = (theTimeWS = getTimeInSecs()) / 3600.0 + HourAdjust;
+
+  index = *((long *)event.usr);
+  dbrValue = (struct dbr_time_string *)event.dbr;
+  statusIndex = (short)dbrValue->status;
+  severityIndex = (short)dbrValue->severity;
+  tsStamp = &(dbrValue->stamp);
+  theTime = tsStamp->secPastEpoch + 1e-9 * tsStamp->nsec + EPOCH_OFFSET - timeZoneOffset;
+  HourIOC = theTime / 3600.0 + HourAdjust;
+
+#ifdef DEBUG
+  fprintf(stderr, "StringEventHandler : index = %ld, status = %ld, severity = %ld\n",
+          index, statusIndex, severityIndex);
+  fprintf(stderr, "event: pv=%s  status=%s  severity=%s  value=%s\n",
+          chInfo[index].controlName, alarmStatusString[statusIndex],
+          alarmSeverityString[severityIndex], dbrValue->value);
+#endif
+  if (!(outputMode & LOGINITIAL)) {
+    if (chInfo[index].lastRow == -2 && (severityIndex == INVALID_ALARM || severityIndex == NO_ALARM)) {
+      chInfo[index].lastRow = -1;
+      chInfo[index].lastSeverity = severityIndex;
+      chInfo[index].lastStatus = statusIndex;
+      strncpy(chInfo[index].stringValue, dbrValue->value, MAX_STRING_SIZE - 1);
+      chInfo[index].stringValue[MAX_STRING_SIZE - 1] = '\0';
+#ifdef DEBUG
+      fprintf(stderr, "string event ignored: condition 1\n");
+#endif
+      return;
+    }
+  }
+  if (chInfo[index].lastRow == -2) {
+    theTime = theTimeWS;
+  }
+  if (chInfo[index].lastRow == -1 && severityIndex == NO_ALARM && chInfo[index].lastSeverity == INVALID_ALARM) {
+    chInfo[index].lastSeverity = severityIndex;
+    chInfo[index].lastStatus = statusIndex;
+#ifdef DEBUG
+    fprintf(stderr, "string event ignored: condition 2\n");
+#endif
+    return;
+  }
+  if (chInfo[index].logPending && chInfo[index].severityIndex > severityIndex) {
+#ifdef DEBUG
+    fprintf(stderr, "string write pending: event is not being logged.\n");
+#endif
+    return;
+  }
+  /* For string PVs, compare string values instead of numeric tolerance */
+  if ((chInfo[index].lastRow >= 0) &&
+      strcmp(chInfo[index].stringValue, dbrValue->value) == 0) {
+#ifdef DEBUG
+    fprintf(stderr, "string event ignored: no string change\n");
+#endif
+    return;
+  }
+
+  logEvent = 1;
+  if (outputMode & REQBOTHCHANGE) {
+    logEvent = chInfo[index].lastSeverity != severityIndex && chInfo[index].lastStatus != statusIndex;
+  } else if (outputMode & REQSTATUSCHANGE) {
+    logEvent = chInfo[index].lastStatus != statusIndex;
+  } else if (outputMode & REQSEVERITYCHANGE) {
+    logEvent = chInfo[index].lastSeverity != severityIndex;
+  }
+  if (logEvent) {
+#ifdef DEBUG
+    fprintf(stderr, "string event is being logged.\n");
+#endif
+    strncpy(chInfo[index].stringValue, dbrValue->value, MAX_STRING_SIZE - 1);
+    chInfo[index].stringValue[MAX_STRING_SIZE - 1] = '\0';
+    if (chInfo[index].relatedControlName) {
+      chInfo[index].logPending = 1;
+      chInfo[index].index = index;
+      chInfo[index].theTime = theTime;
+      chInfo[index].theTimeWS = theTimeWS;
+      chInfo[index].Hour = Hour;
+      chInfo[index].HourIOC = HourIOC;
+      chInfo[index].duration = theTime - chInfo[index].lastChangeTime;
+      chInfo[index].statusIndex = statusIndex;
+      chInfo[index].severityIndex = severityIndex;
+      if (ca_get_callback(DBR_STRING, chInfo[index].relatedChannelID,
+                          RelatedValueEventHandler, (void *)&chInfo[index].usrValue) != ECA_NORMAL) {
+        fprintf(stderr, "error: unable to establish callback for control name %s (related value for %s)\n",
+                chInfo[index].relatedControlName, chInfo[index].controlName);
+        exit(1);
+      }
+    } else {
+      LogEventToFile(index, theTime, theTimeWS, Hour, HourIOC,
+                     theTime - chInfo[index].lastChangeTime, statusIndex, severityIndex,
+                     NULL);
+    }
+  } else {
+    chInfo[index].lastSeverity = severityIndex;
+    chInfo[index].lastStatus = statusIndex;
+  }
+}
+
+void WaveformEventHandler(struct event_handler_args event) {
+  struct dbr_time_double *dbrValue;
+  double Hour, theTime, theTimeWS, HourIOC;
+  long index, j, actualCount;
+  short statusIndex, severityIndex, logEvent;
+  TS_STAMP *tsStamp;
+  double *newData;
+
+  if (disableLog)
+    return;
+  Hour = (theTimeWS = getTimeInSecs()) / 3600.0 + HourAdjust;
+
+  index = *((long *)event.usr);
+  actualCount = event.count;
+  dbrValue = (struct dbr_time_double *)event.dbr;
+  statusIndex = (short)dbrValue->status;
+  severityIndex = (short)dbrValue->severity;
+  tsStamp = &(dbrValue->stamp);
+  theTime = tsStamp->secPastEpoch + 1e-9 * tsStamp->nsec + EPOCH_OFFSET - timeZoneOffset;
+  HourIOC = theTime / 3600.0 + HourAdjust;
+  newData = &dbrValue->value;
+
+#ifdef DEBUG
+  fprintf(stderr, "WaveformEventHandler : index = %ld, actualCount = %ld (max %ld), status = %hd, severity = %hd\n",
+          index, actualCount, chInfo[index].elementCount, statusIndex, severityIndex);
+#endif
+
+  if (!(outputMode & LOGINITIAL)) {
+    if (chInfo[index].lastRow == -2 && (severityIndex == INVALID_ALARM || severityIndex == NO_ALARM)) {
+      chInfo[index].lastRow = -1;
+      chInfo[index].lastSeverity = severityIndex;
+      chInfo[index].lastStatus = statusIndex;
+      memcpy(chInfo[index].waveformValues, newData, actualCount * sizeof(double));
+      return;
+    }
+  }
+  if (chInfo[index].lastRow == -2) {
+    theTime = theTimeWS;
+  }
+  if (chInfo[index].lastRow == -1 && severityIndex == NO_ALARM && chInfo[index].lastSeverity == INVALID_ALARM) {
+    chInfo[index].lastSeverity = severityIndex;
+    chInfo[index].lastStatus = statusIndex;
+    return;
+  }
+  if (chInfo[index].logPending && chInfo[index].severityIndex > severityIndex) {
+    return;
+  }
+
+  /* No tolerance for waveform PVs -- check for any element change */
+  if (chInfo[index].lastRow >= 0) {
+    short changed = 0;
+    for (j = 0; j < actualCount; j++) {
+      if (chInfo[index].waveformValues[j] != newData[j]) {
+        changed = 1;
+        break;
+      }
+    }
+    if (!changed)
+      return;
+  }
+
+  logEvent = 1;
+  if (outputMode & REQBOTHCHANGE)
+    logEvent = chInfo[index].lastSeverity != severityIndex && chInfo[index].lastStatus != statusIndex;
+  else if (outputMode & REQSTATUSCHANGE)
+    logEvent = chInfo[index].lastStatus != statusIndex;
+  else if (outputMode & REQSEVERITYCHANGE)
+    logEvent = chInfo[index].lastSeverity != severityIndex;
+
+  if (logEvent) {
+    memcpy(chInfo[index].waveformValues, newData, actualCount * sizeof(double));
+    LogWaveformEventToFile(index, actualCount, theTime, theTimeWS, Hour, HourIOC,
+                           theTime - chInfo[index].lastChangeTime, statusIndex, severityIndex);
+  } else {
+    chInfo[index].lastSeverity = severityIndex;
+    chInfo[index].lastStatus = statusIndex;
+  }
+}
+
 void RelatedValueEventHandler(struct event_handler_args event) {
   long index;
   index = *((long *)event.usr);
@@ -1147,7 +1373,14 @@ void LogEventToFile(long index, double theTime, double theTimeWS, double Hour, d
                             iDescription, chInfo[index].description, -1)) ||
         (outputMode & EXPLICIT && outputMode & RELATEDVALUES &&
          !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
-                            iRelatedName, chInfo[index].relatedControlName, -1))) {
+                            iRelatedName, chInfo[index].relatedControlName, -1)) ||
+        (iStringValue >= 0 &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iStringValue, chInfo[index].isString ? chInfo[index].stringValue : "", -1)) ||
+        (iWaveformIndex >= 0 &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iWaveformIndex, (int32_t)-1,
+                            iWaveformLength, (int32_t)0, -1))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       exit(1);
     }
@@ -1156,9 +1389,16 @@ void LogEventToFile(long index, double theTime, double theTimeWS, double Hour, d
     if ((theTime == lastLogTime) && (theTimeWS == lastLogTimeWS)) {
       logfileRow--;
       for (i = 0; i < controlNames; i++) {
-        if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 1, chInfo[i].value, -1)) {
-          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-          exit(1);
+        if (chInfo[i].isString) {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 1, chInfo[i].stringValue, -1)) {
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+            exit(1);
+          }
+        } else {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 1, chInfo[i].value, -1)) {
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+            exit(1);
+          }
         }
       }
     } else {
@@ -1173,9 +1413,16 @@ void LogEventToFile(long index, double theTime, double theTimeWS, double Hour, d
         exit(1);
       }
       for (i = 0; i < controlNames; i++) {
-        if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 2, chInfo[i].value, -1)) {
-          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-          exit(1);
+        if (chInfo[i].isString) {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 2, chInfo[i].stringValue, -1)) {
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+            exit(1);
+          }
+        } else {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 2, chInfo[i].value, -1)) {
+            SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+            exit(1);
+          }
         }
       }
     }
@@ -1189,7 +1436,71 @@ void LogEventToFile(long index, double theTime, double theTimeWS, double Hour, d
   chInfo[index].logPending = 0;
 }
 
-long InitiateConnections(char **cName, char **relatedName, char **description, long cNames, double *tolerances, CHANNEL_INFO **chInfo0, double toleranceMinLimit) {
+void LogWaveformEventToFile(long index, long actualCount, double theTime, double theTimeWS, double Hour, double HourIOC, double duration,
+                            short statusIndex, short severityIndex) {
+  long j;
+  eventOccurred = 1;
+  while (logDataset.n_rows_allocated <= logDataset.n_rows + actualCount) {
+    if (!SDDS_LengthenTable(&logDataset, actualCount + 30)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      exit(1);
+    }
+  }
+  for (j = 0; j < actualCount; j++) {
+    if ((outputMode & TIMEOFDAY &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iHour, (float)Hour,
+                            iHourIOC, (float)HourIOC, -1)) ||
+        !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                           iPreviousRow, chInfo[index].lastRow,
+                           iValue, chInfo[index].waveformValues[j],
+                           iTime, theTime, iTimeWS, theTimeWS, -1) ||
+        !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                           iWaveformIndex, (int32_t)j,
+                           iWaveformLength, (int32_t)actualCount, -1) ||
+        (outputMode & DURATIONS &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iDuration, (float)duration, -1)) ||
+        (outputMode & RELATEDVALUES &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iRelatedValueString, "", -1)) ||
+        (!(outputMode & NOINDICES) &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iControlNameIndex, index, -1)) ||
+        (!(outputMode & NOINDICES) && (outputMode & LOGALARMS) &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iAlarmStatusIndex, statusIndex,
+                            iAlarmSeverityIndex, severityIndex, -1)) ||
+        (outputMode & EXPLICIT &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iControlName, chInfo[index].controlName, -1)) ||
+        (outputMode & EXPLICIT && (outputMode & LOGALARMS) &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iAlarmStatus, alarmStatusString[statusIndex],
+                            iAlarmSeverity, alarmSeverityString[severityIndex], -1)) ||
+        (outputMode & EXPLICIT && outputMode & DESCRIPTIONS &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iDescription, chInfo[index].description, -1)) ||
+        (outputMode & EXPLICIT && outputMode & RELATEDVALUES &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iRelatedName, chInfo[index].relatedControlName, -1)) ||
+        (iStringValue >= 0 &&
+         !SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow,
+                            iStringValue, "", -1))) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      exit(1);
+    }
+    logfileRow++;
+  }
+  chInfo[index].lastChangeTime = theTime;
+  chInfo[index].lastChangeTimeWS = theTimeWS;
+  chInfo[index].lastRow = logfileRow - actualCount;
+  chInfo[index].lastSeverity = severityIndex;
+  chInfo[index].lastStatus = statusIndex;
+  chInfo[index].logPending = 0;
+}
+
+long InitiateConnections(char **cName, char **relatedName, char **description, long cNames, double *tolerances, CHANNEL_INFO **chInfo0, double toleranceMinLimit, double connectTimeout, short *expectNumeric, char **expectFieldType, int32_t *expectElements) {
   long i;
   CHANNEL_INFO *chInfo;
 
@@ -1203,6 +1514,21 @@ long InitiateConnections(char **cName, char **relatedName, char **description, l
     chInfo[i].lastRow = -2;      /* indicates no data logged yet for this channel */
     chInfo[i].lastSeverity = -1; /* invalid severity code--indicates no callbacks yet for this channel */
     chInfo[i].value = 0.0;
+    /* Use ExpectNumeric hint from input file if available */
+    if (expectNumeric)
+      chInfo[i].isString = (expectNumeric[i] == 'n' || expectNumeric[i] == 'N') ? 1 : 0;
+    else
+      chInfo[i].isString = 0;
+    chInfo[i].stringValue[0] = '\0';
+    /* Use ExpectFieldType hint for array detection */
+    if (expectFieldType && expectFieldType[i] && strcmp(expectFieldType[i], "scalarArray") == 0) {
+      chInfo[i].isArray = 1;
+      chInfo[i].elementCount = (expectElements && expectElements[i] > 1) ? expectElements[i] : 1;
+    } else {
+      chInfo[i].isArray = 0;
+      chInfo[i].elementCount = 1;
+    }
+    chInfo[i].waveformValues = NULL;
     chInfo[i].controlName = cName[i];
     if (description)
       chInfo[i].description = description[i];
@@ -1235,13 +1561,95 @@ long InitiateConnections(char **cName, char **relatedName, char **description, l
       return (0);
     }
   }
-  ca_pend_event(0.0001);
+  ca_pend_io(connectTimeout);
+  /* Determine field types and element counts after connections are established.
+   * If PV is connected, ca_field_type and ca_element_count override hints.
+   * If PV is not connected, the hints (if provided) are kept.
+   */
   for (i = 0; i < cNames; i++) {
-    if (ca_add_masked_array_event(/*DBR_TIME_STRING*/ DBR_TIME_DOUBLE, 1, chInfo[i].channelID, EventHandler,
-                                  (void *)&chInfo[i].usrValue, (ca_real)0, (ca_real)0, (ca_real)0,
-                                  NULL, /*outputMode&LOGALARMS ? */ DBE_VALUE | DBE_ALARM /* : DBE_VALUE*/) != ECA_NORMAL) {
-      fprintf(stderr, "error: unable to setup alarm callback for control name %s\n", chInfo[i].controlName);
-      exit(1);
+    if (ca_state(chInfo[i].channelID) == cs_conn) {
+      long nelm = ca_element_count(chInfo[i].channelID);
+      if (nelm > 1) {
+        /* PV is a waveform array */
+        if (!expectFieldType || !expectFieldType[i] || strcmp(expectFieldType[i], "scalarArray") != 0) {
+          fprintf(stderr, "error: PV %s is a waveform (NELM %ld) but ExpectFieldType is not set to \"scalarArray\"\n",
+                  cName[i], nelm);
+          return (0);
+        }
+        chInfo[i].isArray = 1;
+        chInfo[i].isString = 0;
+        /* Use ExpectElements for the subscription/logging count if provided;
+         * ca_element_count() returns NELM (max capacity), not NORD (actual count).
+         * ExpectElements should match NORD or the desired element count.
+         * NELM is only used for buffer allocation to handle the maximum safely.
+         */
+        if (expectElements && expectElements[i] > 1)
+          chInfo[i].elementCount = expectElements[i];
+        else
+          chInfo[i].elementCount = nelm;
+      } else {
+        /* Scalar PV */
+        chInfo[i].isArray = 0;
+        chInfo[i].elementCount = 1;
+        if (ca_field_type(chInfo[i].channelID) == DBR_STRING)
+          chInfo[i].isString = 1;
+        else
+          chInfo[i].isString = 0;
+      }
+#ifdef DEBUG
+      fprintf(stderr, "PV %s: isArray=%d, isString=%d, elementCount=%ld (NELM=%ld) via CA\n",
+              cName[i], chInfo[i].isArray, chInfo[i].isString, chInfo[i].elementCount, nelm);
+#endif
+      /* Allocate waveform buffer using NELM for safety */
+      if (chInfo[i].isArray && nelm > 1) {
+        if (!(chInfo[i].waveformValues = (double *)calloc(nelm, sizeof(double)))) {
+          fprintf(stderr, "error: memory allocation failed for waveform buffer of PV %s (%ld elements)\n",
+                  cName[i], nelm);
+          return (0);
+        }
+      }
+    } else {
+#ifdef DEBUG
+      fprintf(stderr, "PV %s not connected, using hints: isArray=%d, isString=%d, elementCount=%ld\n",
+              cName[i], chInfo[i].isArray, chInfo[i].isString, chInfo[i].elementCount);
+#endif
+      /* Allocate waveform buffer for unconnected array PVs using ExpectElements */
+      if (chInfo[i].isArray && chInfo[i].elementCount > 1) {
+        if (!(chInfo[i].waveformValues = (double *)calloc(chInfo[i].elementCount, sizeof(double)))) {
+          fprintf(stderr, "error: memory allocation failed for waveform buffer of PV %s (%ld elements)\n",
+                  cName[i], chInfo[i].elementCount);
+          return (0);
+        }
+      }
+    }
+  }
+  return (1);
+}
+
+long SetupEventCallbacks(void) {
+  long i;
+  for (i = 0; i < controlNames; i++) {
+    if (chInfo[i].isArray) {
+      if (ca_add_masked_array_event(DBR_TIME_DOUBLE, chInfo[i].elementCount, chInfo[i].channelID, WaveformEventHandler,
+                                    (void *)&chInfo[i].usrValue, (ca_real)0, (ca_real)0, (ca_real)0,
+                                    NULL, DBE_VALUE | DBE_ALARM) != ECA_NORMAL) {
+        fprintf(stderr, "error: unable to setup waveform callback for control name %s\n", chInfo[i].controlName);
+        return (0);
+      }
+    } else if (chInfo[i].isString) {
+      if (ca_add_masked_array_event(DBR_TIME_STRING, 1, chInfo[i].channelID, StringEventHandler,
+                                    (void *)&chInfo[i].usrValue, (ca_real)0, (ca_real)0, (ca_real)0,
+                                    NULL, DBE_VALUE | DBE_ALARM) != ECA_NORMAL) {
+        fprintf(stderr, "error: unable to setup string callback for control name %s\n", chInfo[i].controlName);
+        return (0);
+      }
+    } else {
+      if (ca_add_masked_array_event(DBR_TIME_DOUBLE, 1, chInfo[i].channelID, EventHandler,
+                                    (void *)&chInfo[i].usrValue, (ca_real)0, (ca_real)0, (ca_real)0,
+                                    NULL, DBE_VALUE | DBE_ALARM) != ECA_NORMAL) {
+        fprintf(stderr, "error: unable to setup alarm callback for control name %s\n", chInfo[i].controlName);
+        return (0);
+      }
     }
   }
   ca_pend_io(1);
@@ -1280,7 +1688,8 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
       return (0);
     }
     for (i = 0; i < cNames; i++) {
-      if (SDDS_DefineColumn(logSet, rName ? rName[i] : cName[i], NULL, rUnits ? rUnits[i] : NULL, cName[i], NULL, SDDS_DOUBLE, 0) < 0)
+      long colType = (chInfo && chInfo[i].isString) ? SDDS_STRING : SDDS_DOUBLE;
+      if (SDDS_DefineColumn(logSet, rName ? rName[i] : cName[i], NULL, rUnits ? rUnits[i] : NULL, cName[i], NULL, colType, 0) < 0)
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     }
     if (!SDDS_SetRowCountMode(logSet, SDDS_FIXEDROWCOUNT) ||
@@ -1386,7 +1795,10 @@ long SetupLogFile(SDDS_DATASET *logSet, char *output, char *input,
                                   "%8.5f", SDDS_FLOAT, 0))) ||
         0 > (iTime = SDDS_DefineColumn(logSet, "Time", NULL, "s", NULL, NULL, SDDS_DOUBLE, 0)) ||
         0 > (iTimeWS = SDDS_DefineColumn(logSet, "TimeWS", NULL, "s", NULL, NULL, SDDS_DOUBLE, 0)) ||
-        0 > (iValue = SDDS_DefineColumn(logSet, "Value", NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0))) {
+        0 > (iValue = SDDS_DefineColumn(logSet, "Value", NULL, NULL, NULL, NULL, SDDS_DOUBLE, 0)) ||
+        0 > (iStringValue = SDDS_DefineColumn(logSet, "StringValue", NULL, NULL, "String value for string PVs", NULL, SDDS_STRING, 0)) ||
+        0 > (iWaveformIndex = SDDS_DefineColumn(logSet, "WaveformIndex", NULL, NULL, "Waveform element index (-1 for scalar PVs)", "%6ld", SDDS_LONG, 0)) ||
+        0 > (iWaveformLength = SDDS_DefineColumn(logSet, "WaveformLength", NULL, NULL, "Total waveform element count (0 for scalar PVs)", "%6ld", SDDS_LONG, 0))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (0);
     }
@@ -1534,10 +1946,16 @@ long SetupLogFile(SDDS_DATASET *logSet, char *output, char *input,
 long GetControlNames(char *file, char ***name0,
                      char ***readbackName0, char ***readbackUnits0,
                      char ***relatedName0, char ***description0,
-                     double **tolerances0) {
+                     double **tolerances0, short **expectNumeric0,
+                     char ***expectFieldType0, int32_t **expectElements0) {
   char **name, **newName, **readback, **newReadback = NULL, **readbackUnits = NULL, **newReadbackUnits = NULL, **newDescription, **description, **relatedName, **newRelatedName;
   double *tolerances, *newTolerances = NULL;
-  long newNames, i, code, names, doUnits, doDescriptions, doRelatedNames, doReadbackNames, doTolerances;
+  short *expectNumeric = NULL, *newExpectNumeric = NULL;
+  char **expectFieldType = NULL, **newExpectFieldType = NULL;
+  int32_t *expectElements = NULL;
+  double *newExpectElementsD = NULL;
+  long newNames, i, code, names, doUnits, doDescriptions, doRelatedNames, doReadbackNames, doTolerances, doExpectNumeric, doExpectFieldType, doExpectElements;
+  char *unitsColumnName = NULL;
   SDDS_DATASET inSet;
 
   newDescription = newRelatedName = NULL;
@@ -1563,8 +1981,13 @@ long GetControlNames(char *file, char ***name0,
 #endif
 
   doUnits = 0;
-  if (SDDS_CheckColumn(&inSet, "ReadbackUnits", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK)
+  if (SDDS_CheckColumn(&inSet, "ReadbackUnits", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
     doUnits = 1;
+    unitsColumnName = "ReadbackUnits";
+  } else if (SDDS_CheckColumn(&inSet, "Units", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
+    doUnits = 1;
+    unitsColumnName = "Units";
+  }
 #if DEBUGSDDS
   fprintf(stderr, "Units %s\n", doUnits ? "present" : "absent");
 #endif
@@ -1584,9 +2007,24 @@ long GetControlNames(char *file, char ***name0,
   if (SDDS_CheckColumn(&inSet, "Tolerance", NULL, SDDS_ANY_NUMERIC_TYPE, NULL) == SDDS_CHECK_OK)
     doTolerances = 1;
 
+  doExpectNumeric = 0;
+  if (SDDS_CheckColumn(&inSet, "ExpectNumeric", NULL, SDDS_CHARACTER, NULL) == SDDS_CHECK_OK)
+    doExpectNumeric = 1;
+
+  doExpectFieldType = 0;
+  if (SDDS_CheckColumn(&inSet, "ExpectFieldType", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK)
+    doExpectFieldType = 1;
+
+  doExpectElements = 0;
+  if (SDDS_CheckColumn(&inSet, "ExpectElements", NULL, SDDS_ANY_NUMERIC_TYPE, NULL) == SDDS_CHECK_OK)
+    doExpectElements = 1;
+
   names = 0;
   description = name = relatedName = readback = readbackUnits = NULL;
   tolerances = NULL;
+  expectNumeric = NULL;
+  expectFieldType = NULL;
+  expectElements = NULL;
 
   while ((code = SDDS_ReadPage(&inSet)) > 0) {
 #if DEBUGSDDS
@@ -1597,10 +2035,13 @@ long GetControlNames(char *file, char ***name0,
     if ((newNames < 0 ||
          !(newName = SDDS_GetColumn(&inSet, "ControlName"))) ||
         (doReadbackNames && !(newReadback = SDDS_GetColumn(&inSet, "ReadbackName"))) ||
-        (doUnits && !(newReadbackUnits = SDDS_GetColumn(&inSet, "ReadbackUnits"))) ||
+        (doUnits && !(newReadbackUnits = SDDS_GetColumn(&inSet, unitsColumnName))) ||
         (doDescriptions && !(newDescription = SDDS_GetColumn(&inSet, "Description"))) ||
         (doRelatedNames && !(newRelatedName = SDDS_GetColumn(&inSet, "RelatedControlName"))) ||
-        (doTolerances && !(newTolerances = SDDS_GetColumnInDoubles(&inSet, "Tolerance")))) {
+        (doTolerances && !(newTolerances = SDDS_GetColumnInDoubles(&inSet, "Tolerance"))) ||
+        (doExpectNumeric && !(newExpectNumeric = SDDS_GetColumn(&inSet, "ExpectNumeric"))) ||
+        (doExpectFieldType && !(newExpectFieldType = SDDS_GetColumn(&inSet, "ExpectFieldType"))) ||
+        (doExpectElements && !(newExpectElementsD = SDDS_GetColumnInDoubles(&inSet, "ExpectElements")))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (-1);
     }
@@ -1628,6 +2069,18 @@ long GetControlNames(char *file, char ***name0,
       fprintf(stderr, "Unable to get Tolerance data--allocation failure\n");
       return (-1);
     }
+    if (doExpectNumeric && !(expectNumeric = SDDS_Realloc(expectNumeric, (names + newNames) * sizeof(*expectNumeric)))) {
+      fprintf(stderr, "Unable to get ExpectNumeric data--allocation failure\n");
+      return (-1);
+    }
+    if (doExpectFieldType && !(expectFieldType = SDDS_Realloc(expectFieldType, (names + newNames) * sizeof(*expectFieldType)))) {
+      fprintf(stderr, "Unable to get ExpectFieldType data--allocation failure\n");
+      return (-1);
+    }
+    if (doExpectElements && !(expectElements = SDDS_Realloc(expectElements, (names + newNames) * sizeof(*expectElements)))) {
+      fprintf(stderr, "Unable to get ExpectElements data--allocation failure\n");
+      return (-1);
+    }
 
     for (i = 0; i < newNames; i++) {
       name[names + i] = newName[i];
@@ -1641,6 +2094,12 @@ long GetControlNames(char *file, char ***name0,
         relatedName[names + i] = newRelatedName[i];
       if (doTolerances)
         tolerances[names + i] = newTolerances[i];
+      if (doExpectNumeric)
+        expectNumeric[names + i] = newExpectNumeric[i];
+      if (doExpectFieldType)
+        expectFieldType[names + i] = newExpectFieldType[i];
+      if (doExpectElements)
+        expectElements[names + i] = (int32_t)newExpectElementsD[i];
     }
     names += newNames;
     free(newName);
@@ -1654,6 +2113,12 @@ long GetControlNames(char *file, char ***name0,
       free(newRelatedName);
     if (doTolerances)
       free(newTolerances);
+    if (doExpectNumeric)
+      free(newExpectNumeric);
+    if (doExpectFieldType)
+      free(newExpectFieldType);
+    if (doExpectElements)
+      free(newExpectElementsD);
 #if DEBUGSDDS
     fprintf(stderr, "Page %ld processed\n", code);
 #endif
@@ -1679,6 +2144,12 @@ long GetControlNames(char *file, char ***name0,
     *relatedName0 = relatedName;
   if (tolerances0 && doTolerances)
     *tolerances0 = tolerances;
+  if (expectNumeric0 && doExpectNumeric)
+    *expectNumeric0 = expectNumeric;
+  if (expectFieldType0 && doExpectFieldType)
+    *expectFieldType0 = expectFieldType;
+  if (expectElements0 && doExpectElements)
+    *expectElements0 = expectElements;
   return (names);
 }
 
@@ -1845,6 +2316,11 @@ long GetLogFileIndices(SDDS_DATASET *outSet, unsigned long mode) {
     fprintf(stderr, "error (sddsalarmlog): Value index unobtainable.\n");
     return (0);
   }
+  /* StringValue is optional for backward compatibility with older files */
+  iStringValue = SDDS_GetColumnIndex(outSet, "StringValue");
+  /* WaveformIndex and WaveformLength are optional for backward compatibility */
+  iWaveformIndex = SDDS_GetColumnIndex(outSet, "WaveformIndex");
+  iWaveformLength = SDDS_GetColumnIndex(outSet, "WaveformLength");
   if ((iTime = SDDS_GetColumnIndex(outSet, "Time")) < 0) {
     fprintf(stderr, "error (sddsalarmlog): Time index unobtainable.\n");
     return (0);
