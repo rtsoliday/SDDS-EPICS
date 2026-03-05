@@ -102,7 +102,12 @@ DEVELOPMENT CENTER AT ARGONNE NATIONAL LABORATORY (708-252-2000).
 #  include <selectLib.h>
 #else
 #  if defined(linux)
-#    include <termio.h>
+#    if defined(_POSIX_VERSION)
+#      include <sys/ioctl.h>
+#      include <termios.h>
+#    else
+#      include <termio.h>
+#    endif
 #  else
 #    include <sys/sockio.h>
 #  endif
