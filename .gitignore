@@ -1,0 +1,73 @@
+# Native build products
+O.*/
+/bin/
+/lib/
+*.dSYM/
+
+# Python and pytest caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.nox/
+.ruff_cache/
+.tox/
+.venv/
+venv/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Generated documentation
+/doc/EPICStoolkit/
+/doc/APSRunControl/
+/doc/APSlogDaemon/
+/doc/*.aux
+/doc/*.bbl
+/doc/*.blg
+/doc/*.css
+/doc/*.dvi
+/doc/*.fdb_latexmk
+/doc/*.fls
+/doc/*.html
+/doc/*.idv
+/doc/*.lg
+/doc/*.lof
+/doc/*.log
+/doc/*.lot
+/doc/*.out
+/doc/*.pdf
+/doc/*.ps
+/doc/*.synctex.gz
+/doc/*.tmp
+/doc/*.toc
+/doc/*.xref
+/doc/*.4ct
+/doc/*.4tc
+
+# Editor and operating-system metadata
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.idea/
+.vs/
+.vscode/
+*.suo
+*.user
+
+# Local tooling and environment files
+compile_commands.json
+.cache/
+.env
+.env.*
+!.env.example
+
+# Coverage and crash artifacts
+*.gcda
+*.gcno
+*.gcov
+core
+core.*
