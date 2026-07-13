@@ -2477,7 +2477,7 @@ long VerifyPVTypes(PVA_OVERALL *pva, LOGGER_DATA *logger) {
         return (1);
       }
     }
-    if ((logger->verifiedType[j] == false) && (pva->isConnected[j] == true)) {
+    if (!logger->verifiedType[j] && pva->isConnected[j]) {
       if (((pva->pvaData[j].numeric == true) && (logger->expectNumeric[j] == true)) ||
           ((pva->pvaData[j].nonnumeric == true) && (logger->expectNumeric[j] == false))) {
       } else {
@@ -2627,7 +2627,7 @@ long VerifyNumericScalarPVTypes(PVA_OVERALL *pva) {
     return (0);
   }
   for (j = 0; j < pva->numPVs; j++) {
-    if (pva->isConnected[j] == true) {
+    if (pva->isConnected[j]) {
       if (pva->pvaData[j].numeric == false) {
         fprintf(stderr, "Error (sddspvalogger): %s is not numeric\n", pva->pvaChannelNames[j].c_str());
         return (1);
@@ -3277,7 +3277,7 @@ bool PassesConditionsPVA(PVA_OVERALL *pvaConditions, LOGGER_DATA *logger) {
 
   if (pvaConditions != NULL) {
     for (j = 0; j < pvaConditions->numPVs; j++) {
-      if (pvaConditions->isConnected[j] == true) {
+      if (pvaConditions->isConnected[j]) {
         bool haveValue = false;
         if (logger->monitor) {
           if (pvaConditions->pvaData[j].numMonitorReadings > 0 &&
@@ -3357,7 +3357,7 @@ bool CheckGlitchPVA(PVA_OVERALL *pvaGlitch, LOGGER_DATA *logger) {
       logger->glitch_glitchedTemp[i] = 0;
       logger->glitch_alarmedTemp[i] = 0;
       logger->glitch_alarmSeverityTemp[i] = 0;
-      if (pvaGlitch->isConnected[i] == true) {
+      if (pvaGlitch->isConnected[i]) {
         bool haveValue = false;
         if (logger->monitor &&
             pvaGlitch->pvaData[i].numMonitorReadings > 0 &&
@@ -3452,7 +3452,7 @@ bool PassesInhibitPVA(PVA_OVERALL *pvaInhibit, LOGGER_DATA *logger) {
     return true;
   }
 
-  if (pvaInhibit->isConnected[0] == true) {
+  if (pvaInhibit->isConnected[0]) {
     if (pvaInhibit->pvaData[0].numMonitorReadings > 0 &&
         pvaInhibit->pvaData[0].numMonitorElements > 0 &&
         pvaInhibit->pvaData[0].monitorData != NULL &&

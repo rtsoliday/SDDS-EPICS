@@ -116,7 +116,7 @@ void EventHandler(struct event_handler_args event);
 #if defined(vxWorks)
 void sddsPVtestDeleteHook(WIND_TCB *pTcb);
 #else
-void sddsPVtestDeleteHook();
+void sddsPVtestDeleteHook(void);
 #endif
 
 typedef struct
@@ -1237,7 +1237,7 @@ int runControlPingWhileSleep(double sleepTime) {
 #if defined(vxWorks)
 void sddsPVtestDeleteHook(WIND_TCB *pTcb)
 #else
-void sddsPVtestDeleteHook()
+void sddsPVtestDeleteHook(void)
 #endif
 
 {

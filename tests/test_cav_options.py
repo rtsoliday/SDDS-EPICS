@@ -307,14 +307,19 @@ def test_cawait_command_and_subprocess_options(soft_ioc: SoftIOC, tmp_path: Path
     "-repeat=1",
   )
 
+  subprocess_lines: list[str] = []
   deadline = time.monotonic() + 2
-  while time.monotonic() < deadline and not subprocess_output.exists():
+  while time.monotonic() < deadline:
+    if subprocess_output.exists():
+      subprocess_lines = subprocess_output.read_text(encoding="utf-8").splitlines()
+      if subprocess_lines == ["SUB_EVENT", "SUB_END"]:
+        break
     time.sleep(0.01)
 
   assert pre_event.exists()
   assert on_event.exists()
   assert on_end.exists()
-  assert subprocess_output.read_text(encoding="utf-8").splitlines() == ["SUB_EVENT", "SUB_END"]
+  assert subprocess_lines == ["SUB_EVENT", "SUB_END"]
 
 
 @pytest.mark.parametrize(

@@ -19,7 +19,6 @@
  *************************************************************************/
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <string.h>
 #include "cadef.h"
 #include "SDDS.h"

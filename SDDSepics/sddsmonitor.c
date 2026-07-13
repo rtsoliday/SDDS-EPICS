@@ -741,7 +741,7 @@ void startMonitorFile(SDDS_DATASET *output_page, char *outputfile, GLITCH_REQUES
 int runControlPingWhileSleep(double sleepTime);
 void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
-void rc_interrupt_handler();
+void rc_interrupt_handler(void);
 
 static volatile sig_atomic_t terminateSignal = 0;
 static volatile sig_atomic_t sigint = 0;
@@ -2793,7 +2793,7 @@ void sigint_interrupt_handler(int sig) {
   seen = 1;
 }
 
-void rc_interrupt_handler() {
+void rc_interrupt_handler(void) {
   int ca = 1;
 #ifndef EPICS313
   if (ca_current_context() == NULL)

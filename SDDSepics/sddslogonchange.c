@@ -436,7 +436,7 @@ unsigned long outputMode = 0;
 int runControlPingWhileSleep(double sleepTime);
 void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
-void rc_interrupt_handler();
+void rc_interrupt_handler(void);
 
 volatile int sigint = 0;
 
@@ -1911,9 +1911,9 @@ long SetupLogFile(SDDS_DATASET *logSet, char *output, char *input,
        (mode & READBACKUNITS &&
         !SDDS_SetArrayVararg(logSet, "ReadbackUnits", SDDS_POINTER_ARRAY, rUnits, cNames)) ||
        (mode & LOGALARMS &&
-        !SDDS_SetArrayVararg(logSet, "AlarmSeverityString", SDDS_POINTER_ARRAY, alarmSeverityString, ALARM_NSEV)) ||
+        !SDDS_SetArrayVararg(logSet, "AlarmSeverityString", SDDS_POINTER_ARRAY, (void *)alarmSeverityString, ALARM_NSEV)) ||
        (mode & LOGALARMS &&
-        !SDDS_SetArrayVararg(logSet, "AlarmStatusString", SDDS_POINTER_ARRAY, alarmStatusString, ALARM_NSTATUS)))) {
+        !SDDS_SetArrayVararg(logSet, "AlarmStatusString", SDDS_POINTER_ARRAY, (void *)alarmStatusString, ALARM_NSTATUS)))) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (0);
   }
@@ -2364,7 +2364,7 @@ void sigint_interrupt_handler(int sig) {
 #endif
 }
 
-void rc_interrupt_handler() {
+void rc_interrupt_handler(void) {
   int ca = 1;
 #ifndef EPICS313
   if (ca_current_context() == NULL)

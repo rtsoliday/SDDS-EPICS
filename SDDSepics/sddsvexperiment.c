@@ -160,7 +160,7 @@
 void interrupt_handler(int);
 void dummy_interrupt_handler(int);
 void sigint_interrupt_handler(int sig);
-void rc_interrupt_handler();
+void rc_interrupt_handler(void);
 
 static long dev_timeout_errors = 0;
 static long total_limit_errors = 0;
@@ -1214,7 +1214,7 @@ void sigint_interrupt_handler(int sig) {
 #endif
 }
 
-void rc_interrupt_handler() {
+void rc_interrupt_handler(void) {
   int ca = 1;
   signal(SIGINT, dummy_interrupt_handler);
   signal(SIGTERM, dummy_interrupt_handler);

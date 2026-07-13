@@ -230,7 +230,7 @@
 #endif
 
 void interrupt_handler(int sig);
-void rc_interrupt_handler();
+void rc_interrupt_handler(void);
 void abortSimplex(int sig);
 void executeSignalScript();
 
@@ -2884,7 +2884,7 @@ void abortSimplex(int sig) {
 #endif
 }
 
-void rc_interrupt_handler() {
+void rc_interrupt_handler(void) {
   int ca = 1;
 #ifndef EPICS313
   if (ca_current_context() == NULL)

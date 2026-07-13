@@ -57,6 +57,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <string>
+#include <vector>
 
 #ifdef _WIN32
 #  include <winsock.h>
@@ -68,7 +70,6 @@
 #include <epicsVersion.h>
 #if (EPICS_VERSION > 3)
 #  include "pvaSDDS.h"
-#  include <boost/algorithm/string.hpp>
 #endif
 
 #include "mdb.h"
@@ -155,7 +156,93 @@ Program by Michael Borland and Robert Soliday, ANL/APS (" EPICS_VERSION_STRING "
 void oag_ca_exception_handler(struct exception_handler_args args);
 
 #if (EPICS_VERSION > 3)
+static void trimString(std::string &value) {
+  const char *whitespace = " \t\n\r\f\v";
+  size_t first = value.find_first_not_of(whitespace);
+
+  if (first == std::string::npos) {
+    value.clear();
+    return;
+  }
+  size_t last = value.find_last_not_of(whitespace);
+  value = value.substr(first, last - first + 1);
+}
+
 long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue, short charArray);
+#endif
+
+#ifdef _WIN32
+static bool useDirectCACharArrayPath(PV_VALUE *PVvalue, long PVs, long providerMode) {
+  if (providerMode == PROVIDER_PVA)
+    return false;
+  for (long j = 0; j < PVs; j++) {
+    if (strncmp(PVvalue[j].name, "pva://", 6) == 0)
+      return false;
+  }
+  return true;
+}
+
+static long putCACharArrayValues(PV_VALUE *PVvalue, long PVs, double pendIOTime,
+                                 unsigned long blunderAhead) {
+  std::vector<chid> channels(PVs);
+
+  ca_task_initialize();
+  ca_add_exception_event(oag_ca_exception_handler, NULL);
+  for (long j = 0; j < PVs; j++) {
+    const char *name = PVvalue[j].name;
+    if (strncmp(name, "ca://", 5) == 0)
+      name += 5;
+    if (ca_search(name, &channels[j]) != ECA_NORMAL) {
+      fprintf(stderr, "error (cavput): problem doing search for %s\n", name);
+      ca_task_exit();
+      return 1;
+    }
+  }
+  if (ca_pend_io(pendIOTime) != ECA_NORMAL) {
+    fprintf(stderr, "error (cavput): one or more channels did not connect\n");
+    ca_task_exit();
+    return 1;
+  }
+
+  for (long j = 0; j < PVs; j++) {
+    if (ca_state(channels[j]) != cs_conn) {
+      if (!(blunderAhead & BLUNDER_SILENTLY))
+        fprintf(stderr, "Channel not connected: %s\n", PVvalue[j].name);
+      if (!blunderAhead) {
+        ca_task_exit();
+        return 1;
+      }
+      continue;
+    }
+    if (ca_write_access(channels[j]) == 0)
+      fprintf(stderr, "Write access denied on : %s\n", PVvalue[j].name);
+
+    unsigned long count = ca_element_count(channels[j]);
+    std::vector<unsigned char> values(count, 0);
+    size_t length = strlen(PVvalue[j].value);
+    if (count && length) {
+      size_t copyLength = length < count - 1 ? length : count - 1;
+      memcpy(values.data(), PVvalue[j].value, copyLength);
+    }
+    if (ca_array_put(DBR_CHAR, count, channels[j], values.data()) != ECA_NORMAL) {
+      if (!(blunderAhead & BLUNDER_SILENTLY))
+        fprintf(stderr, "error (cavput): problem doing put for %s\n", PVvalue[j].name);
+      if (!blunderAhead) {
+        ca_task_exit();
+        return 1;
+      }
+    }
+  }
+
+  if (ca_pend_io(pendIOTime) != ECA_NORMAL) {
+    fprintf(stderr, "Problem processing one or more puts (cavput)\n");
+    ca_task_exit();
+    return 1;
+  }
+  ca_pend_event(0.5);
+  ca_task_exit();
+  return 0;
+}
 #endif
 
 int main(int argc, char **argv) {
@@ -340,6 +427,12 @@ int main(int argc, char **argv) {
       }
     }
   } else {
+#ifdef _WIN32
+    if (charArray && useDirectCACharArrayPath(PVvalue, PVs, providerMode)) {
+      if (putCACharArrayValues(PVvalue, PVs, pendIOTime, blunderAhead))
+        return EXIT_FAILURE;
+    } else {
+#endif
 #if (EPICS_VERSION > 3)
       //Allocate memory for pva structure
       allocPVA(&pva, PVs, 0);
@@ -644,6 +737,9 @@ int main(int argc, char **argv) {
 #endif
 
 #endif
+#ifdef _WIN32
+    }
+#endif
   }
 
 #ifdef DEBUG
@@ -773,7 +869,7 @@ long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue, short charArray) {
           size_t comma = input.find(',', start);
           std::string value = input.substr(start, comma == std::string::npos ?
                                                    std::string::npos : comma - start);
-          boost::trim(value);
+          trimString(value);
           values.push_back(value);
           if (comma == std::string::npos)
             break;

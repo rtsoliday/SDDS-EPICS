@@ -46,6 +46,17 @@ DIRS += SDDSepics
 SDDS_TEST_TOOL_NAMES = sdds2stream sddsquery
 SDDS_TEST_TOOL_TARGETS = $(addprefix O.$(OS)-$(ARCH)/,$(addsuffix $(EXEEXT),$(SDDS_TEST_TOOL_NAMES)))
 
+PYTEST ?= python3 -m pytest
+
+ifeq ($(OS), Windows)
+  SDDS_EPICS_TEST_BIN = $(abspath bin/$(OS)-$(ARCH))
+  SDDS_TEST_BIN = $(abspath $(SDDS_REPO)/bin/$(OS)-$(ARCH))
+  EPICS_TEST_BIN = $(abspath ../epics-base/bin/$(EPICS_HOST)-$(EPICS_ARCH))
+  TEST_ENV = PATH="$(shell cygpath -u '$(SDDS_EPICS_TEST_BIN)'):$(shell cygpath -u '$(SDDS_TEST_BIN)'):$(shell cygpath -u '$(EPICS_TEST_BIN)'):$$PATH" \
+	SDDS_EPICS_BIN_DIR="$(SDDS_EPICS_TEST_BIN)" \
+	SDDS_BIN_DIR="$(SDDS_TEST_BIN)"
+endif
+
 .PHONY: all $(DIRS) clean distclean test test-binaries
 
 all: $(DIRS)
@@ -96,7 +107,7 @@ test-binaries: rampload logDaemon
 	$(MAKE) -C SDDSepics test-programs
 
 test: test-binaries
-	python3 -m pytest tests
+	$(TEST_ENV) $(PYTEST) tests
 
 clean:
 	$(MAKE) -C oagca clean

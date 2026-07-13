@@ -49,13 +49,22 @@ def _unused_udp_port() -> int:
     return udp_socket.getsockname()[1]
 
 
+def _command_arguments(command: list[str]) -> list[str]:
+  if os.name != "nt":
+    return command
+  # scanargs() interprets backslash escapes, so native Windows paths containing
+  # components such as ``test_*`` would reach the program with ``\t`` changed
+  # into a tab. Windows APIs accept forward slashes for these absolute paths.
+  return [argument.replace("\\", "/") for argument in command]
+
+
 def _invoke(command: list[str], environment: dict[str, str], timeout: float = 10.0) -> subprocess.CompletedProcess[str]:
   # caRepeater may outlive the command and inherit its output descriptors. Regular
   # files let subprocess.run wait for only the requested command, rather than for
   # EOF from every process that inherited a capture pipe.
   with tempfile.TemporaryFile(mode="w+") as stdout_file, tempfile.TemporaryFile(mode="w+") as stderr_file:
     completed = subprocess.run(
-      command,
+      _command_arguments(command),
       env=environment,
       text=True,
       stdout=stdout_file,
@@ -169,7 +178,13 @@ def soft_ioc(tmp_path_factory: pytest.TempPathFactory) -> SoftIOC:
   ]
   stdout_file = (temporary_directory / "sddsSoftIOC.stdout").open("w+")
   stderr_file = (temporary_directory / "sddsSoftIOC.stderr").open("w+")
-  process = subprocess.Popen(command, env=environment, text=True, stdout=stdout_file, stderr=stderr_file)
+  process = subprocess.Popen(
+    _command_arguments(command),
+    env=environment,
+    text=True,
+    stdout=stdout_file,
+    stderr=stderr_file,
+  )
 
   def ioc_output() -> tuple[str, str]:
     stdout_file.flush()

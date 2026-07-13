@@ -1005,7 +1005,7 @@ int main(int argc, char **argv) {
                                    logger.CondExpectElements) == 1)
           return (1);
         for (j = 0; j < pvaCond->numPVs; j++) {
-          if (pvaCond->isConnected[j] == true) {
+          if (pvaCond->isConnected[j]) {
             logger.CondDataBuffer[j] = pvaCond->pvaData[j].getData[0].values[0];
           } else {
             logger.CondDataBuffer[j] = 0;
@@ -1062,7 +1062,7 @@ int main(int argc, char **argv) {
         if (VerifyNumericPVAForUse(pvaGlitch, true, "glitch") == 1)
           return (1);
         for (j = 0; j < pvaGlitch->numPVs; j++) {
-          if (pvaGlitch->isConnected[j] == true) {
+          if (pvaGlitch->isConnected[j]) {
             logger.glitchValue[j] = pvaGlitch->pvaData[j].getData[0].values[0];
           } else {
             logger.glitchValue[j] = 0;
@@ -1079,7 +1079,7 @@ int main(int argc, char **argv) {
         if (VerifyNumericPVAForUse(pvaTrigger, true, "trigger") == 1)
           return (1);
         for (j = 0; j < pvaTrigger->numPVs; j++) {
-          if (pvaTrigger->isConnected[j] == true) {
+          if (pvaTrigger->isConnected[j]) {
             logger.triggerValue[j] = pvaTrigger->pvaData[j].getData[0].values[0];
           } else {
             logger.triggerValue[j] = 0;
@@ -1996,7 +1996,7 @@ bool PassesInhibitPVA(LOGGER_DATA *logger, PVA_OVERALL *pvaInhibit) {
   double value;
 
   if (pvaInhibit != NULL && pvaInhibit->numPVs > 0 &&
-      pvaInhibit->isConnected[0] == true &&
+      pvaInhibit->isConnected[0] &&
       pvaInhibit->pvaData[0].numGetReadings > 0 &&
       pvaInhibit->pvaData[0].numGetElements > 0 &&
       pvaInhibit->pvaData[0].getData != NULL &&
@@ -3888,7 +3888,7 @@ long ReadCAValues(LOGGER_DATA *logger, long index) {
     return (-1);
   }
   for (i = 0; i < logger->datasets[index].pva->numPVs; i++) {
-    if (logger->datasets[index].pva->isConnected[i] == true) {
+    if (logger->datasets[index].pva->isConnected[i]) {
       PVA_DATA_ALL_READINGS *reading = &logger->datasets[index].pva->pvaData[i];
       if (!reading->numeric || reading->numGetReadings < 1 ||
           reading->getData == NULL || reading->getData[0].values == NULL ||

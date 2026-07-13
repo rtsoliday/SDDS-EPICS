@@ -417,15 +417,21 @@ def test_feedforward_rejects_negative_ezca_retries(program: str) -> None:
   ],
 )
 def test_logmessage_rejects_oversized_fields(arguments: tuple[str, ...]) -> None:
-  result = _invoke([str(_program_path("logMessage")), *arguments], _probe_environment())
+  executable = _program_path("logMessage")
+  if not executable.is_file():
+    pytest.skip("logMessage is not built on this platform")
+  result = _invoke([str(executable), *arguments], _probe_environment())
 
   assert result.returncode == 1
   assert "string too long" in result.stderr
 
 
 def test_logdaemon_rejects_an_oversized_service_id() -> None:
+  executable = _program_path("logDaemon")
+  if not executable.is_file():
+    pytest.skip("logDaemon is not built on this platform")
   result = _invoke(
-    [str(_program_path("logDaemon")), "-i", "x" * 1024, "-e"],
+    [str(executable), "-i", "x" * 1024, "-e"],
     _probe_environment(),
   )
 

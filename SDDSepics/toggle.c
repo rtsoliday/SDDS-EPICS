@@ -121,7 +121,7 @@
 void interrupt_handler(int sig);
 void dummy_interrupt_handler(int);
 void sigint_interrupt_handler(int sig);
-void rc_interrupt_handler();
+void rc_interrupt_handler(void);
 
 void getTimeBreakdown(double *Time, double *Day, double *Hour, double *JulianDay,
                       double *Year, double *Month, char **TimeStamp);
@@ -816,7 +816,7 @@ void sigint_interrupt_handler(int sig) {
 #endif
 }
 
-void rc_interrupt_handler() {
+void rc_interrupt_handler(void) {
   int ca = 1;
   signal(SIGINT, dummy_interrupt_handler);
   signal(SIGTERM, dummy_interrupt_handler);

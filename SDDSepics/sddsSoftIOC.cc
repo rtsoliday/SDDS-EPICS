@@ -13,17 +13,33 @@
 #include <math.h>
 #include <limits.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <fcntl.h>
+
+#if defined(_WIN32)
+#  define WIN32_LEAN_AND_MEAN
+#  define NOMINMAX
+#  include <direct.h>
+#  include <io.h>
+#  include <process.h>
+#  include <windows.h>
+#  ifndef PATH_MAX
+#    define PATH_MAX _MAX_PATH
+#  endif
+#  define unlink _unlink
+#  define rmdir _rmdir
+#else
+#  include <strings.h>
+#  include <sys/socket.h>
+#  include <sys/un.h>
+#  include <sys/wait.h>
+#  include <unistd.h>
+#  include <fcntl.h>
+#endif
 
 #include <fstream>
 #include <sstream>
@@ -110,8 +126,14 @@ struct PVDef {
 };
 
 static volatile sig_atomic_t gTerminate = 0;
+#if defined(_WIN32)
+static intptr_t gIocPid = -1;
+static intptr_t gEqPid = -1;
+static HANDLE gChildJob = NULL;
+#else
 static pid_t gIocPid = -1;
 static pid_t gEqPid = -1;
+#endif
 static std::string gTempDir;
 static std::string gDbPath;
 static std::string gPcasPvFile;
@@ -120,7 +142,9 @@ static std::vector<std::string> gExtraDbFiles;
 
 static int gIpcListenFd = -1;
 static std::string gIpcSocketPath;
+#if !defined(_WIN32)
 static pid_t gIpcOwnerPid = (pid_t)-1;
+#endif
 
 static std::string resolveAbsolutePath(const std::string &path);
 static std::string resolveAbsolutePathFromBaseDir(const std::string &path, const std::string &baseDir);
@@ -190,18 +214,27 @@ static std::string resolveAbsolutePath(const std::string &path) {
     return path;
   }
   char resolved[PATH_MAX];
+#if defined(_WIN32)
+  if (_fullpath(resolved, path.c_str(), sizeof(resolved))) {
+#else
   if (realpath(path.c_str(), resolved)) {
+#endif
     return std::string(resolved);
   }
   return path;
 }
 
 static bool isAbsolutePath(const std::string &path) {
+#if defined(_WIN32)
+  return !path.empty() && (path[0] == '/' || path[0] == '\\' ||
+                           (path.size() > 2 && path[1] == ':' && (path[2] == '/' || path[2] == '\\')));
+#else
   return !path.empty() && path[0] == '/';
+#endif
 }
 
 static std::string dirnameOfPath(const std::string &path) {
-  size_t slash = path.find_last_of('/');
+  size_t slash = path.find_last_of("/\\");
   if (slash == std::string::npos) {
     return std::string();
   }
@@ -213,13 +246,20 @@ static std::string dirnameOfPath(const std::string &path) {
 
 static std::string getCwdPath() {
   char buf[PATH_MAX];
+#if defined(_WIN32)
+  if (_getcwd(buf, sizeof(buf))) {
+#else
   if (getcwd(buf, sizeof(buf))) {
+#endif
     return std::string(buf);
   }
   return std::string();
 }
 
 static std::string lexicallyNormalizeAbsolutePath(const std::string &path) {
+#if defined(_WIN32)
+  return resolveAbsolutePath(path);
+#else
   if (!isAbsolutePath(path)) {
     return path;
   }
@@ -258,6 +298,7 @@ static std::string lexicallyNormalizeAbsolutePath(const std::string &path) {
     }
   }
   return out;
+#endif
 }
 
 static std::string resolveAbsolutePathFromBaseDir(const std::string &path, const std::string &baseDir) {
@@ -289,11 +330,7 @@ static std::string resolveAbsolutePathFromBaseDir(const std::string &path, const
 
   candidate = lexicallyNormalizeAbsolutePath(candidate);
 
-  char resolved[PATH_MAX];
-  if (realpath(candidate.c_str(), resolved)) {
-    return std::string(resolved);
-  }
-  return candidate;
+  return resolveAbsolutePath(candidate);
 }
 
 static bool isDirectory(const std::string &path) {
@@ -301,11 +338,19 @@ static bool isDirectory(const std::string &path) {
   if (stat(path.c_str(), &st) != 0) {
     return false;
   }
+#if defined(_WIN32)
+  return (st.st_mode & _S_IFDIR) != 0;
+#else
   return S_ISDIR(st.st_mode);
+#endif
 }
 
 static bool isExecutableFile(const std::string &path) {
+#if defined(_WIN32)
+  return _access(path.c_str(), 0) == 0;
+#else
   return access(path.c_str(), X_OK) == 0;
+#endif
 }
 
 static std::string findDefaultEpicsBase() {
@@ -324,7 +369,9 @@ static std::string findDefaultEpicsBase() {
    */
   std::string binDir = dirnameOfPath(gExecutableDir);
   std::string sddsEpicsRoot;
-  if (!binDir.empty() && binDir.substr(binDir.find_last_of('/') + 1) == "bin") {
+  size_t binSlash = binDir.find_last_of("/\\");
+  std::string binName = binDir.substr(binSlash == std::string::npos ? 0 : binSlash + 1);
+  if (!binDir.empty() && binName == "bin") {
     sddsEpicsRoot = dirnameOfPath(binDir);
   }
   if (!sddsEpicsRoot.empty()) {
@@ -346,8 +393,14 @@ static std::string findDefaultEpicsBase() {
     if (!isDirectory(candidates[i])) {
       continue;
     }
-    /* startSoftIoc and getHostArchFromEpicsBase require this script */
+    /* Verify the platform-specific soft IOC discovery prerequisite. */
+#if defined(_WIN64)
+    if (!isExecutableFile(candidates[i] + "/bin/windows-x64/softIoc.exe")) {
+#elif defined(_WIN32)
+    if (!isExecutableFile(candidates[i] + "/bin/win32-x86/softIoc.exe")) {
+#else
     if (!isExecutableFile(candidates[i] + "/startup/EpicsHostArch")) {
+#endif
       continue;
     }
     return candidates[i];
@@ -362,15 +415,23 @@ static std::string findDefaultEpicsBase() {
 
 static std::string getExecutableDir(const char *argv0) {
   char resolved[PATH_MAX];
+#if defined(_WIN32)
+  DWORD len = GetModuleFileNameA(NULL, resolved, (DWORD)sizeof(resolved));
+  if (len > 0 && len < sizeof(resolved)) {
+    resolved[len] = '\0';
+    return dirnameOfPath(std::string(resolved));
+  }
+#else
   ssize_t len = readlink("/proc/self/exe", resolved, sizeof(resolved) - 1);
   if (len > 0) {
     resolved[len] = '\0';
     return dirnameOfPath(std::string(resolved));
   }
+#endif
 
   if (argv0 && argv0[0]) {
     std::string p = std::string(argv0);
-    if (!isAbsolutePath(p) && p.find('/') != std::string::npos) {
+    if (!isAbsolutePath(p) && p.find_first_of("/\\") != std::string::npos) {
       std::string cwd = getCwdPath();
       if (!cwd.empty()) {
         p = cwd + "/" + p;
@@ -389,11 +450,56 @@ static void signal_handler(int /*sig*/) {
   gTerminate = 1;
 }
 
+#if defined(_WIN32)
+static void assignChildToJob(intptr_t process) {
+  if (process <= 0) {
+    return;
+  }
+  if (!gChildJob) {
+    gChildJob = CreateJobObjectA(NULL, NULL);
+    if (gChildJob) {
+      JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {};
+      limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+      if (!SetInformationJobObject(gChildJob, JobObjectExtendedLimitInformation, &limits, sizeof(limits))) {
+        CloseHandle(gChildJob);
+        gChildJob = NULL;
+      }
+    }
+  }
+  if (gChildJob && !AssignProcessToJobObject(gChildJob, (HANDLE)process)) {
+    fprintf(stderr, "warning: unable to assign child process to cleanup job (error %lu)\n", (unsigned long)GetLastError());
+  }
+}
+
+static void safeKill(intptr_t process, int /*sig*/) {
+  if (process > 0) {
+    TerminateProcess((HANDLE)process, 0);
+  }
+}
+
+static void waitForChild(intptr_t &process) {
+  if (process > 0) {
+    WaitForSingleObject((HANDLE)process, INFINITE);
+    CloseHandle((HANDLE)process);
+    process = -1;
+  }
+}
+
+static bool childExited(intptr_t &process) {
+  if (process > 0 && WaitForSingleObject((HANDLE)process, 0) == WAIT_OBJECT_0) {
+    CloseHandle((HANDLE)process);
+    process = -1;
+    return true;
+  }
+  return false;
+}
+#else
 static void safeKill(pid_t pid, int sig) {
   if (pid > 0) {
     kill(pid, sig);
   }
 }
+#endif
 
 static void cleanupTemp() {
   if (!gDbPath.empty()) {
@@ -408,6 +514,7 @@ static void cleanupTemp() {
   }
 }
 
+#if !defined(_WIN32)
 static void setCloexec(int fd) {
   int flags = fcntl(fd, F_GETFD);
   if (flags >= 0)
@@ -469,6 +576,7 @@ static void ipcCleanup() {
     unlink(gIpcSocketPath.c_str());
   }
 }
+#endif
 
 struct SoftIocPvAddDef {
   std::string controlName;
@@ -575,6 +683,7 @@ static std::vector<SoftIocPvAddDef> readAddDefsFromInputFiles(const std::vector<
   return defs;
 }
 
+#if !defined(_WIN32)
 static bool ipcTryForwardAddRequests(const std::string &sockPath, const std::vector<SoftIocPvAddDef> &defs) {
   if (defs.empty())
     return false;
@@ -760,6 +869,7 @@ static void ipcPump(std::vector<SoftIocPvAddDef> &outDefs) {
     close(cfd);
   }
 }
+#endif
 
 static std::string getHostArchFromEpicsBase(const std::string &epicsBase) {
   const char *env = getenv("EPICS_HOST_ARCH");
@@ -767,6 +877,11 @@ static std::string getHostArchFromEpicsBase(const std::string &epicsBase) {
     return std::string(env);
   }
 
+#if defined(_WIN64)
+  return std::string("windows-x64");
+#elif defined(_WIN32)
+  return std::string("win32-x86");
+#else
   std::string script = epicsBase + "/startup/EpicsHostArch";
   FILE *fp = popen(script.c_str(), "r");
   if (!fp) {
@@ -783,6 +898,16 @@ static std::string getHostArchFromEpicsBase(const std::string &epicsBase) {
     buf[--len] = 0;
   }
   return std::string(buf);
+#endif
+}
+
+static int getLocalHostname(char *hostname, size_t size) {
+#if defined(_WIN32)
+  DWORD length = (DWORD)size;
+  return GetComputerNameA(hostname, &length) ? 0 : -1;
+#else
+  return gethostname(hostname, size);
+#endif
 }
 
 static std::string formatPvName(const std::string &pvPrefix, const std::string &controlName) {
@@ -1111,6 +1236,16 @@ static void startSoftIoc(const std::string &epicsBase, const std::string &dbPath
 
   std::string softIoc = epicsBase + "/bin/" + hostArch + "/softIoc";
 
+#if defined(_WIN32)
+  softIoc += ".exe";
+  intptr_t process = _spawnl(_P_NOWAIT, softIoc.c_str(), softIoc.c_str(), "-S", "-d", dbPath.c_str(), (char *)NULL);
+  if (process == -1) {
+    fprintf(stderr, "error: unable to start %s: %s\n", softIoc.c_str(), strerror(errno));
+    exit(1);
+  }
+  gIocPid = process;
+  assignChildToJob(gIocPid);
+#else
   pid_t pid = fork();
   if (pid < 0) {
     fprintf(stderr, "error: fork() failed: %s\n", strerror(errno));
@@ -1124,14 +1259,19 @@ static void startSoftIoc(const std::string &epicsBase, const std::string &dbPath
     _exit(1);
   }
   gIocPid = pid;
+#endif
 }
 
 static void restartSoftIoc(const std::string &epicsBase, const std::string &dbPath) {
   if (gIocPid > 0) {
     safeKill(gIocPid, SIGTERM);
+#if defined(_WIN32)
+    waitForChild(gIocPid);
+#else
     int status = 0;
     waitpid(gIocPid, &status, 0);
     gIocPid = -1;
+#endif
   }
   startSoftIoc(epicsBase, dbPath);
 }
@@ -1259,20 +1399,34 @@ static void filterOutMasterSddspcasPvConflicts(const std::string &pcasPvFile, co
 }
 
 static void startEquationsHelper(const std::vector<std::string> &inputFiles, int debugLevel) {
+  std::string fileNames;
+  for (size_t i = 0; i < inputFiles.size(); i++) {
+    fileNames += inputFiles[i];
+    if (i + 1 < inputFiles.size()) {
+      fileNames += ",";
+    }
+  }
+
+#if defined(_WIN32)
+  intptr_t process;
+  if (debugLevel > 0) {
+    process = _spawnlp(_P_NOWAIT, "sddspcasEquations.exe", "sddspcasEquations.exe", "-debug", "1", "-input", fileNames.c_str(), (char *)NULL);
+  } else {
+    process = _spawnlp(_P_NOWAIT, "sddspcasEquations.exe", "sddspcasEquations.exe", "-input", fileNames.c_str(), (char *)NULL);
+  }
+  if (process == -1) {
+    fprintf(stderr, "warning: Error starting sddspcasEquations helper (not fatal)\n");
+    return;
+  }
+  gEqPid = process;
+  assignChildToJob(gEqPid);
+#else
   pid_t pid = fork();
   if (pid < 0) {
     fprintf(stderr, "warning: Unable to fork sddspcasEquations helper\n");
     return;
   }
   if (pid == 0) {
-    std::string fileNames;
-    for (size_t i = 0; i < inputFiles.size(); i++) {
-      fileNames += inputFiles[i];
-      if (i + 1 < inputFiles.size()) {
-        fileNames += ",";
-      }
-    }
-
     if (debugLevel > 0) {
       execlp("sddspcasEquations", "sddspcasEquations", "-debug", "1", "-input", fileNames.c_str(), (char *)NULL);
     } else {
@@ -1283,6 +1437,7 @@ static void startEquationsHelper(const std::vector<std::string> &inputFiles, int
     _exit(1);
   }
   gEqPid = pid;
+#endif
 }
 
 static bool anyInputHasEquationColumn(const std::vector<std::string> &inputFiles) {
@@ -1524,7 +1679,7 @@ static void readMasterSddspcasPvFile(const std::string &pcasPvFile, const std::s
   SDDS_Terminate(&SDDS_masterlist);
 
   if (rows > 0) {
-    gethostname(hostname, 255);
+    getLocalHostname(hostname, sizeof(hostname));
     for (int m = 0; m < rows; m++) {
       if (strcmp(host_name[m], hostname) == 0) {
         fprintf(stderr, "error: %s listed as a hostname already running sddspcas in %s\n", hostname, pcasPvFile.c_str());
@@ -1559,7 +1714,7 @@ static void appendMasterSddspcasPvFile(const std::string &pcasPvFile, const std:
   char hostname[255];
   int64_t rowsPresent;
 
-  gethostname(hostname, 255);
+  getLocalHostname(hostname, sizeof(hostname));
 
   if (!SDDS_InitializeAppendToPage(&SDDS_masterlist, (char *)pcasPvFile.c_str(), 100, &rowsPresent)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1598,7 +1753,7 @@ extern "C" void CleanMasterSDDSpcasPVFile() {
   char **host_name = NULL;
   char hostname[255];
 
-  gethostname(hostname, 255);
+  getLocalHostname(hostname, sizeof(hostname));
 
   if (!SDDS_InitializeInput(&SDDS_masterlist, (char *)gPcasPvFile.c_str())) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1772,6 +1927,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+#if !defined(_WIN32)
   gIpcSocketPath = buildIpcSocketPath();
   {
     std::vector<SoftIocPvAddDef> defs = readAddDefsFromInputFiles(inputFiles);
@@ -1781,6 +1937,7 @@ int main(int argc, char **argv) {
       return 0;
     }
   }
+#endif
 
   // Keep sddspcas defaults for compatibility (unless -standalone)
   if (!standalone) {
@@ -1810,6 +1967,22 @@ int main(int argc, char **argv) {
   signal(SIGTERM, signal_handler);
 
   // Create temp directory and db file
+#if defined(_WIN32)
+  char tempPath[MAX_PATH];
+  char tempName[MAX_PATH];
+  DWORD tempPathLength = GetTempPathA((DWORD)sizeof(tempPath), tempPath);
+  if (tempPathLength == 0 || tempPathLength >= sizeof(tempPath) ||
+      GetTempFileNameA(tempPath, "sio", 0, tempName) == 0) {
+    fprintf(stderr, "error: unable to create temporary path (error %lu)\n", (unsigned long)GetLastError());
+    exit(1);
+  }
+  DeleteFileA(tempName);
+  if (!CreateDirectoryA(tempName, NULL)) {
+    fprintf(stderr, "error: unable to create temporary directory %s (error %lu)\n", tempName, (unsigned long)GetLastError());
+    exit(1);
+  }
+  gTempDir = tempName;
+#else
   char tmpTemplate[] = "/tmp/sddsSoftIOCXXXXXX";
   char *tmpDir = mkdtemp(tmpTemplate);
   if (!tmpDir) {
@@ -1817,8 +1990,10 @@ int main(int argc, char **argv) {
     exit(1);
   }
   gTempDir = tmpDir;
+#endif
   gDbPath = gTempDir + "/sddsSoftIOC.db";
 
+#if !defined(_WIN32)
   gIpcListenFd = ipcSetupListener(gIpcSocketPath);
   if (gIpcListenFd >= 0) {
     gIpcOwnerPid = getpid();
@@ -1829,6 +2004,7 @@ int main(int argc, char **argv) {
   } else {
     fprintf(stderr, "warning: unable to create sddsSoftIOC IPC socket %s\n", gIpcSocketPath.c_str());
   }
+#endif
 
   std::vector<PVDef> pvs;
   readPvInputFiles(inputFiles, std::string(pvPrefixC), pvs);
@@ -1982,12 +2158,18 @@ int main(int argc, char **argv) {
   while (!gTerminate) {
     // Stop if IOC exited
     if (gIocPid > 0) {
+#if defined(_WIN32)
+      if (childExited(gIocPid)) {
+        break;
+      }
+#else
       int status = 0;
       pid_t r = waitpid(gIocPid, &status, WNOHANG);
       if (r == gIocPid) {
         gIocPid = -1;
         break;
       }
+#endif
     }
 
     if (!forever) {
@@ -2005,6 +2187,7 @@ int main(int argc, char **argv) {
       }
     }
 
+#if !defined(_WIN32)
     if (gIpcListenFd >= 0) {
       std::vector<SoftIocPvAddDef> received;
       ipcPump(received);
@@ -2012,10 +2195,15 @@ int main(int argc, char **argv) {
         pendingAddDefs.insert(pendingAddDefs.end(), received.begin(), received.end());
       }
     }
+#endif
 
     processPendingAdds(std::string(pvPrefixC), PVFile1 ? std::string(PVFile1) : std::string(), PVFile2 ? std::string(PVFile2) : std::string());
 
+#if defined(_WIN32)
+    Sleep(100);
+#else
     usleep(100000); // 100ms
+#endif
   }
 
   // Shutdown
@@ -2024,12 +2212,21 @@ int main(int argc, char **argv) {
   safeKill(gEqPid, SIGTERM);
   safeKill(gIocPid, SIGTERM);
 
+#if defined(_WIN32)
+  waitForChild(gEqPid);
+  waitForChild(gIocPid);
+  if (gChildJob) {
+    CloseHandle(gChildJob);
+    gChildJob = NULL;
+  }
+#else
   if (gEqPid > 0) {
     waitpid(gEqPid, NULL, 0);
   }
   if (gIocPid > 0) {
     waitpid(gIocPid, NULL, 0);
   }
+#endif
 
   cleanupTemp();
   free_scanargs(&s_arg, argc);

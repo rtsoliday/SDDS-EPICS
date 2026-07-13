@@ -294,7 +294,7 @@
 
 void interrupt_handler(int sig);
 void sigint_interrupt_handler(int sig);
-void rc_interrupt_handler();
+void rc_interrupt_handler(void);
 
 #define CLO_DAEMON 0
 #define CLO_SEMAPHORE 1
@@ -1856,9 +1856,9 @@ void sddscasaverestore(CONTROL_NAME *control_name, char *inputFile, char *output
     }
     if (outputFile && control_name->outputFilePV) {
       char charData[500];
-      long i;
+      unsigned long i;
       sprintf(charData, "%s", outputFile);
-      for (i = strlen(outputFile); i < ca_element_count(control_name->outputFilePV_ID); i++)
+      for (i = (unsigned long)strlen(outputFile); i < ca_element_count(control_name->outputFilePV_ID); i++)
         charData[i] = '\0';
       if (ca_array_put(DBR_CHAR,
                        ca_element_count(control_name->outputFilePV_ID),
@@ -2492,7 +2492,7 @@ void sigint_interrupt_handler(int sig) {
   return;
 }
 
-void rc_interrupt_handler() {
+void rc_interrupt_handler(void) {
   int ca = 1;
 #ifndef EPICS313
   if (ca_current_context() == NULL)

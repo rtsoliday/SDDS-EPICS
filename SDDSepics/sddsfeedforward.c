@@ -277,7 +277,7 @@ void operate_runcontrol(long prevValue, long currentValue, char *message, long c
 #if defined(vxWorks)
 void sddsFeedforwardDeleteHook(WIND_TCB *pTcb);
 #else
-void sddsFeedforwardDeleteHook();
+void sddsFeedforwardDeleteHook(void);
 #endif
 
 /* need to be global because some quantities are used
@@ -2505,7 +2505,7 @@ double ffInterpolate(double *f, double *x, long n, double xo,
 #if defined(vxWorks)
 void sddsFeedforwardDeleteHook(WIND_TCB *pTcb)
 #else
-void sddsFeedforwardDeleteHook()
+void sddsFeedforwardDeleteHook(void)
 #endif
 {
   SDDSFEEDFORWARD_GLOBAL *sg;

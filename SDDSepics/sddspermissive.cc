@@ -759,7 +759,7 @@ long VerifyNumericScalarPVTypes(PVA_OVERALL *pva) {
     return (0);
   }
   for (j = 0; j < pva->numPVs; j++) {
-    if (pva->isConnected[j] == true) {
+    if (pva->isConnected[j]) {
       if (pva->pvaData[j].numeric == false) {
         fprintf(stderr, "Error (sddspermissive): %s is not numeric\n", pva->pvaChannelNames[j].c_str());
         return (1);

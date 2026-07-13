@@ -11,8 +11,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include <sys/time.h>
-#if !defined(_WIN32)
+#if defined(_WIN32)
+#  include <io.h>
+#else
 #  include <unistd.h>
 #endif
 #include "cadef.h"
@@ -609,16 +610,13 @@ char *timestamp(void) {
   /* Gets current time and puts it in a static array    */
   /* The calling program should copy it to a safe place */
   /*    e.g. strcpy(savetime,timestamp());              */
-  struct timeval tv;
-  struct timezone tz;
   time_t clock;
-  static char time[26];
+  static char timeString[26];
 
-  gettimeofday(&tv,&tz);
-  clock=tv.tv_sec;
-  strcpy(time,ctime(&clock));
-  time[24]='\0';
-  return time;
+  clock=time(NULL);
+  strcpy(timeString,ctime(&clock));
+  timeString[24]='\0';
+  return timeString;
 }
 
 void writerampheader(FILE *file) {
