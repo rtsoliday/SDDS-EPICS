@@ -106,6 +106,20 @@ GSLCBLAS_LIB = $(firstword $(wildcard \
               $(addsuffix /libgslcblas.dylib, $(LIB_DIRS)) \
               $(addsuffix /libgslcblas.a, $(LIB_DIRS)) \
               $(addsuffix /libgslcblas.so, $(LIB_DIRS))))
+ifeq ($(OS), Windows)
+  GSL_LINK_LIBS = gsl.lib gslcblas.lib
+else
+  # Preserve the RHEL 8 GSL soname when these executables run on RHEL 9.
+  # Only add the search path on build hosts where the compatibility copy exists.
+  GSL_COMPAT_LIB_DIR ?= /usr/local/oag/apps/lib/linux-x86_64
+  GSL_COMPAT_LIB ?= $(GSL_COMPAT_LIB_DIR)/libgsl.so.23
+  ifeq ($(OS), Linux)
+    ifneq ($(wildcard $(GSL_COMPAT_LIB)),)
+      GSL_RPATH = -Wl,-rpath=$(GSL_COMPAT_LIB_DIR)
+    endif
+  endif
+  GSL_LINK_LIBS = $(GSL_RPATH) $(GSL_LIB) $(GSLCBLAS_LIB)
+endif
 PNG_LIB = $(firstword $(wildcard \
            $(addsuffix /libpng.dylib, $(LIB_DIRS)) \
            $(addsuffix /libpng.so, $(LIB_DIRS)) \

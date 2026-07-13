@@ -55,7 +55,7 @@ ifeq ($(OS), Linux)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
+    $(LZMA_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
   PROD_SYS_LIBS := $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvaClient.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libnt.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccessCA.a \
@@ -63,7 +63,7 @@ ifeq ($(OS), Linux)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
+    $(LZMA_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS = -lrunControl
 endif
 
@@ -77,7 +77,7 @@ ifeq ($(OS), Darwin)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
+    $(LZMA_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
   PROD_SYS_LIBS := $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvaClient.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libnt.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccessCA.a \
@@ -85,7 +85,7 @@ ifeq ($(OS), Darwin)
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
     $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
-    $(LZMA_LIB) $(GSL_LIB) $(GSLCBLAS_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
+    $(LZMA_LIB) $(Z_LIB) $(READLINE_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS = -lrunControl
 endif
 

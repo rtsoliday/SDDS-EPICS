@@ -58,6 +58,13 @@ ifneq ($(PROD),)
  .SECONDARY: $(PROD_OBJECTS)
 endif
 
+# Keep GSL out of the common link line.  Individual makefiles list the
+# executables that require the SDDS RPN math implementation in GSL_PROD.
+ifneq ($(GSL_PROD),)
+ GSL_FULLPROD = $(patsubst %,$(OBJ_DIR)/%$(EXEEXT), $(GSL_PROD))
+ $(GSL_FULLPROD): GSL_LIBS = $(GSL_LINK_LIBS)
+endif
+
 ifneq ($(BUNDLED_RUNTIME_LIBS),)
  $(FULLPROD): $(BUNDLED_RUNTIME_LIBS)
  $(PYTHON_SHARED_LIBRARY): $(BUNDLED_RUNTIME_LIBS)
@@ -131,7 +138,7 @@ $(OBJ_DIR):
 ifeq ($(OS), Windows)
 
  %$(EXEEXT): %.$(OBJEXT) $(PROD_DEPS)
-	$(LINKEXE) -out:$@ $(@:.exe=.obj) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
+	$(LINKEXE) -out:$@ $(@:.exe=.obj) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(GSL_LIBS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
@@ -165,7 +172,7 @@ DEPFLAGS =
 
 else
  %$(EXEEXT): %.$(OBJEXT) $(PROD_DEPS)
-	$(CCC) -o $@ $@.o $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
+	$(CCC) -o $@ $@.o $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(GSL_LIBS) $(PROD_SYS_LIBS)
 	cp -f $@ $(BIN_DIR)/
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
 	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
