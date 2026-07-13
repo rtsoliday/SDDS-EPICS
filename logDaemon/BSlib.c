@@ -944,10 +944,10 @@ int BSgetBroadcastSocket(int port, struct sockaddr_in *sin) {
 /*-----------------------------------------------------------------------*/
 static int BSgetBroadcastAddr(int soc, struct sockaddr *sin) {
   struct ifconf ifc;
-  struct ifreq *ifr;
-  struct ifreq *save;
+  struct ifreq request;
   char buf[BUFSIZ];
-  int tot, i;
+  char *entry;
+  char *end;
 
   ifc.ifc_len = sizeof(buf);
   ifc.ifc_buf = buf;
@@ -956,36 +956,45 @@ static int BSgetBroadcastAddr(int soc, struct sockaddr *sin) {
     return -1;
   }
 
-  ifr = ifc.ifc_req;
-  tot = ifc.ifc_len / sizeof(struct ifreq);
-  save = (struct ifreq *)NULL;
-  i = 0;
+  entry = ifc.ifc_buf;
+  end = entry + ifc.ifc_len;
+  while (entry < end) {
+    struct ifreq *ifr = (struct ifreq *)entry;
+    size_t entrySize = sizeof(*ifr);
 
-  do {
-    if (ifr[i].ifr_addr.sa_family == AF_INET) {
-      if (ioctl(soc, SIOCGIFFLAGS, (char *)&ifr[i]) < 0) {
+#if defined(_SIZEOF_ADDR_IFREQ)
+    /* BSD systems such as Darwin return variable-sized ifreq records. */
+    entrySize = _SIZEOF_ADDR_IFREQ(*ifr);
+#endif
+    if (entrySize == 0 || entrySize > (size_t)(end - entry))
+      return -1;
+
+    if (ifr->ifr_addr.sa_family == AF_INET) {
+      memset(&request, 0, sizeof(request));
+      memcpy(request.ifr_name, ifr->ifr_name, sizeof(request.ifr_name));
+      request.ifr_name[sizeof(request.ifr_name) - 1] = '\0';
+
+      if (ioctl(soc, SIOCGIFFLAGS, (char *)&request) < 0) {
         perror("ioctl SIOCGIFFLAGS failed");
         return -1;
       }
 
-      if ((ifr[i].ifr_flags & IFF_UP) &&
-          !(ifr[i].ifr_flags & IFF_LOOPBACK) &&
-          (ifr[i].ifr_flags & IFF_BROADCAST)) {
-        save = &ifr[i];
+      if ((request.ifr_flags & IFF_UP) &&
+          !(request.ifr_flags & IFF_LOOPBACK) &&
+          (request.ifr_flags & IFF_BROADCAST)) {
+        if (ioctl(soc, SIOCGIFBRDADDR, (char *)&request) < 0) {
+          perror("ioctl SIOCGIFBRDADDR failed");
+          return -1;
+        }
+
+        memcpy((char *)sin, (char *)&request.ifr_broadaddr,
+               sizeof(request.ifr_broadaddr));
+        return 0;
       }
     }
-  } while (!save && ++i < tot);
 
-  if (save) {
-    if (ioctl(soc, SIOCGIFBRDADDR, (char *)save) < 0) {
-      perror("ioctl SIOCGIFBRDADDR failed");
-      return -1;
-    }
+    entry += entrySize;
+  }
 
-    memcpy((char *)sin, (char *)&save->ifr_broadaddr,
-           sizeof(save->ifr_broadaddr));
-  } else
-    return -1;
-
-  return 0;
+  return -1;
 }
