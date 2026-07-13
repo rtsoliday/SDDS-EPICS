@@ -2009,7 +2009,8 @@ void ReadInputRAM(char *inputRAMFile, long *waveformLength, uint32_t **waveform,
       if (!SDDS_GetParameter(&ramData, tmpBuffer, &sample))
         SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
       sampleMode[i] = match_string(str_tolower(sample), sampleModeList, sampleModes, EXACT_MATCH);
-      free(plane);
+      free(sample);
+      sample = NULL;
     }
   }
   if (SDDS_CheckParameter(&ramData, "BunchPattern", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {

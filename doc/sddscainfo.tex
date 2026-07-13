@@ -4,7 +4,8 @@
 \begin{sddsprog}{sddscainfo}
 \item \textbf{description:}
   \verb+sddscainfo+ reads a list of process variable (PV) names from an SDDS file,
-  queries the control system for metadata, and writes the results to an SDDS output file.
+  tries PVAccess first and then Channel Access for each name, and writes the
+  discovered provider and metadata to an SDDS output file.
   The program can also create input files for \progref{sddspvalogger} or \progref{sddspvasaverestore}.
 
 \item \textbf{examples:}
@@ -48,7 +49,7 @@ usage: sddscainfo [<inputfile>] [<outputfile>]
     \verb|withStorageType| to include the storage type.
   \item {\tt -makeSCRInput} --- write an input file for \progref{sddspvasaverestore}.
   \item {\tt -verbose} --- print PV metadata to the terminal.
-  \item {\tt -pendIOTime=<seconds>} --- time to wait for Channel Access operations (default 0.5 s).
+  \item {\tt -pendIOTime=<seconds>} --- time to wait for PVA and CA operations (default 0.5 s).
 \end{itemize}
 
 \item \textbf{see also:}

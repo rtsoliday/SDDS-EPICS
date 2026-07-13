@@ -10,6 +10,7 @@
 #include <complex>
 #include <iostream>
 #include <ctime>
+#include <inttypes.h>
 #include <alarm.h>
 
 #include <cadef.h>
@@ -498,6 +499,10 @@ long SetupPVs(LOGGER_DATA *logger, PVA_OVERALL *pvaTrigger, PVA_OVERALL *pvaGlit
 long SetupAlarmPVs(PVA_OVERALL *pvaAlarm, ALARMTRIG_REQUEST *alarmTrigRequest, long alarmTrigChannels);
 long SetupDatasetPVs(LOGGER_DATA *logger);
 long SetupInhibitPV(LOGGER_DATA *logger, PVA_OVERALL *pvaInhibit);
+long VerifyNumericPVAForUse(PVA_OVERALL *pva, bool scalarOnly, const char *role,
+                            char **expectFieldType = NULL,
+                            char *expectNumeric = NULL,
+                            int32_t *expectElements = NULL);
 long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg);
 long CheckCommandLineArgsValidity(LOGGER_DATA *logger);
 void InitializeVariables(LOGGER_DATA *logger);
@@ -523,8 +528,8 @@ int main(int argc, char **argv) {
   long iGlitch, iAlarm, iTrigger;
   alarmTrigRequest = NULL;
 
-  PVA_OVERALL pva1, pva2, pva3, pva4, pva5;
-  PVA_OVERALL *pvaTrigger=NULL, *pvaGlitch=NULL, *pvaInhibit, *pvaCond=NULL, *pvaAlarm;
+  PVA_OVERALL pva1{}, pva2{}, pva3{}, pva4{}, pva5{};
+  PVA_OVERALL *pvaTrigger=NULL, *pvaGlitch=NULL, *pvaInhibit=NULL, *pvaCond=NULL, *pvaAlarm=NULL;
   LOGGER_DATA logger;
 
   //Initialize variable values
@@ -952,6 +957,8 @@ int main(int argc, char **argv) {
         if (GetPVAValues(pvaInhibit) == 1) {
           return (1);
         }
+        if (VerifyNumericPVAForUse(pvaInhibit, true, "inhibit") == 1)
+          return (1);
         if (PassesInhibitPVA(&logger, pvaInhibit) == false) {
           if (logger.CondMode & TOUCH_OUTPUT)
             for (i = 0; i < logger.numDatasets; i++)
@@ -992,6 +999,11 @@ int main(int argc, char **argv) {
         if (GetPVAValues(pvaCond) == 1) {
           return (1);
         }
+        if (VerifyNumericPVAForUse(pvaCond, true, "condition",
+                                   logger.CondExpectFieldType,
+                                   logger.CondExpectNumeric,
+                                   logger.CondExpectElements) == 1)
+          return (1);
         for (j = 0; j < pvaCond->numPVs; j++) {
           if (pvaCond->isConnected[j] == true) {
             logger.CondDataBuffer[j] = pvaCond->pvaData[j].getData[0].values[0];
@@ -1047,6 +1059,8 @@ int main(int argc, char **argv) {
         if (GetPVAValues(pvaGlitch) == 1) {
           return (1);
         }
+        if (VerifyNumericPVAForUse(pvaGlitch, true, "glitch") == 1)
+          return (1);
         for (j = 0; j < pvaGlitch->numPVs; j++) {
           if (pvaGlitch->isConnected[j] == true) {
             logger.glitchValue[j] = pvaGlitch->pvaData[j].getData[0].values[0];
@@ -1062,6 +1076,8 @@ int main(int argc, char **argv) {
         if (GetPVAValues(pvaTrigger) == 1) {
           return (1);
         }
+        if (VerifyNumericPVAForUse(pvaTrigger, true, "trigger") == 1)
+          return (1);
         for (j = 0; j < pvaTrigger->numPVs; j++) {
           if (pvaTrigger->isConnected[j] == true) {
             logger.triggerValue[j] = pvaTrigger->pvaData[j].getData[0].values[0];
@@ -1078,8 +1094,7 @@ int main(int argc, char **argv) {
           return (1);
         }
         for (i = 0; i < pvaAlarm->numPVs; i++) {
-          if (!pvaAlarm->isConnected[i]) {
-            fprintf(stderr, "DEBUG Alarm severity = %d\n", pvaAlarm->pvaData[i].alarmSeverity);
+          if (pvaAlarm->isConnected[i]) {
             if (alarmTrigRequest[i].severity != pvaAlarm->pvaData[i].alarmSeverity) {
               alarmTrigRequest[i].severity = pvaAlarm->pvaData[i].alarmSeverity;
               alarmTrigRequest[i].triggered = 1;
@@ -1372,7 +1387,7 @@ int main(int argc, char **argv) {
       free(logger.datasets[i].ControlName[j]);
       free(logger.datasets[i].ReadbackName[j]);
       free(logger.datasets[i].ReadbackUnits[j]);
-      //free(logger.datasets[i].Provider[j]);
+      free(logger.datasets[i].Provider[j]);
       free(logger.datasets[i].ExpectFieldType[j]);
     }
     free(logger.datasets[i].values);
@@ -1434,10 +1449,18 @@ int main(int argc, char **argv) {
     free(logger.inputfile);
   if (logger.outputDir)
     free(logger.outputDir);
+  if (logger.inhibitProvider)
+    free(logger.inhibitProvider);
   if (pvaTrigger != NULL)
     freePVA(pvaTrigger);
   if (pvaGlitch != NULL)
     freePVA(pvaGlitch);
+  if (pvaInhibit != NULL)
+    freePVA(pvaInhibit);
+  if (pvaCond != NULL)
+    freePVA(pvaCond);
+  if (pvaAlarm != NULL)
+    freePVA(pvaAlarm);
   free_scanargs(&s_arg, argc);
 
   return 0;
@@ -1599,10 +1622,14 @@ long ReadCommandLineArgs(LOGGER_DATA *logger, int argc, SCANNED_ARG *s_arg) {
         logger->autoHoldoff = 1;
         break;
       case CLO_INHIBITPV:
+        if (s_arg[i_arg].n_items < 2) {
+          fprintf(stderr, "invalid -inhibitPV syntax/values\n");
+          return (1);
+        }
         logger->InhibitPendIOTime = 10;
         logger->InhibitWaitTime = 5;
-        logger->inhibitProvider = (char *)malloc(sizeof(char) * 5);
-        logger->inhibitProvider = (char *)"ca";
+        logger->inhibitProvider = (char *)malloc(sizeof(char) * 3);
+        strcpy(logger->inhibitProvider, "ca");
         s_arg[i_arg].n_items -= 1;
         if (!scanItemList(&dummyFlags, s_arg[i_arg].list + 1, &s_arg[i_arg].n_items, 0,
                           "name", SDDS_STRING, &(logger->InhibitPV.name), 1, 0,
@@ -1746,6 +1773,8 @@ long SetupInhibitPV(LOGGER_DATA *logger, PVA_OVERALL *pvaInhibit) {
     if (GetPVAValues(pvaInhibit) == 1) {
       return (1);
     }
+    if (VerifyNumericPVAForUse(pvaInhibit, true, "inhibit") == 1)
+      return (1);
   }
   return (0);
 }
@@ -1777,6 +1806,11 @@ long SetupDatasetPVs(LOGGER_DATA *logger) {
     if (GetPVAValues(logger->datasets[i].pva) == 1) {
       return (1);
     }
+    if (VerifyNumericPVAForUse(logger->datasets[i].pva, false, "logged",
+                               logger->datasets[i].ExpectFieldType,
+                               logger->datasets[i].ExpectNumeric,
+                               logger->datasets[i].ExpectElements) == 1)
+      return (1);
   }
   return (0);
 }
@@ -1810,13 +1844,12 @@ long SetupAlarmPVs(PVA_OVERALL *pvaAlarm, ALARMTRIG_REQUEST *alarmTrigRequest, l
     return (1);
   }
   for (i = 0; i < pvaAlarm->numPVs; i++) {
-    if (!pvaAlarm->isConnected[i]) {
+    if (pvaAlarm->isConnected[i]) {
       alarmTrigRequest[i].severity = pvaAlarm->pvaData[i].alarmSeverity;
     }
   }
   freePVAGetReadings(pvaAlarm);
   return (0);
-  return 1;
 }
 
 long SetupPVs(LOGGER_DATA *logger, PVA_OVERALL *pvaTrigger, PVA_OVERALL *pvaGlitch, PVA_OVERALL *pvaCond) {
@@ -1846,6 +1879,8 @@ long SetupPVs(LOGGER_DATA *logger, PVA_OVERALL *pvaTrigger, PVA_OVERALL *pvaGlit
     if (GetPVAValues(pvaTrigger) == 1) {
       return (1);
     }
+    if (VerifyNumericPVAForUse(pvaTrigger, true, "trigger") == 1)
+      return (1);
     freePVAGetReadings(pvaTrigger);
   }
   if (pvaGlitch != NULL) {
@@ -1870,6 +1905,8 @@ long SetupPVs(LOGGER_DATA *logger, PVA_OVERALL *pvaTrigger, PVA_OVERALL *pvaGlit
     if (GetPVAValues(pvaGlitch) == 1) {
       return (1);
     }
+    if (VerifyNumericPVAForUse(pvaGlitch, true, "glitch") == 1)
+      return (1);
     freePVAGetReadings(pvaGlitch);
   }
   if (pvaCond != NULL) {
@@ -1894,16 +1931,76 @@ long SetupPVs(LOGGER_DATA *logger, PVA_OVERALL *pvaTrigger, PVA_OVERALL *pvaGlit
     if (GetPVAValues(pvaCond) == 1) {
       return (1);
     }
+    if (VerifyNumericPVAForUse(pvaCond, true, "condition",
+                               logger->CondExpectFieldType,
+                               logger->CondExpectNumeric,
+                               logger->CondExpectElements) == 1)
+      return (1);
     freePVAGetReadings(pvaCond);
   }
 
   return (0);
 }
 
+long VerifyNumericPVAForUse(PVA_OVERALL *pva, bool scalarOnly, const char *role,
+                            char **expectFieldType, char *expectNumeric,
+                            int32_t *expectElements) {
+  if (pva == NULL)
+    return (0);
+  for (long i = 0; i < pva->numPVs; i++) {
+    if (!pva->isConnected[i])
+      continue;
+    bool scalar = pva->pvaData[i].fieldType == epics::pvData::scalar ||
+                  pva->pvaData[i].pvEnumeratedStructure;
+    bool scalarArray = pva->pvaData[i].fieldType == epics::pvData::scalarArray;
+    if (expectFieldType && expectFieldType[i] && expectFieldType[i][0]) {
+      bool fieldTypeMatches =
+        (strcmp(expectFieldType[i], "scalar") == 0 && scalar) ||
+        (strcmp(expectFieldType[i], "scalarArray") == 0 && scalarArray);
+      if (!fieldTypeMatches) {
+        fprintf(stderr, "Error: %s PV %s does not match expected field type %s\n",
+                role, pva->pvaChannelNames[i].c_str(), expectFieldType[i]);
+        return (1);
+      }
+    }
+    if (expectNumeric &&
+        ((expectNumeric[i] == 'y' || expectNumeric[i] == 'Y') !=
+         pva->pvaData[i].numeric)) {
+      fprintf(stderr, "Error: %s PV %s does not match its ExpectNumeric setting\n",
+              role, pva->pvaChannelNames[i].c_str());
+      return (1);
+    }
+    if (expectFieldType && expectFieldType[i] && expectFieldType[i][0] &&
+        expectElements && expectElements[i] > 0 &&
+        pva->pvaData[i].numGetElements != expectElements[i]) {
+      fprintf(stderr,
+              "Error: %s PV %s has %ld elements, expected %" PRId32 "\n",
+              role, pva->pvaChannelNames[i].c_str(),
+              pva->pvaData[i].numGetElements, expectElements[i]);
+      return (1);
+    }
+    if (!pva->pvaData[i].numeric || (scalarOnly && !scalar) ||
+        pva->pvaData[i].numGetReadings < 1 ||
+        pva->pvaData[i].numGetElements < 1 ||
+        pva->pvaData[i].getData == NULL ||
+        pva->pvaData[i].getData[0].values == NULL) {
+      fprintf(stderr, "Error: %s PV %s must provide %snumeric data\n",
+              role, pva->pvaChannelNames[i].c_str(), scalarOnly ? "scalar " : "");
+      return (1);
+    }
+  }
+  return (0);
+}
+
 bool PassesInhibitPVA(LOGGER_DATA *logger, PVA_OVERALL *pvaInhibit) {
   double value;
 
-  if (pvaInhibit->isConnected[0] == true) {
+  if (pvaInhibit != NULL && pvaInhibit->numPVs > 0 &&
+      pvaInhibit->isConnected[0] == true &&
+      pvaInhibit->pvaData[0].numGetReadings > 0 &&
+      pvaInhibit->pvaData[0].numGetElements > 0 &&
+      pvaInhibit->pvaData[0].getData != NULL &&
+      pvaInhibit->pvaData[0].getData[0].values != NULL) {
     value = pvaInhibit->pvaData[0].getData[0].values[0];
     if (value > .1) {
       return false;
@@ -2055,10 +2152,10 @@ long getConditionsDataInfo(LOGGER_DATA *logger) {
     logger->CondExpectNumeric = (char *)malloc(sizeof(char) * (logger->CondChannels));
     logger->CondExpectElements = (int32_t *)malloc(sizeof(int32_t) * (logger->CondChannels));
     for (i = 0; i < logger->CondChannels; i++) {
-      (logger->CondProvider)[i] = (char *)malloc(sizeof(char) * 5);
-      (logger->CondExpectFieldType)[i] = (char *)malloc(sizeof(char) * (8 + 1));
-      (logger->CondProvider)[i] = (char *)"ca";
-      (logger->CondExpectFieldType)[i][0] = 0;
+      SDDS_CopyString(&logger->CondProvider[i], (char *)"ca");
+      SDDS_CopyString(&logger->CondExpectFieldType[i], (char *)"scalar");
+      logger->CondExpectNumeric[i] = 'y';
+      logger->CondExpectElements[i] = 1;
     }
   }
 
@@ -2246,7 +2343,7 @@ int ReadInputFiles(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, lo
     logger->trigBeforeCount[i] = 0;
     logger->tableStarted[i] = 0;
     logger->datasets[i].triggerMode = 0;
-    logger->datasets[i].pva = new PVA_OVERALL;
+    logger->datasets[i].pva = new PVA_OVERALL();
 
     snprintf(logger->temp, sizeof(logger->temp), "%s%s", logger->outputDir, logger->datasets[i].OutputRootname);
     snprintf(logger->temp, sizeof(logger->temp), "%s", MakeDailyGenerationFilename(logger->temp, 4, (char *)".", 0));
@@ -2575,10 +2672,12 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
         (logger->datasets + (logger->numDatasets) - 1)->ExpectNumeric = (char *)malloc(sizeof(char) * rows);
         (logger->datasets + (logger->numDatasets) - 1)->ExpectElements = (int32_t *)malloc(sizeof(int32_t) * rows);
         for (i = 0; i < rows; i++) {
-          (logger->datasets + (logger->numDatasets) - 1)->Provider[i] = (char *)malloc(sizeof(char) * 5);
-          (logger->datasets + (logger->numDatasets) - 1)->ExpectFieldType[i] = (char *)malloc(sizeof(char) * (8 + 1));
-          (logger->datasets + (logger->numDatasets) - 1)->Provider[i] = (char *)"ca";
-          (logger->datasets + (logger->numDatasets) - 1)->ExpectFieldType[i][0] = 0;
+          SDDS_CopyString(&(logger->datasets + (logger->numDatasets) - 1)->Provider[i],
+                          (char *)"ca");
+          SDDS_CopyString(&(logger->datasets + (logger->numDatasets) - 1)->ExpectFieldType[i],
+                          (char *)"");
+          (logger->datasets + (logger->numDatasets) - 1)->ExpectNumeric[i] = 'y';
+          (logger->datasets + (logger->numDatasets) - 1)->ExpectElements[i] = 1;
         }
       }
 
@@ -2651,7 +2750,7 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
             exit(1);
           }
           (*alarmTrigRequest + (*alarmTrigChannels) - 1)->provider = (char *)malloc(sizeof(char) * 5);
-          (*alarmTrigRequest + (*alarmTrigChannels) - 1)->provider = (char *)"ca";
+          strcpy((*alarmTrigRequest + (*alarmTrigChannels) - 1)->provider, "ca");
 
           (*alarmTrigRequest + (*alarmTrigChannels) - 1)->MajorAlarm = major;
           (*alarmTrigRequest + (*alarmTrigChannels) - 1)->MinorAlarm = minor;
@@ -2728,7 +2827,7 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
             (logger->triggerRequest + (logger->triggerChannels) - 1)->glitchScript = NULL;
 
           (logger->triggerRequest + (logger->triggerChannels) - 1)->provider = (char *)malloc(sizeof(char) * 5);
-          (logger->triggerRequest + (logger->triggerChannels) - 1)->provider = (char *)"ca";
+          strcpy((logger->triggerRequest + (logger->triggerChannels) - 1)->provider, "ca");
           (logger->triggerRequest + (logger->triggerChannels) - 1)->message = (char *)malloc(sizeof(char) * 64);
           (logger->triggerRequest + (logger->triggerChannels) - 1)->message[0] = 0;
           (logger->triggerRequest + (logger->triggerChannels) - 1)->holdoff = 0;
@@ -2782,7 +2881,7 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
             (logger->glitchRequest + (logger->glitchChannels) - 1)->glitchScript = NULL;
 
           (logger->glitchRequest + (logger->glitchChannels) - 1)->provider = (char *)malloc(sizeof(char) * 5);
-          (logger->glitchRequest + (logger->glitchChannels) - 1)->provider = (char *)"ca";
+          strcpy((logger->glitchRequest + (logger->glitchChannels) - 1)->provider, "ca");
           (logger->glitchRequest + (logger->glitchChannels) - 1)->message = (char *)malloc(sizeof(char) * 64);
           (logger->glitchRequest + (logger->glitchChannels) - 1)->message[0] = 0;
           (logger->glitchRequest + (logger->glitchChannels) - 1)->delta =
@@ -3373,7 +3472,7 @@ long getTriggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, l
           (*alarmTrigRequest + (*alarmTrigChannels) - 1)->expectElements = expectElements[i];
         } else {
           (*alarmTrigRequest + (*alarmTrigChannels) - 1)->provider = (char *)malloc(sizeof(char) * 5);
-          (*alarmTrigRequest + (*alarmTrigChannels) - 1)->provider = (char *)"ca";
+          strcpy((*alarmTrigRequest + (*alarmTrigChannels) - 1)->provider, "ca");
         }
         if (MajorAlarm[i] && MinorAlarm[i] && NoAlarm[i])
           strcat((*alarmTrigRequest + (*alarmTrigChannels) - 1)->severityNameList, "MAJOR,MINOR,NO_ALARM");
@@ -3429,7 +3528,7 @@ long getTriggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, l
           (logger->triggerRequest + (logger->triggerChannels) - 1)->expectElements = expectElements[i];
         } else {
           (logger->triggerRequest + (logger->triggerChannels) - 1)->provider = (char *)malloc(sizeof(char) * 5);
-          (logger->triggerRequest + (logger->triggerChannels) - 1)->provider = (char *)"ca";
+          strcpy((logger->triggerRequest + (logger->triggerChannels) - 1)->provider, "ca");
         }
         (logger->triggerRequest + (logger->triggerChannels) - 1)->message = (char *)malloc(sizeof(char) * 64);
         (logger->triggerRequest + (logger->triggerChannels) - 1)->message[0] = 0;
@@ -3468,7 +3567,7 @@ long getTriggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, l
           (logger->glitchRequest + (logger->glitchChannels) - 1)->expectElements = expectElements[i];
         } else {
           (logger->glitchRequest + (logger->glitchChannels) - 1)->provider = (char *)malloc(sizeof(char) * 5);
-          (logger->glitchRequest + (logger->glitchChannels) - 1)->provider = (char *)"ca";
+          strcpy((logger->glitchRequest + (logger->glitchChannels) - 1)->provider, "ca");
         }
         (logger->glitchRequest + (logger->glitchChannels) - 1)->message = (char *)malloc(sizeof(char) * 64);
         (logger->glitchRequest + (logger->glitchChannels) - 1)->message[0] = 0;
@@ -3790,14 +3889,27 @@ long ReadCAValues(LOGGER_DATA *logger, long index) {
   }
   for (i = 0; i < logger->datasets[index].pva->numPVs; i++) {
     if (logger->datasets[index].pva->isConnected[i] == true) {
-      for (j = 0; j < logger->datasets[index].pva->pvaData[i].numGetElements; j++)
-        logger->datasets[index].values[i][j] = logger->datasets[index].pva->pvaData[i].getData[0].values[j];
+      PVA_DATA_ALL_READINGS *reading = &logger->datasets[index].pva->pvaData[i];
+      if (!reading->numeric || reading->numGetReadings < 1 ||
+          reading->getData == NULL || reading->getData[0].values == NULL ||
+          reading->numGetElements != logger->datasets[index].elements[i]) {
+        fprintf(stderr,
+                "Error: PV %s changed type or element count while logging (expected %ld, received %ld)\n",
+                logger->datasets[index].ControlName[i],
+                logger->datasets[index].elements[i], reading->numGetElements);
+        for (j = 0; j < logger->datasets[index].elements[i]; j++)
+          logger->datasets[index].values[i][j] = 0;
+        caErrors++;
+        continue;
+      }
+      for (j = 0; j < logger->datasets[index].elements[i]; j++)
+        logger->datasets[index].values[i][j] = reading->getData[0].values[j];
     } else {
-      for (j = 0; j < logger->datasets[index].ExpectElements[i]; j++)
+      for (j = 0; j < logger->datasets[index].elements[i]; j++)
         logger->datasets[index].values[i][j] = 0;
     }
   }
-  caErrors = logger->datasets[index].pva->numNotConnected;
+  caErrors += logger->datasets[index].pva->numNotConnected;
   freePVAGetReadings(logger->datasets[index].pva);
   return caErrors;
 }

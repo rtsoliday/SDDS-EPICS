@@ -129,7 +129,8 @@ void readPVvaluesFromFile(char *filename, char ***pvName, char ***valueString, i
 void freeCorrVectorMemory(CORR_VECTOR *vecor);
 void freeBPMVectorMemory(BPM_VECTOR *bpmVector, long bpmVectors);
 void init_corr_vector(CORR_VECTOR *corrVector, char *plane, char *sourceModeInput,
-                      long dryRun, double pendIOTime, double AOAItolerance, double dacAOtolerance, long unified, char *corrTypeInput);
+                      long setSourceMode, long dryRun, double pendIOTime, double AOAItolerance,
+                      double dacAOtolerance, long unified, char *corrTypeInput);
 void init_bpm_vector(BPM_VECTOR *bpmVector, long bpmVectors, char *bpmType);
 
 int main(int argc, char **argv) {
@@ -188,6 +189,7 @@ int main(int argc, char **argv) {
           sourceModeInput = sourceMode[0];
         else
           sourceModeInput = sourceMode[1];
+        break;
       case CLO_SETSOURCE:
         setSourceMode = 1;
         break;
@@ -313,7 +315,8 @@ int main(int argc, char **argv) {
       corrVector.setpointValue[i] = corrVector.dacAI[i] - corrVector.FFcurrentAO[i];
     }
   }
-  init_corr_vector(&corrVector, plane, sourceModeInput, dryRun, pendIOTime, AOAItolerance, dacAOtolerance, unified, corrTypeInput);
+  init_corr_vector(&corrVector, plane, sourceModeInput, setSourceMode, dryRun, pendIOTime,
+                   AOAItolerance, dacAOtolerance, unified, corrTypeInput);
   tmpTime = getTimeInSecs();
   if (!dryRun) {
     init_bpm_vector(bpmVector, bpmVectors, bpmType);
@@ -504,7 +507,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     if ((vectorRows = SDDS_RowCount(&SDDSvector)) <= 0)
       continue;
     if (vectors > 9) {
-      vector = SDDS_Realloc(vector, sizeof(vector) * (vectors + 1));
+      vector = SDDS_Realloc(vector, sizeof(*vector) * (vectors + 1));
     }
     vector[vectors].waveformPV = NULL;
     vector[vectors].waveformValue = vector[vectors].setpoint = vector[vectors].offset = NULL;
@@ -656,7 +659,8 @@ void freeBPMVectorMemory(BPM_VECTOR *bpmVector, long bpmVectors) {
 }
 
 void init_corr_vector(CORR_VECTOR *corrVector, char *plane, char *sourceModeInput,
-                      long dryRun, double pendIOTime, double AOAItolerance, double dacAOtolerance, long unified, char *corrTypeInput) {
+                      long setSourceMode, long dryRun, double pendIOTime, double AOAItolerance,
+                      double dacAOtolerance, long unified, char *corrTypeInput) {
   long i, failed;
   double dacAI_AI_diff, dacAI_AO_diff;
   /*first corrector sanity check*/
@@ -678,7 +682,8 @@ void init_corr_vector(CORR_VECTOR *corrVector, char *plane, char *sourceModeInpu
     exit(1);
   }
   /*set corrector mode to scalar, then initialize corr vector */
-  set_source_mode(plane, sourceModeInput, dryRun, pendIOTime);
+  if (setSourceMode)
+    set_source_mode(plane, sourceModeInput, dryRun, pendIOTime);
   set_corr_mode(plane, "scalar", dryRun, pendIOTime, unified);
   /*then set corr vector */
   if (!dryRun) {

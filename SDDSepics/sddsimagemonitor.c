@@ -316,12 +316,14 @@ int main(int argc, char **argv) {
         noWarnings = 1;
         break;
       case CLO_STEPS:
-        if (!(get_long(&NStep, s_arg[i_arg].list[1])) || NStep <= 0)
+        if (s_arg[i_arg].n_items != 2 ||
+            !(get_long(&NStep, s_arg[i_arg].list[1])) || NStep <= 0)
           bomb("no value or invalid value given for option -steps", NULL);
         stepsSet = 1;
         break;
       case CLO_FLUSHSTEPS:
-        if (!(get_long(&flushSteps, s_arg[i_arg].list[1])) || flushSteps <= 0)
+        if (s_arg[i_arg].n_items != 2 ||
+            !(get_long(&flushSteps, s_arg[i_arg].list[1])) || flushSteps <= 0)
           bomb("no value or invalid value given for option -flushSteps", NULL);
         break;
       case CLO_VERBOSE:

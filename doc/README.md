@@ -1,35 +1,67 @@
-# SDDS EPICS Documentation
+# SDDS-EPICS manuals
 
-The LaTeX sources in this directory document each SDDS EPICS command-line tool.  One program is described per `.tex` file using the `sddsprog` environment from `sddstoolkit.sty`.
+This directory contains the LaTeX sources for three manuals:
+
+- `EPICStoolkit.tex` — SDDS-compliant EPICS command-line applications.
+- `APSRunControl.tex` — the APS run-control library and protocol.
+- `APSlogDaemon.tex` — the APS distributed logging service.
+
+Most EPICS Toolkit commands have one program-specific `.tex` file that uses
+the `sddsprog` environment from `sddstoolkit.sty`. See
+[`AGENTS.md`](AGENTS.md) for the source-format and manual-page conventions.
 
 ## Build requirements
 
-Install TeX Live packages and related tools:
+The build directly uses these commands:
 
-```bash
-apt-get update
-apt-get install -y --no-install-recommends \
+- `latex` and `dvips` from TeX Live
+- `ps2pdf13` from Ghostscript
+- `htlatex` from TeX4ht
+- `convert` from ImageMagick (for the APS Run Control diagram)
+
+On Debian or Ubuntu, a suitable installation is:
+
+```sh
+sudo apt-get update
+sudo apt-get install --no-install-recommends \
   texlive-base texlive-latex-base texlive-latex-extra \
   texlive-fonts-recommended texlive-plain-generic \
-  texlive-extra-utils tex4ht ghostscript latex2html \
-  texlive-font-utils
+  tex4ht ghostscript imagemagick
 ```
 
-If an error referencing `ca-certificates-java` appears, remove the OpenJDK packages:
+Package names differ on other operating systems. Confirm the commands needed
+by the makefile with:
 
-```bash
-apt-get remove --purge -y openjdk-*-jre-headless default-jre-headless default-jre
+```sh
+make check-deps
 ```
 
-See [AGENTS.md](AGENTS.md) for documentation style guidelines.
+Some ImageMagick installations disable EPS input in their security policy. If
+the `convert rc.eps rc.png` step is rejected, enable EPS conversion according
+to the local ImageMagick policy or retain the checked-in `rc.png` generated
+from `rc.eps`.
 
 ## Building
 
-Use the provided `Makefile` to generate PostScript, PDF and HTML output:
+Run the documentation build from this directory:
 
-```bash
+```sh
 make
 ```
 
-PDF files (e.g. `EPICStoolkit.pdf`) are written to this directory and HTML output is placed in subdirectories such as `EPICStoolkit/`.
+The following outputs are generated:
 
+| Manual | PostScript | PDF | HTML directory |
+| --- | --- | --- | --- |
+| EPICS Toolkit | `EPICStoolkit.ps` | `EPICStoolkit.pdf` | `EPICStoolkit/` |
+| APS Run Control | `APSRunControl.ps` | `APSRunControl.pdf` | `APSRunControl/` |
+| APS Log Daemon | `APSlogDaemon.ps` | `APSlogDaemon.pdf` | `APSlogDaemon/` |
+
+Remove all generated manual files with:
+
+```sh
+make clean
+```
+
+The application build and pytest workflow are documented in the repository
+[`README.md`](../README.md).

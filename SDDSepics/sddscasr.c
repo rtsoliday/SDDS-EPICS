@@ -549,7 +549,8 @@ int main(int argc, char **argv) {
 
   semaphoreFile = NULL;
   inputFile = outputRoot = pidFile = NULL;
-  control_name = calloc(sizeof(*control_name), 1);
+  if (!(control_name = calloc(1, sizeof(*control_name))))
+    SDDS_Bomb("Memory allocation error for control_name!");
   /*initialize rcParam */
 #ifdef USE_RUNCONTROL
   rcParam.PV = rcParam.Desc = rcParam.PVparam = rcParam.DescParam = NULL;
@@ -870,6 +871,9 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
   fprintf(stderr, "Closed log file\n");
 #endif
+  if (tmpfile_used && !replaceFileAndBackUp(inputFile, outputRoot))
+    exit(1);
+
   FreeDataMemory(control_name);
 #ifdef DEBUG
   fprintf(stderr, "FreeDataMemory returned\n");
@@ -894,9 +898,6 @@ int main(int argc, char **argv) {
   fprintf(stderr, "ca_task_exit returned\n");
 #endif
 
-  if (tmpfile_used && !replaceFileAndBackUp(inputFile, outputRoot))
-    exit(1);
-
 #ifdef DEBUG
   fprintf(stderr, "returning from main routine\n");
 #endif
@@ -912,10 +913,8 @@ void SignalEventHandler(int i) {
 #endif
 
 void InitializeData(CONTROL_NAME *control_name) {
-  if (!control_name) {
-    if (!(control_name = (CONTROL_NAME *)malloc(sizeof(*control_name))))
-      SDDS_Bomb("Memory allocation error for control_name!");
-  }
+  if (!control_name)
+    SDDS_Bomb("NULL control_name passed to InitializeData");
   control_name->doubleValue = NULL;
   control_name->numerical = 0;
   control_name->waveformRootname = NULL;
@@ -2589,16 +2588,19 @@ char *read_char_waveform(char **stringval, chid charWFID) {
     free(*stringval);
   *stringval = NULL;
   length = ca_element_count(charWFID);
-  (*stringval) = malloc(sizeof(char *) * length);
+  if (length < 0 || !((*stringval) = malloc(sizeof(**stringval) * ((size_t)length + 1)))) {
+    fprintf(stderr, "Unable to allocate the character waveform value!\n");
+    exit(1);
+  }
   if (ca_array_get(DBR_CHAR, length, charWFID, *stringval) != ECA_NORMAL) {
     fprintf(stderr, "Unable to read the character waveform value!\n");
     exit(1);
   }
-  ca_pend_io(10.0);
-  if (strlen(*stringval) == length && (*stringval)[length - 1] != '\0') {
-    *stringval = realloc(*stringval, sizeof(char) * (length + 1));
-    (*stringval)[length] = '\0';
+  if (ca_pend_io(10.0) != ECA_NORMAL) {
+    fprintf(stderr, "Unable to complete the character waveform read!\n");
+    exit(1);
   }
+  (*stringval)[length] = '\0';
   return *stringval;
 }
 

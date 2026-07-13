@@ -11,6 +11,7 @@
 #include <iostream>
 #include <cerrno>
 #include <csignal>
+#include <new>
 
 #if defined(_WIN32)
 #  include <winsock.h>
@@ -698,7 +699,7 @@ Link date: " __DATE__ " " __TIME__ ", SVN revision: " SVN_VERSION ", " EPICS_VER
   SDDS_RegisterProgramName("sddspvacontrollaw");
 
   SDDS_CheckDatasetStructureSize(sizeof(SDDS_DATASET));
-  if ((sddscontrollawGlobal = (SDDSCONTROLLAW_GLOBAL *)calloc(1, sizeof(SDDSCONTROLLAW_GLOBAL))) == NULL) {
+  if ((sddscontrollawGlobal = new (std::nothrow) SDDSCONTROLLAW_GLOBAL()) == NULL) {
     fprintf(stderr, "can't malloc sddscontrollawGlobal\n");
     return (1);
   }
@@ -1694,6 +1695,15 @@ long readPVs(char **PVs, double *value, CHANNEL_INFO *channelInfo, PVA_OVERALL *
       exit(1);
     }
     for (i = 0; i < n; i++) {
+      if (!pva->isConnected[i] ||
+          pva->pvaData[i].numGetReadings < 1 ||
+          pva->pvaData[i].numGetElements < 1 ||
+          pva->pvaData[i].getData == NULL ||
+          pva->pvaData[i].getData[0].values == NULL) {
+        fprintf(stderr, "Error, no numeric reading available for %s\n", PVs[i]);
+        FreeEverything();
+        exit(1);
+      }
       if (pva->pvaData[i].numeric == false) {
         fprintf(stderr, "Error, string PV %s is not allowed\n", PVs[i]);
         FreeEverything();
@@ -1746,28 +1756,17 @@ long setPVs(char **PVs, double *value, CHANNEL_INFO *channelInfo, PVA_OVERALL *p
       continue;
     }
     pva->pvaData[j].skip = false;
-    switch (pva->pvaData[j].fieldType) {
-    case epics::pvData::scalar: {
-      pva->pvaData[j].numPutElements = 1;
-      if (pva->pvaData[j].numeric) {
-        if (pva->pvaData[j].putData[0].values == NULL) {
-          pva->pvaData[j].putData[0].values = (double*)malloc(sizeof(double));
-        }
-        pva->pvaData[j].putData[0].values[0] = value[j];
-      } else {
-        fprintf(stderr, "error: %s is not a numeric PV\n", PVs[j]);
-        FreeEverything();
-        exit(1);
-      }
-      break;
-    }
-    default: {
+    if (pva->pvaData[j].fieldType != epics::pvData::scalar ||
+        !pva->pvaData[j].numeric) {
       fprintf(stderr, "error: unexpected field type for %s\n", PVs[j]);
       FreeEverything();
       exit(1);
     }
+    if (PrepPut(pva, j, value[j])) {
+      fprintf(stderr, "error: unable to prepare value for %s\n", PVs[j]);
+      FreeEverything();
+      exit(1);
     }
-
   }
   *(channelInfo[0].count) = 0;
   if (PutPVAValues(pva) == 1) {
@@ -1848,27 +1847,19 @@ long setStringPV(char *PV, char *value, CHANNEL_INFO channelInfo, PVA_OVERALL *p
   if (pva->isConnected[0] == false)
     return 1;
   pva->pvaData[0].skip = false;
-  switch (pva->pvaData[0].fieldType) {
-  case epics::pvData::scalar: {
-    pva->pvaData[0].numPutElements = 1;
-    if (pva->pvaData[0].numeric) {
-      fprintf(stderr, "error: %s is not a string PV\n", PV);
-      FreeEverything();
-      exit(1);
-    } else {
-      if (pva->pvaData[0].putData[0].stringValues == NULL) {
-        pva->pvaData[0].putData[0].stringValues = (char**)malloc(sizeof(char*));
-        pva->pvaData[0].putData[0].stringValues[0] = (char*)malloc(sizeof(char) * 1024);
-      }
-      strcpy(pva->pvaData[0].putData[0].stringValues[0], trim_spaces(value));
-    }
-    break;
-  }
-  default: {
+  if (pva->pvaData[0].fieldType != epics::pvData::scalar ||
+      pva->pvaData[0].numeric) {
     fprintf(stderr, "error: unexpected field type for %s\n", PV);
     FreeEverything();
     exit(1);
   }
+  if (PrepPut(pva, 0, trim_spaces(value))) {
+    fprintf(stderr, "error: unable to prepare value for %s\n", PV);
+    if (exitOnError) {
+      FreeEverything();
+      exit(1);
+    }
+    return 1;
   }
   
   if (PutPVAValues(pva) == 1) {
@@ -1894,12 +1885,10 @@ long setEnumPV(char *PV, long value, CHANNEL_INFO channelInfo, PVA_OVERALL *pva,
   switch (pva->pvaData[0].fieldType) {
   case epics::pvData::structure: {
     if (pva->pvaData[0].pvEnumeratedStructure) {
-      pva->pvaData[0].numPutElements = 1;
-      
-      if (pva->pvaData[0].putData[0].values == NULL) {
-        pva->pvaData[0].putData[0].values = (double*)malloc(sizeof(double));
+      if (PrepPut(pva, 0, (int64_t)value)) {
+        fprintf(stderr, "error: unable to prepare enum value for %s\n", PV);
+        return (1);
       }
-      pva->pvaData[0].putData[0].values[0] = value;
     } else {
       fprintf(stderr, "error: unexpected structure type for %s\n", PV);
       return (1);
@@ -1956,10 +1945,25 @@ long readEnumPV(char *PV, long *value, CHANNEL_INFO channelInfo, PVA_OVERALL *pv
       return 1;
     }
   }
+  if (!pva->isConnected[0] ||
+      pva->pvaData[0].numGetReadings < 1 ||
+      pva->pvaData[0].numGetElements < 1 ||
+      pva->pvaData[0].getData == NULL ||
+      pva->pvaData[0].getData[0].values == NULL) {
+    fprintf(stderr, "error: no enum reading available for %s\n", PV);
+    if (exitOnError) {
+      FreeEverything();
+      exit(1);
+    }
+    return 1;
+  }
   if (IsEnumFieldType(pva, 0) == false) {
     fprintf(stderr, "error: expected enum PV for %s\n", PV);
-    FreeEverything();
-    exit(1);
+    if (exitOnError) {
+      FreeEverything();
+      exit(1);
+    }
+    return 1;
   }
   *value = (long)pva->pvaData[0].getData[0].values[0];
 
@@ -5541,7 +5545,7 @@ void initializeData(CORRECTION *correction,
                     WAVEFORM_TESTS *waveform_tests) {
   CONTROL_NAME *control, *controlComp, *readback, *readbackComp;
 
-  if ((readback = (CONTROL_NAME*)calloc(1, sizeof(CONTROL_NAME))) == NULL) {
+  if ((readback = new (std::nothrow) CONTROL_NAME()) == NULL) {
     fprintf(stderr, "memory allocation failure\n");
     FreeEverything();
     exit(1);
@@ -5560,7 +5564,7 @@ void initializeData(CORRECTION *correction,
   readback->valueIndexes = 0;
   correction->readback = readback;
 
-  if ((control = (CONTROL_NAME *)calloc(1, sizeof(CONTROL_NAME))) == NULL) {
+  if ((control = new (std::nothrow) CONTROL_NAME()) == NULL) {
     fprintf(stderr, "memory allocation failure\n");
     FreeEverything();
     exit(1);
@@ -5586,7 +5590,7 @@ void initializeData(CORRECTION *correction,
   correction->control = control;
   correction->coefFile = NULL;
 
-  if ((readbackComp = (CONTROL_NAME*)calloc(1, sizeof(CONTROL_NAME))) == NULL) {
+  if ((readbackComp = new (std::nothrow) CONTROL_NAME()) == NULL) {
     fprintf(stderr, "memory allocation failure\n");
     FreeEverything();
     exit(1);
@@ -5607,7 +5611,7 @@ void initializeData(CORRECTION *correction,
   overlapCompensation->readback = readbackComp;
   overlapCompensation->actuator = NULL;
 
-  if ((controlComp = (CONTROL_NAME *)calloc(1, sizeof(CONTROL_NAME))) == NULL) {
+  if ((controlComp = new (std::nothrow) CONTROL_NAME()) == NULL) {
     fprintf(stderr, "memory allocation failure\n");
     FreeEverything();
     exit(1);
@@ -6659,7 +6663,12 @@ long ReadWaveformData(WAVE_FORMS *wave_forms, double pendIOTime) {
     exit(1);
   }
   for (i = 0; i < n; i++) {
-    if (pva->pvaData[i].numGetElements != channelInfo[i].waveformLength) {
+    if (!pva->isConnected[i] ||
+        pva->pvaData[i].numGetReadings < 1 ||
+        pva->pvaData[i].getData == NULL ||
+        pva->pvaData[i].getData[0].values == NULL ||
+        !pva->pvaData[i].numeric ||
+        pva->pvaData[i].numGetElements != channelInfo[i].waveformLength) {
       fprintf(stderr, "Error: %s waveform length different from expected\n", PVs[i]);
       FreeEverything();
       exit(1);
@@ -7099,7 +7108,12 @@ long CheckWaveformTest(WAVEFORM_TESTS *waveform_tests, BACKOFF *backoff, LOOP_PA
     exit(1);
   }
   for (i = 0; i < tests; i++) {
-    if (pva->pvaData[i].numGetElements != channelInfo[i].waveformLength) {
+    if (!pva->isConnected[i] ||
+        pva->pvaData[i].numGetReadings < 1 ||
+        pva->pvaData[i].getData == NULL ||
+        pva->pvaData[i].getData[0].values == NULL ||
+        !pva->pvaData[i].numeric ||
+        pva->pvaData[i].numGetElements != channelInfo[i].waveformLength) {
       fprintf(stderr, "Error: %s waveform length different from expected\n", waveform_tests->waveformPV[i]);
       FreeEverything();
       exit(1);
@@ -7297,9 +7311,6 @@ void cleanupTestWaveforms(WAVEFORM_TESTS *waveform_tests) {
       if (waveform_tests->ignore)
         if (waveform_tests->ignore[i])
           free(waveform_tests->ignore[i]);
-      if (waveform_tests->sleep)
-        if (waveform_tests->sleep[i])
-          free(waveform_tests->sleep[i]);
       if (waveform_tests->holdOff)
         if (waveform_tests->holdOff[i])
           free(waveform_tests->holdOff[i]);
@@ -7432,15 +7443,14 @@ long WriteWaveformData(WAVE_FORMS *controlWaveforms, CONTROL_NAME *control, doub
       continue;
     }
     pva->pvaData[i].skip = false;
-    switch (pva->pvaData[j].fieldType) {
+    switch (pva->pvaData[i].fieldType) {
     case epics::pvData::scalarArray: {
-      pva->pvaData[i].numPutElements = controlWaveforms->waveformLength[i];
       if (pva->pvaData[i].numeric) {
-        if (pva->pvaData[i].putData[0].values == NULL) {
-          pva->pvaData[i].putData[0].values = (double *)malloc(sizeof(double) * pva->pvaData[i].numPutElements);
-        }
-        for (j = 0; j < pva->pvaData[i].numPutElements; j++) {
-          pva->pvaData[i].putData[0].values[j] = controlWaveforms->waveformData[i][j];
+        if (PrepPut(pva, i, controlWaveforms->waveformData[i],
+                    controlWaveforms->waveformLength[i])) {
+          fprintf(stderr, "error: unable to prepare waveform for %s\n", PVs[i]);
+          FreeEverything();
+          exit(1);
         }
       } else {
         fprintf(stderr, "error: %s is not a numeric waveform PV\n", PVs[i]);
@@ -7647,11 +7657,11 @@ void CleanUpCorrections(CORRECTION *correction) {
     correction->bCoef = NULL;
   }
   if (correction->readback) {
-    free(correction->readback);
+    delete correction->readback;
     correction->readback = NULL;
   }
   if (correction->control) {
-    free(correction->control);
+    delete correction->control;
     correction->control = NULL;
   }
   if (correction->K) {
@@ -7864,6 +7874,11 @@ void SetupRawPVAConnection(char **PVname, CHANNEL_INFO *channelInfo, long n, dou
   pva->pvaProvider = freeze(providerNames);
   ConnectPVA(pva, pendIOTime);
   pva->limitGetReadings = true;
+  if (GetPVAValues(pva) == 1) {
+    fprintf(stderr, "error: unable to initialize PVA metadata\n");
+    FreeEverything();
+    exit(1);
+  }
   if (pva->numNotConnected > 0) {
     for (j = 0; j < n; j++) {
       if (pva->isConnected[j] == false) {
@@ -7872,6 +7887,13 @@ void SetupRawPVAConnection(char **PVname, CHANNEL_INFO *channelInfo, long n, dou
     }
     FreeEverything();
     exit(1);
+  }
+  for (j = 0; j < n; j++) {
+    if (pva->pvaData[j].numGetReadings < 1) {
+      fprintf(stderr, "error: no initial value available for %s\n", PVname[j]);
+      FreeEverything();
+      exit(1);
+    }
   }
 
 }
@@ -7954,7 +7976,7 @@ void FreeEverything(void) {
     sddscontrollawGlobal->controlLogFile = NULL;
   }
 
-  free(sddscontrollawGlobal);
+  delete sddscontrollawGlobal;
   sddscontrollawGlobal = NULL;
 }
 
@@ -8030,4 +8052,3 @@ long pvaEscapableThreadSleep(long double seconds, volatile int *flag) {
   }
   return (0);
 }
-

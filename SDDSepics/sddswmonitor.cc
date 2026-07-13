@@ -84,10 +84,6 @@
 
 #include <cadef.h>
 #include <epicsVersion.h>
-#if (EPICS_VERSION > 3)
-#  include "pvaSDDS.h"
-#  include "pv/thread.h"
-#endif
 
 #include "mdb.h"
 #include "scan.h"

@@ -96,14 +96,14 @@ void SetupOutput(char *outputFile, SDDS_DATASET *SDDSout);
 int main(int argc, char **argv) {
   char *outputFile;
   SDDS_DATASET SDDSout;
-  int i, j, i_arg;
+  int i, j, i_arg, written;
   unsigned long dummyFlags, pipeFlags;
   SCANNED_ARG *s_arg;
   CORRECTOR_RAMPTABLE *corrector_ramp;
   long correctors, caErrors = 0, code, count, insert_bump, insert_cross;
   double bumptime, on_time, ext_time, maxcurrent, orbit_change = 0.0;
   char buff[256], desc[2046];
-  double pendIOtime = 30.0, I_b0, I_b, delta, I0, IE, t_cross, delta_Ib, t0;
+  double pendIOtime = 30.0, I_b0, I_b, delta, IE, t_cross, delta_Ib, t0;
 
   ca_task_initialize();
 
@@ -114,6 +114,7 @@ int main(int argc, char **argv) {
   outputFile = NULL;
   corrector_ramp = NULL;
   correctors = 0;
+  dummyFlags = pipeFlags = 0;
 
   SDDS_RegisterProgramName(argv[0]);
   argc = scanargs(&s_arg, argc, argv);
@@ -145,7 +146,7 @@ int main(int argc, char **argv) {
       case SET_MAX_CURRENT:
         if (s_arg[i_arg].n_items != 2 ||
             sscanf(s_arg[i_arg].list[1], "%lf", &maxcurrent) != 1 ||
-            maxcurrent < 0)
+            maxcurrent <= 0)
           SDDS_Bomb("invalid -maxcurrent syntax");
         break;
       case SET_CORRECTOR:
@@ -183,24 +184,28 @@ int main(int argc, char **argv) {
     SDDS_Bomb("No correctors provided.");
   buff[0] = 0;
   for (i = 0; i < correctors; i++) {
-    corrector_ramp[i].rampPV[0] = 0;
-    sprintf(corrector_ramp[i].rampPV, "%s:rampRAMPTABLE", corrector_ramp[i].correctorName);
-    sprintf(buff, "%s.NORD", corrector_ramp[i].rampPV);
+    written = snprintf(corrector_ramp[i].rampPV, sizeof(corrector_ramp[i].rampPV),
+                       "%s:rampRAMPTABLE", corrector_ramp[i].correctorName);
+    if (written < 0 || (size_t)written >= sizeof(corrector_ramp[i].rampPV))
+      SDDS_Bomb("corrector name is too long");
+    written = snprintf(buff, sizeof(buff), "%s.NORD", corrector_ramp[i].rampPV);
+    if (written < 0 || (size_t)written >= sizeof(buff))
+      SDDS_Bomb("corrector PV name is too long");
     if (ca_search(buff, &corrector_ramp[i].nordID) != ECA_NORMAL) {
       fprintf(stderr, "Error: problem doing search for %s\n", buff);
       exit(1);
     }
-    sprintf(buff, "%s.BIAS", corrector_ramp[i].rampPV);
+    snprintf(buff, sizeof(buff), "%s.BIAS", corrector_ramp[i].rampPV);
     if (ca_search(buff, &corrector_ramp[i].biasID) != ECA_NORMAL) {
       fprintf(stderr, "Error: problem doing search for %s\n", buff);
       exit(1);
     }
-    sprintf(buff, "%s.TIMA", corrector_ramp[i].rampPV);
+    snprintf(buff, sizeof(buff), "%s.TIMA", corrector_ramp[i].rampPV);
     if (ca_search(buff, &corrector_ramp[i].timeID) != ECA_NORMAL) {
       fprintf(stderr, "Error: problem doing search for %s\n", buff);
       exit(1);
     }
-    sprintf(buff, "%s.VAL", corrector_ramp[i].rampPV);
+    snprintf(buff, sizeof(buff), "%s.VAL", corrector_ramp[i].rampPV);
     if (ca_search(buff, &corrector_ramp[i].valID) != ECA_NORMAL) {
       fprintf(stderr, "Error: problem doing search for %s\n", buff);
       exit(1);
@@ -246,18 +251,22 @@ int main(int argc, char **argv) {
   SetupOutput(outputFile, &SDDSout);
   sprintf(desc, "bump start at %.3f ms", bumptime);
   for (i = 0; i < correctors; i++) {
-    if (corrector_ramp[i].nord < 3) {
+    if (corrector_ramp[i].nord < 3 || corrector_ramp[i].nord > corrector_ramp[i].elements) {
       fprintf(stderr, "%s ramptable can not be modified.\n", corrector_ramp[i].correctorName);
       exit(1);
     }
     on_time = corrector_ramp[i].time[0];
     ext_time = corrector_ramp[i].time[corrector_ramp[i].nord - 2];
+    if (ext_time <= 0) {
+      fprintf(stderr, "%s has an invalid nonpositive extraction time.\n",
+              corrector_ramp[i].correctorName);
+      exit(1);
+    }
     if (bumptime < on_time || bumptime > ext_time) {
       fprintf(stderr, "bumptime is outside the start and extraction time range for corrector %s.\n",
               corrector_ramp[i].correctorName);
       exit(1);
     }
-    I0 = corrector_ramp[i].ramp[0];                          /*start current (normalized) */
     IE = corrector_ramp[i].ramp[corrector_ramp[i].nord - 2]; /* extraction current, normalized.*/
 
     /* I_bump is normalized to maxcurrent, while bumpValue is not */
@@ -265,8 +274,8 @@ int main(int argc, char **argv) {
                   0, 1, &code);
     delta_Ib = corrector_ramp[i].bumpValue / maxcurrent * bumptime / ext_time;
     I_b = I_b0 + delta_Ib;
-    if (I_b > 1.0) {
-      fprintf(stderr, "The normalized current for %s at start bump time %.3f ms is greater than 1.0, it is illegal.\n",
+    if (fabs(I_b) > 1.0) {
+      fprintf(stderr, "The normalized current for %s at start bump time %.3f ms is outside [-1, 1], it is illegal.\n",
               corrector_ramp[i].correctorName, bumptime);
       exit(1);
     }
@@ -292,15 +301,17 @@ int main(int argc, char **argv) {
         /*keep original point */
         delta = 0;
         /*check if need insert cross point*/
-        if (corrector_ramp[i].time[j + 1] > t_cross) {
+        if (j + 1 < corrector_ramp[i].nord && corrector_ramp[i].time[j + 1] > t_cross) {
           if (t_cross - corrector_ramp[i].time[j] > 0.1 && corrector_ramp[i].time[j + 1] - t_cross > 0.1)
             /*need insert cross point now, since the cross point is between this point and next point, not at one of them*/
             insert_cross = 1;
         }
-        if (abs(corrector_ramp[i].time[j] - bumptime) <= 0.1 || abs(corrector_ramp[i].time[j + 1] - bumptime) <= 0.1) {
+        if (fabs(corrector_ramp[i].time[j] - bumptime) <= 0.1 ||
+            (j + 1 < corrector_ramp[i].nord &&
+             fabs(corrector_ramp[i].time[j + 1] - bumptime) <= 0.1)) {
           /*the bumptime point is included in this or next point, no need insert bumptime point */
           delta = corrector_ramp[i].bumpValue / maxcurrent * corrector_ramp[i].time[j] / ext_time;
-        } else if (corrector_ramp[i].time[j + 1] > bumptime) {
+        } else if (j + 1 < corrector_ramp[i].nord && corrector_ramp[i].time[j + 1] > bumptime) {
           /*need insert now, since bumptime point is between this point and next point*/
           insert_bump = 1;
         }
@@ -314,10 +325,12 @@ int main(int argc, char **argv) {
         if (delta_Ib * delta < 0)
           delta = 0;
         /*check if need insert bumptime point */
-        if (abs(corrector_ramp[i].time[j] - bumptime) <= 0.1 || abs(corrector_ramp[i].time[j + 1] - bumptime) <= 0.1) {
+        if (fabs(corrector_ramp[i].time[j] - bumptime) <= 0.1 ||
+            (j + 1 < corrector_ramp[i].nord &&
+             fabs(corrector_ramp[i].time[j + 1] - bumptime) <= 0.1)) {
           /*the bumptime point is included in this or next point, no need insert bumptime point */
           delta = corrector_ramp[i].bumpValue / maxcurrent * corrector_ramp[i].time[j] / ext_time;
-        } else if (corrector_ramp[i].time[j + 1] > bumptime) {
+        } else if (j + 1 < corrector_ramp[i].nord && corrector_ramp[i].time[j + 1] > bumptime) {
           /*need insert now, since bumptime point is between this point and next point*/
           insert_bump = 1;
         }

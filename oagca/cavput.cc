@@ -1,6 +1,6 @@
 /**
  * @file cavput.cc
- * @brief Send values to EPICS process variables using Channel Access.
+ * @brief Send values to EPICS process variables using CA or PVA.
  *
  * cavput performs vector puts to one or more process variables.  It supports
  * ramping, delta mode, and other features useful for scripting accelerator
@@ -9,12 +9,12 @@
  * @section Usage
  * ```
  * cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
- *        [-delist=<pattern>[,<pattern]...]
+ *        [-delist=<pattern>[,<pattern>...]]
  *        [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
  *        [-pendIoTime=<seconds>]
  *        [-dryRun]
  *        [-deltaMode[=factor=<value>]]
- *        [-ramp=step=<n>,pause=<sec>]
+ *        [-ramp=steps=<n>,pause=<sec>]
  *        [-numerical]
  *        [-charArray]
  *        [-blunderAhead[=silently]]
@@ -28,7 +28,7 @@
  * | `-range`        | Generate PV names from a range.                                                              |
  * | `-pendIoTime`   | Maximum time to wait for connections and I/O. Default is 1.0s.                                |
  * | `-deltaMode`    | Send values as deltas from current PV values; optional factor (defaults to 1).                |
- * | `-ramp`         | Ramp to the target value in steps (default steps=1); optional pause between steps (default 0.1s). |
+ * | `-ramp`         | Ramp to the target in more than one step; optional pause between steps (default 0.1s). |
  * | `-numerical`    | Force conversion to numeric mode.                                                             |
  * | `-charArray`    | Force string mode for array values.                                                           |
  * | `-blunderAhead` | Continue puts on errors; `silently` suppresses error messages.                                |
@@ -38,7 +38,6 @@
  * | `-provider`     | Choose `ca` (Channel Access) or `pva` (PVAccess) provider.                                     |
  *
  * @subsection Incompatibilities
- * - `-ezcaTiming` cannot be used with `-pendIoTime`; use `-pendIoTime` exclusively.  
  * - `-deltaMode` and `-ramp` require numeric, scalar PVs; incompatible with `-charArray`.  
  * - `-numerical` and `-charArray` are mutually exclusive.                                 
  *
@@ -120,7 +119,7 @@ char *providerOption[PROVIDER_COUNT] = {
 static char *USAGE = (char *)"cavput [-list=<string>[=<value>][,<string>[=<value>]...]]\n\
 [-delist=<pattern>[,<pattern>...]]\n\
 [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]\n\
-[-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>] \n\
+[-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=steps=<n>,pause=<sec>] \n\
 [-numerical] [-charArray] [-blunderAhead[=silently]]\n\
 [-provider={ca|pva}]\n\n\
 -list           specifies PV name string components\n\
@@ -178,7 +177,7 @@ int main(int argc, char **argv) {
   char **excludePatterns = NULL;
   long excludeCount = 0;
 #if (EPICS_VERSION > 3)
-  PVA_OVERALL pva;
+  PVA_OVERALL pva{};
   double *rampDeltas = NULL;
 #endif
 
@@ -392,8 +391,9 @@ int main(int argc, char **argv) {
       if (doRamp || deltaMode) {
         for (j = 0; j < PVs; j++) {
           if (pva.isConnected[j]) {
-            if (pva.pvaData[j].fieldType != epics::pvData::scalar) {
-              fprintf(stderr, "error (cavput): %s is not a scalar type PV, delta and ramp options are only available for scalar type PVs\n", PVvalue[j].name);
+            if (pva.pvaData[j].fieldType != epics::pvData::scalar ||
+                !pva.pvaData[j].numeric) {
+              fprintf(stderr, "error (cavput): %s is not a numeric scalar PV, delta and ramp options are only available for numeric scalar PVs\n", PVvalue[j].name);
               return (EXIT_FAILURE);
             }
           }
@@ -408,7 +408,10 @@ int main(int argc, char **argv) {
       if (deltaMode) {
         for (j = 0; j < PVs; j++) {
           if (pva.isConnected[j] && (pva.pvaData[j].fieldType == epics::pvData::scalar) && pva.pvaData[j].numeric) {
-            pva.pvaData[j].putData[0].values[0] = pva.pvaData[j].putData[0].values[0] * deltaFactor + pva.pvaData[j].getData[0].values[0];
+            double value = pva.pvaData[j].putData[0].values[0] * deltaFactor +
+                           pva.pvaData[j].getData[0].values[0];
+            if (PrepPut(&pva, j, value))
+              return (EXIT_FAILURE);
           }
         }
       }
@@ -422,22 +425,24 @@ int main(int argc, char **argv) {
           if (pva.isConnected[j] && (pva.pvaData[j].fieldType == epics::pvData::scalar) && pva.pvaData[j].numeric) {
             fValues[j] = pva.pvaData[j].putData[0].values[0];
             rampDeltas[j] = (pva.pvaData[j].putData[0].values[0] - pva.pvaData[j].getData[0].values[0]) / rampSteps;
-            pva.pvaData[j].putData[0].values[0] = pva.pvaData[j].getData[0].values[0];
           }
         }
         //Put ramp values
         for (iramp = 1; iramp <= rampSteps; iramp++) {
           for (j = 0; j < PVs; j++) {
             if (pva.isConnected[j] && (pva.pvaData[j].fieldType == epics::pvData::scalar) && pva.pvaData[j].numeric) {
-              if (iramp == rampSteps) {
-                pva.pvaData[j].putData[0].values[0] = fValues[j];
-              } else {
-                pva.pvaData[j].putData[0].values[0] = pva.pvaData[j].putData[0].values[0] + rampDeltas[j];
+              double value = iramp == rampSteps ? fValues[j] :
+                pva.pvaData[j].getData[0].values[0] + rampDeltas[j] * iramp;
+              if (PrepPut(&pva, j, value)) {
+                free(rampDeltas);
+                free(fValues);
+                return (EXIT_FAILURE);
               }
-              pva.pvaData[j].numPutElements = 1;
             }
           }
           if (PutPVAValues(&pva) == 1) {
+            free(rampDeltas);
+            free(fValues);
             return (EXIT_FAILURE);
           }
           if ((rampPause > 0) && (iramp < rampSteps)) {
@@ -445,6 +450,7 @@ int main(int argc, char **argv) {
           }
         }
         free(rampDeltas);
+        free(fValues);
       } else {
         //Put values
         if (PutPVAValues(&pva) == 1) {
@@ -733,92 +739,58 @@ void oag_ca_exception_handler(struct exception_handler_args args) {
 
 #if (EPICS_VERSION > 3)
 long PrepPVAPutValues(PVA_OVERALL *pva, PV_VALUE *PVvalue, short charArray) {
-  long i, j;
+  long j;
   for (j = 0; j < pva->numPVs; j++) {
     if (pva->isConnected[j]) {
       switch (pva->pvaData[j].fieldType) {
       case epics::pvData::scalar: {
-        pva->pvaData[j].numPutElements = 1;
-        if (pva->pvaData[j].numeric) {
-          pva->pvaData[j].putData[0].values = (double *)malloc(sizeof(double));
-          if (sscanf(PVvalue[j].value, "%le", &(pva->pvaData[j].putData[0].values[0])) != 1) {
-            fprintf(stderr, "error (cavput): value (%s) for %s is not numerical\n", PVvalue[j].value, PVvalue[j].name);
-            return (1);
-          }
-        } else {
-          pva->pvaData[j].putData[0].stringValues = (char **)malloc(sizeof(char *));
-          pva->pvaData[j].putData[0].stringValues[0] = (char *)malloc(sizeof(char) * (strlen(PVvalue[j].value) + 1));
-          strcpy(pva->pvaData[j].putData[0].stringValues[0], trim_spaces(PVvalue[j].value));
-        }
+        if (PrepPut(pva, j, trim_spaces(PVvalue[j].value)))
+          return (1);
         break;
       }
       case epics::pvData::scalarArray: {
-        char *ptr, *ptr2;
         size_t length = strlen(PVvalue[j].value);
-        pva->pvaData[j].numPutElements = count_chars(PVvalue[j].value, ',') + 1;
-        if (pva->pvaData[j].numeric) {
-          std::string ss;
-          if (length == 0) {
-            pva->pvaData[j].numPutElements = 0;
-          }
-          if (charArray) {
-            pva->pvaData[j].numPutElements = strlen(PVvalue[j].value) + 1;
-            pva->pvaData[j].putData[0].values = (double *)malloc(sizeof(double) * pva->pvaData[j].numPutElements);
-            for (i = 0; i < pva->pvaData[j].numPutElements - 1; i++) {
-              pva->pvaData[j].putData[0].values[i] = (int)(PVvalue[j].value[i]);
-            }
-            pva->pvaData[j].putData[0].values[pva->pvaData[j].numPutElements - 1] = 0;
-          } else {
-            if (pva->pvaData[j].numPutElements > 0) {
-              ptr = PVvalue[j].value;
-              pva->pvaData[j].putData[0].values = (double *)malloc(sizeof(double) * pva->pvaData[j].numPutElements);
-              for (i = 0; i < pva->pvaData[j].numPutElements; i++) {
-                if ((ptr2 = strchr(ptr, ',')) != NULL) {
-                  *ptr2 = 0;
-                  ss = ptr;
-                  ptr = ptr2 + 1;
-                } else {
-                  ss = ptr;
-                }
-                if (sscanf(ss.c_str(), "%le", &(pva->pvaData[j].putData[0].values[i])) != 1) {
-                  fprintf(stderr, "error (cavput): value (%s) for %s is not numerical\n", ss.c_str(), PVvalue[j].name);
-                  return (1);
-                }
-              }
-            }
-          }
-        } else {
-          std::string ss;
-          if ((length == 0) && (pva->pvaData[j].scalarType != epics::pvData::pvString)) {
-            pva->pvaData[j].numPutElements = 0;
-          }
-          if (pva->pvaData[j].numPutElements > 0) {
-            ptr = PVvalue[j].value;
-            pva->pvaData[j].putData[0].stringValues = (char **)malloc(sizeof(char *) * pva->pvaData[j].numPutElements);
-            for (i = 0; i < pva->pvaData[j].numPutElements; i++) {
-              if ((ptr2 = strchr(ptr, ',')) != NULL) {
-                *ptr2 = 0;
-                ss = ptr;
-                ptr = ptr2 + 1;
-              } else {
-                ss = ptr;
-              }
-              boost::trim(ss);
-              pva->pvaData[j].putData[0].stringValues[i] = (char *)malloc(sizeof(char) * (ss.length() + 1));
-              strcpy(pva->pvaData[j].putData[0].stringValues[i], ss.c_str());
-            }
-          }
+        if (charArray) {
+          std::vector<double> values(length + 1, 0);
+          for (size_t i = 0; i < length; i++)
+            values[i] = (unsigned char)PVvalue[j].value[i];
+          if (PrepPut(pva, j, values.data(), (long)values.size()))
+            return (1);
+          break;
         }
+
+        if (length == 0 && pva->pvaData[j].scalarType != epics::pvData::pvString) {
+          double *empty = NULL;
+          if (PrepPut(pva, j, empty, 0))
+            return (1);
+          break;
+        }
+
+        std::vector<std::string> values;
+        std::string input(PVvalue[j].value);
+        size_t start = 0;
+        do {
+          size_t comma = input.find(',', start);
+          std::string value = input.substr(start, comma == std::string::npos ?
+                                                   std::string::npos : comma - start);
+          boost::trim(value);
+          values.push_back(value);
+          if (comma == std::string::npos)
+            break;
+          start = comma + 1;
+        } while (true);
+
+        std::vector<char *> valuePointers(values.size());
+        for (size_t i = 0; i < values.size(); i++)
+          valuePointers[i] = const_cast<char *>(values[i].c_str());
+        if (PrepPut(pva, j, valuePointers.data(), (long)valuePointers.size()))
+          return (1);
         break;
       }
       case epics::pvData::structure: {
         if (pva->pvaData[j].pvEnumeratedStructure) {
-          pva->pvaData[j].numPutElements = 1;
-          pva->pvaData[j].putData[0].stringValues = (char **)malloc(sizeof(char *));
-          pva->pvaData[j].putData[0].stringValues[0] = (char *)malloc(sizeof(char) * (strlen(PVvalue[j].value) + 1));
-          strcpy(pva->pvaData[j].putData[0].stringValues[0], trim_spaces(PVvalue[j].value));
-          pva->pvaData[j].putData[0].values = (double *)malloc(sizeof(double));
-          pva->pvaData[j].putData[0].values = 0; //Set this to 0 for now. It isn't used for putting values.
+          if (PrepPut(pva, j, trim_spaces(PVvalue[j].value)))
+            return (1);
         } else {
           std::cerr << "error (cavput): unexpected structure type " << std::endl;
           return (1);

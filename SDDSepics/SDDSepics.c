@@ -1611,8 +1611,8 @@ CHANNEL_ASSIGNMENT *makeAssignments(char *assignmentFile, long *assignments) {
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     assignment = SDDS_Realloc(assignment, sizeof(*assignment) * (*assignments + rows));
     for (i = 0; i < rows; i++) {
-      assignment[i].PVname = PV[i];
-      assignment[i].PVchid = NULL;
+      assignment[i + *assignments].PVname = PV[i];
+      assignment[i + *assignments].PVchid = NULL;
       /*
             if (strncmp(PV[i], "dest", 4)!=0 || strncmp(PV[i]+strlen(PV[i])-2, "WF", 2)!=0 ) {
             fprintf(stderr, "warning: PV name %s is not of the expected \"dest...WF\" format\n",

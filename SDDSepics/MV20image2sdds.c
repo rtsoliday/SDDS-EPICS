@@ -111,9 +111,13 @@ int main(int argc, char **argv) {
       /* process options here */
       switch (match_string(scanned[i_arg].list[0], option, N_OPTIONS, 0)) {
       case SET_DEFINITION:
+        if (scanned[i_arg].n_items < 2)
+          bomb("invalid -definition syntax", USAGE);
         data_name = scanned[i_arg].list[1];
         definition = process_column_definition(scanned[i_arg].list + 1,
                                                scanned[i_arg].n_items - 1);
+        if (!definition)
+          bomb("invalid -definition syntax", USAGE);
         if (!strstr(definition, "type=character"))
           bomb("data type must be character for now", NULL);
         break;

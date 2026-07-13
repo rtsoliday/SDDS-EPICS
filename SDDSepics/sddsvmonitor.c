@@ -430,7 +430,8 @@ int main(int argc, char **argv) {
         }
         break;
       case CLO_STEPS:
-        if (!(get_long(&NStep, s_arg[i_arg].list[1])) || NStep <= 0)
+        if (s_arg[i_arg].n_items != 2 ||
+            !(get_long(&NStep, s_arg[i_arg].list[1])) || NStep <= 0)
           bomb("no value or invalid value given for option -steps", NULL);
         stepsSet = 1;
         break;

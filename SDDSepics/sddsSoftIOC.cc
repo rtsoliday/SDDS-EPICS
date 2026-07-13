@@ -1666,7 +1666,7 @@ extern "C" void CleanMasterSDDSpcasPVFile() {
     free(host_name);
 }
 
-extern "C" int main(int argc, char **argv) {
+int main(int argc, char **argv) {
   uint32_t debugLevel = 0u;
   double executionTime = 43200.0; /* 12 hours */
   bool forever = false;

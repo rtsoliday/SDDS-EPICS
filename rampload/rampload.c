@@ -33,7 +33,7 @@ int process_cmdline_args(int argc, char *argv[], char *spec);
 void usage(char *name);
 
 /* PV name fields of interest in the ramptable record */
-static struct ramp_rec_pvs {
+struct ramp_rec_pvs {
   char ramp_set[255];       /* VAL field (array of setpoints) */
   char ramp_time[255];      /* TIMA field (array of time values) */
   char ramp_bias[255];      /* BIAS field */
@@ -69,7 +69,6 @@ int main(int argc, char *argv[]) {
 
   struct ramp_rec_pvs ramp;   /* struct containing PV names and chids */
   char specfilename[255];     /* specification file name */
-  char *contents;             /* contents field of SDDS descrip. */
   long nrows;
   int exitstatus = 0;
   long i;
@@ -88,7 +87,6 @@ int main(int argc, char *argv[]) {
     return(1);
   }
   
-  contents = NULL;
   /* comment this part because it is not uncessary (HS)
     if (!SDDS_GetDescription(&table, NULL, &contents)) {
     fprintf(stderr,"%s: SDDS error: unable to get description from file %s\n",

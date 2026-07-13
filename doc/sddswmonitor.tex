@@ -44,7 +44,7 @@ usage: sddswmonitor {<inputfile> | -PVnames=<name>[,<name>]} <outputfile>
     [-append[=recover]] [-pendIOtime=<seconds>]
     [-steps=<integer> | -time=<value>[,<units>]] [-interval=<value>[,<units>]]
     [-enforceTimeLimit] [-offsetTimeOfDay]
-    [-verbose] [-singleShot[=noprompt|stdout]]
+    [-verbose] [-singleShot[=noprompt|stdout]] [-prompt]
     [-precision={single | double}] [-dataType={short | long | float | double | character | string}]
     [-onCAerror={useZero | skipPage | exit}]
     [-scalars=<filename>]
@@ -166,6 +166,7 @@ Many additional parameters which don't change values throughout the file are def
           initiated by a \verb+<cr>+ key press. With \verb+noprompt+ present, no
           prompt is written. With \verb+stdout+, the prompt goes to standard
           output. Typing ``q'' or ``Q'' terminates the monitoring.
+  \item {\tt -prompt} --- Legacy alias for \verb+-singleShot+.
   \item {\tt -precision={single|double}} --- Specify floating-point
           precision for PV data.
   \item {\tt -dataType={short|long|float|double|character|string}} ---

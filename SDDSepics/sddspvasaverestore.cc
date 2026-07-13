@@ -203,6 +203,11 @@ void GetUserInformation(CONTROL_NAME *control_name);
 long SDDS_UnsetDupicateRows(SDDS_TABLE *inSet);
 void connection_callback(struct connection_handler_args event);
 char *read_char_waveform(char **stringval, PVA_OVERALL *pva);
+long prep_char_waveform(PVA_OVERALL *pva, long index, const char *value);
+bool is_string_or_char_waveform(PVA_OVERALL *pva, long index);
+bool validate_pva_reading(CONTROL_NAME *control_name, PVA_OVERALL *pva,
+                          long index, long expectedElements,
+                          bool allowCAArrayPromotion);
 long setup_other_caconnections(CONTROL_NAME *control_name, PVA_OVERALL *pvaDescriptPV, PVA_OVERALL *pvaTriggerPV, PVA_OVERALL *pvaOutputFilePV, PVA_OVERALL *pvaInputFilePV);
 char *getWaveformFileName(CONTROL_NAME *control_name, char *outputFile, char *waveformPV);
 
@@ -324,7 +329,7 @@ int main(int argc, char **argv) {
   char *semaphoreFile, *inputFile, *outputRoot, *pidFile, *tmpstr;
   FILE *fp = NULL;
   unsigned long pipeFlags = 0;
-  PVA_OVERALL pva, pvaDescriptPV, pvaTriggerPV, pvaOutputFilePV, pvaInputFilePV;
+  PVA_OVERALL pva{}, pvaDescriptPV{}, pvaTriggerPV{}, pvaOutputFilePV{}, pvaInputFilePV{};
 
   pvaDescriptPV.numPVs = 0;
   pvaTriggerPV.numPVs = 0;
@@ -1292,6 +1297,8 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
       control_name->channelInfo[i].length = control_name->ExpectElements[i];
       continue;
     }
+    if (!validate_pva_reading(control_name, pva, i, -1, true))
+      exit(1);
     control_name->channelInfo[i].length = pva->pvaData[i].numGetElements;
     if (control_name->channelInfo[i].length != control_name->ExpectElements[i]) {
       if ((strcmp(control_name->Provider[i], (char *)"ca") == 0) && (control_name->ExpectElements[i] == 1)) {
@@ -1669,6 +1676,14 @@ void sddspvasaverestore(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERAL
               fprintf(stderr, "Error, no connection for %s\n", control_name->triggerPV);
               exit(1);
             }
+            if (pvaTriggerPV->pvaData[0].numGetReadings < 1 ||
+                pvaTriggerPV->pvaData[0].numGetElements < 1 ||
+                pvaTriggerPV->pvaData[0].getData == NULL ||
+                pvaTriggerPV->pvaData[0].getData[0].values == NULL) {
+              fprintf(stderr, "Error, no numeric reading available for %s\n",
+                      control_name->triggerPV);
+              exit(1);
+            }
             SignalEventArrived = pvaTriggerPV->pvaData[0].getData[0].values[0];
           }
           if (!SignalEventArrived) {
@@ -1690,7 +1705,7 @@ void sddspvasaverestore(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERAL
         }
         /*set outputfile pv to an empty string */
         if (outputFile && control_name->outputFilePV) {
-          if (PrepPut(pvaOutputFilePV, 0, outputFile) == 1) {
+          if (prep_char_waveform(pvaOutputFilePV, 0, outputFile) == 1) {
             fprintf(stderr, "Error1, unable to set value of %s\n", control_name->outputFilePV);
             exit(1);
           }
@@ -1773,7 +1788,7 @@ void sddspvasaverestore(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERAL
       }
     }
     if (outputFile && control_name->outputFilePV) {
-      if (PrepPut(pvaOutputFilePV, 0, outputFile) == 1) {
+      if (prep_char_waveform(pvaOutputFilePV, 0, outputFile) == 1) {
         fprintf(stderr, "Error1, unable to set value of %s\n", control_name->outputFilePV);
         exit(1);
       }
@@ -1905,6 +1920,9 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
         control_name->CAError[i] = 'y';
         continue;
       }
+      if (!validate_pva_reading(control_name, pva, i,
+                                channelInfo[i].length, false))
+        return 0;
       if (channelInfo[i].length > 1) {
         control_name->hasWaveform = 1;
         if (channelInfo[i].dataType == SDDS_STRING) {
@@ -2464,8 +2482,6 @@ void connection_callback(struct connection_handler_args event) {
 }
 
 char *read_char_waveform(char **stringval, PVA_OVERALL *pva) {
-  long length;
-
   if (*stringval)
     free(*stringval);
   *stringval = NULL;
@@ -2474,10 +2490,112 @@ char *read_char_waveform(char **stringval, PVA_OVERALL *pva) {
     fprintf(stderr, "Unable to read the character waveform value!\n");
     exit(1);
   }
-  length = strlen(pva->pvaData[0].getData[0].stringValues[0]) + 1;
-  *stringval = (char *)malloc(sizeof(char) * length);
-  strcpy(*stringval, pva->pvaData[0].getData[0].stringValues[0]);
+  if (pva->numNotConnected != 0 || pva->pvaData[0].numGetReadings == 0) {
+    fprintf(stderr, "Unable to read the character waveform value: PV is not connected\n");
+    exit(1);
+  }
+
+  if (pva->pvaData[0].getData[0].stringValues &&
+      pva->pvaData[0].getData[0].stringValues[0]) {
+    size_t length = strlen(pva->pvaData[0].getData[0].stringValues[0]);
+    *stringval = (char *)malloc(length + 1);
+    memcpy(*stringval, pva->pvaData[0].getData[0].stringValues[0], length + 1);
+  } else if (pva->pvaData[0].getData[0].values) {
+    size_t available = (size_t)pva->pvaData[0].numGetElements;
+    size_t length = 0;
+    while (length < available && pva->pvaData[0].getData[0].values[length] != 0)
+      length++;
+    *stringval = (char *)malloc(length + 1);
+    for (size_t i = 0; i < length; i++)
+      (*stringval)[i] = (char)(unsigned char)pva->pvaData[0].getData[0].values[i];
+    (*stringval)[length] = '\0';
+  } else {
+    fprintf(stderr, "Unable to read the character waveform value: unsupported PV type\n");
+    exit(1);
+  }
   return *stringval;
+}
+
+long prep_char_waveform(PVA_OVERALL *pva, long index, const char *value) {
+  if (pva == NULL || value == NULL || index < 0 || index >= pva->numPVs)
+    return 1;
+  if (pva->pvaData[index].fieldType == epics::pvData::scalarArray &&
+      pva->pvaData[index].numeric) {
+    size_t length = strlen(value);
+    std::vector<double> bytes(length + 1, 0);
+    for (size_t i = 0; i < length; i++)
+      bytes[i] = (unsigned char)value[i];
+    return PrepPut(pva, index, bytes.data(), (long)bytes.size());
+  }
+  return PrepPut(pva, index, const_cast<char *>(value));
+}
+
+bool is_string_or_char_waveform(PVA_OVERALL *pva, long index) {
+  if (pva == NULL || index < 0 || index >= pva->numPVs ||
+      !pva->isConnected[index] || pva->pvaData[index].numGetReadings < 1)
+    return false;
+  if (pva->pvaData[index].fieldType == epics::pvData::scalar &&
+      pva->pvaData[index].scalarType == epics::pvData::pvString)
+    return true;
+  return pva->pvaData[index].fieldType == epics::pvData::scalarArray &&
+         pva->pvaData[index].numeric &&
+         (pva->pvaData[index].scalarType == epics::pvData::pvByte ||
+          pva->pvaData[index].scalarType == epics::pvData::pvUByte);
+}
+
+bool validate_pva_reading(CONTROL_NAME *control_name, PVA_OVERALL *pva,
+                          long index, long expectedElements,
+                          bool allowCAArrayPromotion) {
+  if (control_name == NULL || pva == NULL || index < 0 ||
+      index >= pva->numPVs || pva->pvaData == NULL)
+    return false;
+
+  PVA_DATA_ALL_READINGS *reading = &pva->pvaData[index];
+  const char *name = control_name->ControlName[index];
+  if (reading->numGetReadings < 1 || reading->numGetElements < 1 ||
+      reading->getData == NULL) {
+    fprintf(stderr, "Error: no PVA reading available for %s\n", name);
+    return false;
+  }
+
+  bool scalar = reading->fieldType == epics::pvData::scalar ||
+                reading->pvEnumeratedStructure;
+  bool scalarArray = reading->fieldType == epics::pvData::scalarArray;
+  const char *expectedType = control_name->ExpectFieldType[index];
+  bool typeMatches = (expectedType == NULL || expectedType[0] == '\0') &&
+                     (scalar || scalarArray);
+  if (expectedType != NULL && expectedType[0] != '\0')
+    typeMatches = (strcmp(expectedType, "scalar") == 0 && scalar) ||
+                  (strcmp(expectedType, "scalarArray") == 0 && scalarArray);
+  if (!typeMatches && allowCAArrayPromotion && scalarArray &&
+      expectedType != NULL && strcmp(expectedType, "scalar") == 0 &&
+      control_name->Provider[index] != NULL &&
+      strcmp(control_name->Provider[index], "ca") == 0 &&
+      control_name->ExpectElements[index] == 1)
+    typeMatches = true;
+  if (!typeMatches) {
+    fprintf(stderr, "Error: %s does not match expected field type %s\n",
+            name, expectedType ? expectedType : "(null)");
+    return false;
+  }
+
+  bool expectNumeric = control_name->ExpectNumeric[index] == 'y' ||
+                       control_name->ExpectNumeric[index] == 'Y';
+  if ((expectNumeric &&
+       (!reading->numeric || reading->getData[0].values == NULL)) ||
+      (!expectNumeric &&
+       (!reading->nonnumeric || reading->getData[0].stringValues == NULL))) {
+    fprintf(stderr, "Error: %s does not match its ExpectNumeric setting\n", name);
+    return false;
+  }
+
+  if (expectedElements >= 0 && reading->numGetElements != expectedElements) {
+    fprintf(stderr,
+            "Error: %s changed element count while saving (expected %ld, received %ld)\n",
+            name, expectedElements, reading->numGetElements);
+    return false;
+  }
+  return true;
 }
 
 long setup_other_caconnections(CONTROL_NAME *control_name, PVA_OVERALL *pvaDescriptPV, PVA_OVERALL *pvaTriggerPV, PVA_OVERALL *pvaOutputFilePV, PVA_OVERALL *pvaInputFilePV) {
@@ -2551,23 +2669,31 @@ long setup_other_caconnections(CONTROL_NAME *control_name, PVA_OVERALL *pvaDescr
     return (1);
   }
   if (control_name->descriptPV) {
-    if ((pvaDescriptPV->pvaData[0].scalarType != epics::pvData::pvString) ||
-        (pvaDescriptPV->pvaData[0].fieldType != epics::pvData::scalar)) {
-      fprintf(stderr, "the description PV should be a character-waveform PV\n");
+    if (!is_string_or_char_waveform(pvaDescriptPV, 0)) {
+      fprintf(stderr, "the description PV should be a string scalar or byte waveform PV\n");
+      return (1);
+    }
+  }
+  if (control_name->triggerPV) {
+    bool scalar = pvaTriggerPV->pvaData[0].fieldType == epics::pvData::scalar ||
+                  pvaTriggerPV->pvaData[0].pvEnumeratedStructure;
+    if (!scalar || !pvaTriggerPV->pvaData[0].numeric ||
+        pvaTriggerPV->pvaData[0].numGetReadings < 1 ||
+        pvaTriggerPV->pvaData[0].getData == NULL ||
+        pvaTriggerPV->pvaData[0].getData[0].values == NULL) {
+      fprintf(stderr, "the trigger PV should be a numeric scalar PV\n");
       return (1);
     }
   }
   if (control_name->outputFilePV) {
-    if ((pvaOutputFilePV->pvaData[0].scalarType != epics::pvData::pvString) ||
-        (pvaOutputFilePV->pvaData[0].fieldType != epics::pvData::scalar)) {
-      fprintf(stderr, "the output file PV should be a character-waveform PV\n");
+    if (!is_string_or_char_waveform(pvaOutputFilePV, 0)) {
+      fprintf(stderr, "the output file PV should be a string scalar or byte waveform PV\n");
       return (1);
     }
   }
   if (control_name->inputFilePV) {
-    if ((pvaInputFilePV->pvaData[0].scalarType != epics::pvData::pvString) ||
-        (pvaInputFilePV->pvaData[0].fieldType != epics::pvData::scalar)) {
-      fprintf(stderr, "the input file PV should be a character-waveform PV\n");
+    if (!is_string_or_char_waveform(pvaInputFilePV, 0)) {
+      fprintf(stderr, "the input file PV should be a string scalar or byte waveform PV\n");
       return (1);
     }
   }

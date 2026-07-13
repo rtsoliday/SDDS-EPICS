@@ -897,7 +897,7 @@ long sddsfeedforward_parseArguments(char ***argv, int *argc, FEEDFORWARD_DATA *f
         }
         break;
       case CLO_CONTROLLOG:
-        if (s_arg[i_arg].n_items < 2) {
+        if (s_arg[i_arg].n_items < 2 || s_arg[i_arg].n_items > 3) {
           free_scanargs(&s_arg, *argc);
           SDDS_Bomb("invalid -controllog syntax.\n");
         }
@@ -905,9 +905,14 @@ long sddsfeedforward_parseArguments(char ***argv, int *argc, FEEDFORWARD_DATA *f
           free_scanargs(&s_arg, *argc);
           SDDS_Bomb("Problem -controlLog syntax.\n");
         }
-        if (s_arg[i_arg].n_items == 3 && strncmp(s_arg[i_arg].list[2], "logonchange",
-                                                 strlen(s_arg[i_arg].list[1])) == 0)
+        if (s_arg[i_arg].n_items == 3) {
+          if (!strlen(s_arg[i_arg].list[2]) ||
+              strncmp("logonchange", s_arg[i_arg].list[2], strlen(s_arg[i_arg].list[2])) != 0) {
+            free_scanargs(&s_arg, *argc);
+            SDDS_Bomb("Problem -controlLog syntax.\n");
+          }
           loopParam->logOnChange = 1;
+        }
         break;
       case CLO_STEPS:
         if (s_arg[i_arg].n_items != 2 ||
@@ -922,7 +927,7 @@ long sddsfeedforward_parseArguments(char ***argv, int *argc, FEEDFORWARD_DATA *f
           SDDS_Bomb("wrong number of items for -ezcaTiming");
         if (sscanf(s_arg[i_arg].list[1], "%lf", &timeout) != 1 ||
             sscanf(s_arg[i_arg].list[2], "%ld", &retries) != 1 ||
-            timeout <= 0 || sddsfeedforwardGlobal->rcParam.pingTimeout < 0)
+            timeout <= 0 || retries < 0)
           bomb("invalid -ezca values", NULL);
         *pendIOtime = timeout * (retries + 1);
         break;
@@ -1812,8 +1817,8 @@ void readFeedForwardFile(FEEDFORWARD_DATA *feedforwardData, CONTROL_DATA *readba
       if (loopParam->verbose) {
         fprintf(FPINFO, "Warning: The feedforward enable2 pv will be ignore since its lower limit or upper limit or the disabled output value or enable PV is not provided.\n");
         fflush(FPINFO);
-        enable2PVPresent = 0;
       }
+      enable2PVPresent = 0;
     }
   }
   if (testPVPresent) {
@@ -1821,8 +1826,8 @@ void readFeedForwardFile(FEEDFORWARD_DATA *feedforwardData, CONTROL_DATA *readba
       if (loopParam->verbose) {
         fprintf(FPINFO, "Warning: The feedforward test pv will be ignore since its lower limit or upper limit is not provided.\n");
         fflush(FPINFO);
-        testPVPresent = 0;
       }
+      testPVPresent = 0;
     }
   }
   enablePVData->controlName2 = enablePVData->test_pvName = NULL;
@@ -1853,8 +1858,10 @@ void readFeedForwardFile(FEEDFORWARD_DATA *feedforwardData, CONTROL_DATA *readba
       SDDS_Terminate(&FFdataset);
       exit(1);
     }
-    if (TestPV)
+    if (TestPV) {
       free(TestPV);
+      TestPV = NULL;
+    }
     if (loopParam->verbose) {
       fprintf(FPINFO, "Readback = %s, Actuator = %s\n", readbackName, actuatorName);
       fflush(FPINFO);

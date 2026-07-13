@@ -30,7 +30,7 @@ usage: cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<sec
  [-subprocess=<command>[,event=<string>][,timeout=<string>][,end=<string>]]
  [-pendIOTime=<seconds>]
  [-noWarnings]
- [-provider=\{ca|pva\}]
+ [-provider={ca|pva}]
 \end{verbatim}
 \item \textbf{switches:}
 \begin{itemize}
@@ -43,10 +43,9 @@ usage: cawait [-interval=<seconds>] [-timeLimit=<seconds>] [-totalTimeLimit=<sec
   \item {\tt -emit} --- emit strings for events, timeouts, or end-of-run.
   \item {\tt -preEvent}, {\tt -onEvent}, {\tt -postEvent}, {\tt -onEnd} --- commands to execute before, during, after events, or at end.
   \item {\tt -subprocess} --- run a subprocess and send event/timeout/end messages.
-  \item {\tt -pendIOTime} --- time allowed for channel access operations (default 10~s).
+  \item {\tt -pendIOTime} --- time allowed for connection and I/O operations (default 10~s).
   \item {\tt -noWarnings} --- suppress timeout warnings.
   \item {\tt -provider} --- choose channel access ({\tt ca}) or PVAccess ({\tt pva}) provider.
 \end{itemize}
 \item \textbf{author:} Michael Borland, Robert Soliday, ANL/APS.
 \end{sddsprog}
-

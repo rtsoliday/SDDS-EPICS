@@ -199,6 +199,7 @@ BS *BSipOpen(char *address, int Port) {
   BSDATA info;
   struct sockaddr_in *tsin;
 
+  memset(&info, 0, sizeof(info));
   tsin = (struct sockaddr_in *)&(info.sin);
 
 #ifndef vxWorks
@@ -226,6 +227,7 @@ BS *BSipOpenData(BSDATA *info) {
   int osoc;
   BS *bdt;
 
+  memset(&tsin, 0, sizeof(tsin));
   tsin.sin_port = 0;
   tsin.sin_family = AF_INET;
   tsin.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -536,6 +538,7 @@ int BSopenListenerUDP(int Port) {
   int nsoc;
   struct sockaddr_in tsin;
 
+  memset(&tsin, 0, sizeof(tsin));
   tsin.sin_port = htons(Port);
   tsin.sin_family = AF_INET;
   tsin.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -563,7 +566,7 @@ int BSopenListenerTCP(int Port) {
 
   memset((void *)&tsin, 0, sizeof(struct sockaddr_in));
   tsin.sin_port = htons(Port);
-  tsin.sin_family = (unsigned char)htons(AF_INET);
+  tsin.sin_family = AF_INET;
   tsin.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if ((nsoc = socket(AF_INET, SOCK_STREAM, BS_TCP)) < 0) {
@@ -577,7 +580,11 @@ int BSopenListenerTCP(int Port) {
     return -1;
   }
 
-  listen(nsoc, 5);
+  if (listen(nsoc, 5) < 0) {
+    perror("BSopenListenerTCP: listen failed");
+    close(nsoc);
+    return -1;
+  }
   return nsoc;
 }
 
@@ -613,7 +620,7 @@ int BSgetAddressPort(BSDATA *info, char *ip_addr, int *dest_port) {
   char *name;
   struct sockaddr_in *sin = (struct sockaddr_in *)&(info->sin);
 
-  *dest_port = sin->sin_port;
+  *dest_port = ntohs(sin->sin_port);
   name = inet_ntoa(sin->sin_addr);
   strcpy(ip_addr, name);
 
@@ -621,6 +628,9 @@ int BSgetAddressPort(BSDATA *info, char *ip_addr, int *dest_port) {
 }
 
 int BSsetAddressPort(BSDATA *info, char *ip_addr, int dest_port) {
+  if (!info)
+    return -1;
+  memset(&info->sin, 0, sizeof(info->sin));
   BSsetPort(info, dest_port);
   return BSsetAddress(info, ip_addr);
 }
@@ -760,8 +770,6 @@ int BSreadUDP(int soc, BSDATA *info, BS_ULONG tout, void *buf, int size) {
     }
   } while (rc < 0 && error == 0);
 
-  error = 0;
-
   if (rc > 0) {
     error = 0;
     do {
@@ -797,6 +805,7 @@ int BSreadUDP(int soc, BSDATA *info, BS_ULONG tout, void *buf, int size) {
 int BSwriteDataUDP(int soc, int dest_port, char *ip_addr, void *buf, int size) {
   BSDATA data;
 
+  memset(&data, 0, sizeof(data));
   BSsetAddress(&data, ip_addr);
   BSsetPort(&data, dest_port);
 
@@ -903,6 +912,7 @@ int BSgetBroadcastSocket(int port, struct sockaddr_in *sin) {
   int on = 1;
   int soc;
 
+  memset(sin, 0, sizeof(*sin));
   sin->sin_port = htons(port);
   sin->sin_family = AF_INET;
   sin->sin_addr.s_addr = htonl(INADDR_ANY);

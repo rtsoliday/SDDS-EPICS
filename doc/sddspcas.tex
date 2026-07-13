@@ -8,6 +8,11 @@ from one or more SDDS input files. Each input file must contain a \verb+ControlN
 Optional columns (e.g., \verb+Hopr+, \verb+Lopr+, \verb+ReadbackUnits+, \verb+ElementCount+, \verb+Type+) control
 limits, engineering units, waveform length, and data type.
 
+With EPICS Base 7, PCAS is normally a separate EPICS module. The SDDS-EPICS
+build enables \verb+sddspcas+ only when it finds \verb+casdef.h+ and the PCAS
+libraries in EPICS Base or in a sibling \verb+pcas+ module. All other toolkit
+programs can be built without PCAS.
+
 If an \verb+Equation+ column is present, PV values can be automatically updated based on expressions involving
 other PVs.
 
@@ -40,6 +45,7 @@ usage: sddspcas <inputfiles>
       [-executionTime=<seconds>] (default=12 hours, 0=forever)
       [-pvPrefix=<PV name prefix>]
       [-noise=<rateSeconds>]
+      [-arraySize=<bytes>]
       [-runControlPV=string=<string>,pingTimeout=<value>]
       [-runControlDescription=string=<string>]
       [-standalone]
@@ -54,8 +60,12 @@ usage: sddspcas <inputfiles>
   \item {\tt -executionTime} --- How long to run in seconds. Values less than 0.5 are treated as ``forever''.
   \item {\tt -pvPrefix} --- Prefix prepended to all PV names.
   \item {\tt -noise} --- Periodically adds small random noise to numeric PV values.
+  \item {\tt -arraySize} --- Sets \verb+EPICS_CA_MAX_ARRAY_BYTES+ for waveform transfers.
   \item {\tt -debugLevel} --- Increase diagnostic output.
   \item {\tt -runControlPV} / {\tt -runControlDescription} --- Optional run-control integration (if built with runcontrol).
+  \item {\tt -aliasCount}, {\tt -syncScan} --- legacy option names that are
+        recognized but not supported by this implementation; either option
+        terminates the program with an error.
 \end{itemize}
 
 \item \textbf{see also:}

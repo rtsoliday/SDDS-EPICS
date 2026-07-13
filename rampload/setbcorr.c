@@ -12,6 +12,9 @@
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
+#if !defined(_WIN32)
+#  include <unistd.h>
+#endif
 #include "cadef.h"
 
 #define HIGH 19.
@@ -59,7 +62,7 @@ struct BTIMING {
   long bpmm;
 };
 
-static struct pvs {
+struct pvs {
   char name_newt[255];
   char name_swap[255];
   char name_pact[255];
@@ -81,7 +84,7 @@ static struct pvs {
   char enum_value_sevr[256];
 };
 
-static struct timingpvs {
+struct timingpvs {
   char name_delaycount[255];
   char name_cyclecount[255];
   chid chid_delaycount;
@@ -90,7 +93,7 @@ static struct timingpvs {
   long value_cyclecount;
 };
 
-static struct moretimingpvs {
+struct moretimingpvs {
   char name_Hp8657RefFreq[255];
   char name_LastBunch2BoosterIp[255];
   char name_Trig2BsIp[255];
@@ -199,6 +202,10 @@ int main(int argc, char *argv[]) {
         i++;
         if (i >= argc) {
           usage();
+          return(1);
+        }
+        if (strlen(argv[i]) >= sizeof(filename)) {
+          fprintf(stderr, "*** setbcorr: Output filename is too long\n");
           return(1);
         }
         strcpy(filename, argv[i]);
@@ -702,7 +709,10 @@ int setbcorr(char *corname,double val, double rampbias, int usebpmtime,
   double bpmtime=0.,bpmduration=0.;
   char timestring[26];
   char *templet=FILETEMPLET;
-  char lfilename[BUFSIZ];     /* Need a copy to avoid mktemp clobbering it */
+  char lfilename[BUFSIZ];
+#if !defined(_WIN32)
+  int temporaryFile = -1;
+#endif
   int err,returncode=0;
   struct pvs pvcor;
   int i;
@@ -713,17 +723,36 @@ int setbcorr(char *corname,double val, double rampbias, int usebpmtime,
   /* Make temporary file */
   if (!save) {
     strcpy(lfilename, templet);
-    mktemp(lfilename);
+#if defined(_WIN32)
+    if (_mktemp_s(lfilename, sizeof(lfilename)) != 0) {
+      fprintf(stderr, "Unable to create temporary filename\n");
+      return (1);
+    }
+#else
+    if ((temporaryFile = mkstemp(lfilename)) < 0) {
+      fprintf(stderr, "Unable to create temporary file\n");
+      return (1);
+    }
+#endif
   } else {
     strcpy(lfilename, filename);
   }
 
   /* Open file */
-  if (!append) 
+#if !defined(_WIN32)
+  if (!save)
+    file=fdopen(temporaryFile, append ? "a" : "w");
+  else
+#endif
+  if (!append)
     file=fopen(lfilename, "w");
-  else 
+  else
     file=fopen(lfilename, "a");
   if (file == NULL) {
+#if !defined(_WIN32)
+    if (temporaryFile >= 0)
+      close(temporaryFile);
+#endif
     fprintf(stderr, "Unable to open %s\n", lfilename);
     return(1);
   }
@@ -929,9 +958,7 @@ int setbcorr(char *corname,double val, double rampbias, int usebpmtime,
   /* Clean up */
  QUIT:    
   if (!save) {
-    sprintf(string, "\\rm -f %s", lfilename);
-    err = system(string);
-    if (err>>8) {
+    if (remove(lfilename) != 0) {
       fprintf(stderr, "Could not delete temporary file %s\n", lfilename);
     }
   }

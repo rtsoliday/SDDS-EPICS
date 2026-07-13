@@ -49,7 +49,7 @@
 /* Function Prototypes */
 void sleep_us(unsigned int);
 int validate_time(int32_t min, int32_t sec);
-int process_cmdline_args(int argc, char *argv[], char *spec, int *query,
+int process_cmdline_args(int argc, char *argv[], char *spec, size_t specSize, int *query,
                          int *configure, int *stop, double *pendIoTime);
 void usage(char *name);
 void oag_ca_exception_handler(struct exception_handler_args args);
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
   fprintf(stdout, "Magnet Degaussing Utility\n");
   fprintf(stdout, "------------------------------\n");
 
-  process_cmdline_args(argc, argv, specfilename, &query, &configure, &stop, &pendIoTime);
+  process_cmdline_args(argc, argv, specfilename, sizeof(specfilename), &query, &configure, &stop, &pendIoTime);
 
   if (!SDDS_InitializeInput(&table, specfilename)) {
     fprintf(stderr, "%s: SDDS error: unable to initialize with file %s\n",
@@ -294,24 +294,27 @@ int main(int argc, char *argv[]) {
     dname[i] = (char *)malloc(sizeof(char) * 255);
   }
 
-  for (i = 0; i < nrows; i++) {
-    strcpy(dname[i], name[i]);
-  }
-
   /* Build pv names for needed sub record fields based on given pv name */
   for (i = 0; i < nrows; i++) {
-    if (!strcmp(type[i], "dev")) { /* device name specified in input */
-      strcpy(buffer, name[i]);
-      if (!suffix || (suffix[i] && is_blank(suffix[i])))
-        strcat(buffer, ":StandardizeSUB");
-      else {
-        strcat(buffer, ":");
-        strcat(buffer, suffix[i]);
-      }
-      strcpy(pvname[i], buffer);
-    } else {
-      strcpy(pvname[i], name[i]);
+    const char *recordSuffix;
+    int written;
+
+    if (!name[i] || strlen(name[i]) >= 255) {
+      fprintf(stderr, "%s: ControlName is empty or too long\n", argv[0]);
+      exit(1);
     }
+    strcpy(dname[i], name[i]);
+    if (!strcmp(type[i], "dev")) { /* device name specified in input */
+      recordSuffix = (!suffix || !suffix[i] || is_blank(suffix[i])) ? "StandardizeSUB" : suffix[i];
+      written = snprintf(buffer, sizeof(buffer), "%s:%s", name[i], recordSuffix);
+    } else {
+      written = snprintf(buffer, sizeof(buffer), "%s", name[i]);
+    }
+    if (written < 0 || (size_t)written + strlen(".OUTD") >= sizeof(sub[0].sub_outd)) {
+      fprintf(stderr, "%s: generated PV name is too long for %s\n", argv[0], name[i]);
+      exit(1);
+    }
+    strcpy(pvname[i], buffer);
   }
   for (i = 0, k = 0; i < nrows; i++) {    /* for each row in sdds file */
     for (l = 0; l < ndevs[i]; l++, k++) { /* for each atomic in comp */
@@ -553,21 +556,22 @@ int validate_time(int32_t min, int32_t sec) {
  * GLOBAL   : nothing
  * RETURNS  : 0
  ************************************************************************/
-int process_cmdline_args(int argc, char *argv[], char *spec, int *query,
+int process_cmdline_args(int argc, char *argv[], char *spec, size_t specSize, int *query,
                          int *configure, int *stop, double *pendIoTime) {
   int i, dd;
   int cmderror = 0;
   /* void usage();*/
 
+  *query = 0;
+  *configure = 0;
+  *stop = 0;
+  *spec = '\0';
+  *pendIoTime = CA_TIMEOUT;
+
   /* Process command line options */
   if (argc < 2 || argc > 5)
     cmderror++;
   else {
-    *query = 0;
-    *configure = 0;
-    *stop = 0;
-    *spec = '\0';
-    *pendIoTime = CA_TIMEOUT;
     dd = 0;
     for (i = 1; i < argc; i++) {
       if (!strncmp("--", argv[i], 2))
@@ -596,6 +600,10 @@ int process_cmdline_args(int argc, char *argv[], char *spec, int *query,
           fprintf(stderr, "invalid option %s (degauss)\n", argv[i]);
           cmderror++;
         } else {
+          if (strlen(argv[i]) >= specSize) {
+            fprintf(stderr, "specification filename is too long (degauss)\n");
+            exit(1);
+          }
           strcpy(spec, argv[i]);
         }
       }

@@ -1,6 +1,6 @@
 /**
  * @file cavget.cc
- * @brief Retrieve values from EPICS process variables using Channel Access.
+ * @brief Retrieve values from EPICS process variables using CA or PVA.
  *
  * cavget performs vector gets on one or more process variables specified on the
  * command line.  Various formatting and statistical options are provided for
@@ -9,7 +9,7 @@
  * @section Usage
  * ```
  * cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
- *        [-delist=<pattern>[,<pattern]...]
+ *        [-delist=<pattern>[,<pattern>...]]
  *        [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
  *        [-floatformat=<printfString>] 
  *        [-charArray] 
@@ -47,7 +47,7 @@
  * | `-pendIoTime`    | Maximum time to wait for connections. |
  * | `-dryRun`        | List PV names without fetching values. |
  * | `-repeat`        | Perform repeated readings. |
- * | `-numerical`     | Use numerical PV names instead of labels. |
+ * | `-numerical`     | Print numerical values for enumerated PVs. |
  * | `-errorValue`    | Value to use when an error occurs. |
  * | `-excludeErrors` | Omit values when an error occurs. |
  * | `-despike`       | Remove spikes using optional parameters. |
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
   long providerMode = 0;
   long infoMode = 0;
 #if (EPICS_VERSION > 3)
-  PVA_OVERALL pva;
+  PVA_OVERALL pva{};
 #else
   long delimNeeded;
 #endif
@@ -593,21 +593,31 @@ int main(int argc, char **argv) {
 
     if (repeats) {
       for (j = 0; j < PVs; j++) {
-        if ((pva.pvaData[j].numGetElements == 1) && (pva.pvaData[j].numeric)) {
+        long readings = pva.pvaData[j].numGetReadings;
+        if ((pva.pvaData[j].numGetElements == 1) &&
+            pva.pvaData[j].numeric && readings > 0) {
           double *v;
           long i;
-          v = (double *)malloc(sizeof(double) * repeats);
-          for (i = 0; i < repeats; i++) {
+          v = (double *)malloc(sizeof(double) * readings);
+          for (i = 0; i < readings; i++) {
+            if (pva.pvaData[j].getData[i].values == NULL) {
+              free(v);
+              fprintf(stderr, "error (cavget): missing repeated reading for %s\n", PVvalue[j].name);
+              freePVA(&pva);
+              return (EXIT_FAILURE);
+            }
             v[i] = pva.pvaData[j].getData[i].values[0];
           }
           if (doDespike) {
-            despikeData(v, repeats, despikeNeighbors, despikePasses, despikeAverageOf, despikeThreshold, 0);
+            long neighbors = despikeNeighbors > readings ? readings : despikeNeighbors;
+            long averageOf = despikeAverageOf > readings ? readings : despikeAverageOf;
+            despikeData(v, readings, neighbors, despikePasses, averageOf, despikeThreshold, 0);
           }
-          find_min_max(&pva.pvaData[j].min, &pva.pvaData[j].max, v, repeats);
-          computeMoments(&pva.pvaData[j].mean, &pva.pvaData[j].rms, &pva.pvaData[j].stDev, &pva.pvaData[j].MAD, v, repeats);
+          find_min_max(&pva.pvaData[j].min, &pva.pvaData[j].max, v, readings);
+          computeMoments(&pva.pvaData[j].mean, &pva.pvaData[j].rms, &pva.pvaData[j].stDev, &pva.pvaData[j].MAD, v, readings);
           pva.pvaData[j].spread = pva.pvaData[j].max - pva.pvaData[j].min;
-          pva.pvaData[j].sigma = pva.pvaData[j].stDev / sqrt(repeats);
-          find_median(&pva.pvaData[j].median, v, repeats);
+          pva.pvaData[j].sigma = pva.pvaData[j].stDev / sqrt(readings);
+          find_median(&pva.pvaData[j].median, v, readings);
           free(v);
         }
       }
@@ -1141,7 +1151,7 @@ void printResultPVA(char *startBrace, long labeled, PVA_OVERALL *pva, PV_VALUE *
         } else {
           if (doRepeat) {
             if (!average) {
-              for (i = 0; i < repeats; i++) {
+              for (i = 0; i < pva->pvaData[j].numGetReadings; i++) {
                 fprintf(stdout, "%.0f ", pva->pvaData[j].getData[i].values[0]);
               }
             } else {
@@ -1202,7 +1212,7 @@ void printResultPVA(char *startBrace, long labeled, PVA_OVERALL *pva, PV_VALUE *
         } else {
           if (doRepeat) {
             if (!average) {
-              for (i = 0; i < repeats; i++) {
+              for (i = 0; i < pva->pvaData[j].numGetReadings; i++) {
                 fprintf(stdout, floatFormat, pva->pvaData[j].getData[i].values[0]);
                 fprintf(stdout, " ");
               }
@@ -1270,7 +1280,10 @@ void printResultPVA(char *startBrace, long labeled, PVA_OVERALL *pva, PV_VALUE *
               fprintf(stdout, "\"");
             }
             for (i = 0; i < pva->pvaData[j].numGetElements; i++) {
-              fprintf(stdout, "%c", (char)pva->pvaData[j].getData[n].values[i]);
+              char value = (char)pva->pvaData[j].getData[n].values[i];
+              if (value == '\0')
+                break;
+              fputc(value, stdout);
             }
             if (quotes) {
               fprintf(stdout, "\"");

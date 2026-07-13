@@ -5,13 +5,14 @@
 
 \begin{document}
 
-\title{User's Guide for SDDS-compliant EPICS Toolkit Version 5}
+\title{User's Guide for the SDDS-compliant EPICS Toolkit}
 \author{L. Emery, M. Borland, H. Shang, R. Soliday\\Advanced Photon Source\\ \date{\today}}
 \maketitle
 
 The SDDS-compliant EPICS toolkit is a set of software applications for
-the collection or writing of data in Experimental Physics and
-Industrial Control System (EPICS) database records.  Though most of
+reading and writing Experimental Physics and Industrial Control System
+(EPICS) process variables using Channel Access (CA), PVAccess (PVA), or
+both, depending on the application. Though most of
 the applications essentially do rather simple operations, the
 combination of these and others from the SDDS postprocessing toolkit
 allows arbitrarily complicated analysis of data and control of the
@@ -47,7 +48,9 @@ to as ``process variables'' or PVs in this manual.
 \subsection{EPICS Toolkit Programs by Category}
 \subsubsection{Configuration Save and Restore}
 \begin{itemize}
-  \item \progref{sddscasr} --- a new configuration save and restore program with many unique features.
+  \item \progref{sddscasr} --- Saves and restores process-variable configurations.
+  \item \progref{sddspvasaverestore} --- Saves or restores CA and PVA process
+        variables, including waveform values, with optional daemon operation.
   \item \progref{sddscaramp} --- Performs ramping of process variables between
 the present state and the states in one or more SDDS files.
   \item \progref{toggle} --- Alternates between two sets of process variable values stored in snapshot files
@@ -64,7 +67,7 @@ the present state and the states in one or more SDDS files.
   \item \progref{sddsmonitor} --- Reads values of process variables and writes them to a file at regular intervals.
         Example application: archiving of system performance, investigation of glitches.
   \item \progref{sddsglitchlogger} --- Reads values of process variables and writes them to a file or multifile at regular intervals when certain trigger occurs.
-        Example application: archiving of system performance, inverstigation of
+        Example application: archiving of system performance, investigation of
         transition-based, glitch-based and alarmed-based triggers.
   \item \progref{sddsvmonitor} --- Reads values of process variables
         and writes them to a file at regular intervals. The list of readback process
@@ -92,6 +95,15 @@ the present state and the states in one or more SDDS files.
         many runs in order to compile a history of faults statistics.
   \item \progref{sddslogger} --- Reads values of process variables and writes them to a file at regular intervals. Similar to sddsmonitor but it generates less network traffic.
   \item \progref{sddslogonchange} --- Records only the values of process variables that change. This reduces the output file size if process variables do not change often.
+  \item \progref{sddspvalogger} --- Logs scalar and waveform process variables
+        using a per-PV CA or PVA provider, with conditional, rotating, and
+        glitch-capture modes.
+  \item \progref{sddspvaglitchlogger} --- Captures buffered data when configured
+        transition, glitch, or alarm triggers occur, using CA or PVA per PV.
+  \item \progref{sddswget} --- Reads CA or PVA waveform process variables into
+        an SDDS file.
+  \item \progref{sddscainfo} --- Queries PVA and CA metadata and can generate
+        input files for the PVA-aware logger and save/restore tools.
 \end{itemize}
 
 \subsubsection{Control}
@@ -108,6 +120,10 @@ values of a list of readback process variables by applying corrections to anothe
         response matrix between bpms and correctors.
   \item \progref{sddsoptimize} ---Minimizes or maximizes the RMS of a set of readback process variables by automatically varying setpoint process variables (or knobs composed of setpoint PVs), which have a physical influence on the readback process variables, through simplex or 1dscan method.
   \item \progref{sddspvtest} ---tests the process variable given by the inputfile are out-of-range or not and sets the number of out-of-range process variables to a control PV.
+  \item \progref{sddspvacontrollaw} --- Applies a response-matrix control law
+        to CA or explicitly prefixed PVA process variables.
+  \item \progref{sddspermissive} --- Checks per-PV CA or PVA permissive ranges
+        and reports violations through run control.
 \end{itemize}
 
 \subsubsection{Soft IOCs and PV Servers}

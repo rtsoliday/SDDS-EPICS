@@ -133,6 +133,20 @@ DEVELOPMENT CENTER AT ARGONNE NATIONAL LABORATORY (708-252-2000).
 extern int errno;
 /*extern char *sys_errlist[];*/
 
+static int parsePort(const char *text, int *port) {
+  char *end = NULL;
+  long value;
+
+  if (!text || !text[0] || !port)
+    return 0;
+  errno = 0;
+  value = strtol(text, &end, 10);
+  if (errno || !end || *end || value < 1 || value > 65535)
+    return 0;
+  *port = (int)value;
+  return 1;
+}
+
 /*************************************************************************
  * FUNCTION : logOpen()
  * PURPOSE  : Opens a connection to the log server specified by serviceId,
@@ -171,9 +185,13 @@ int logOpen(LOGHANDLE *handle, char *serviceId, char *sourceId,
   BSDATA o_info, i_info;
   char omsg[MAX_MESSAGE_SIZE];
   char imsg[STDBUF];
-  int i;
+  int i, written;
 
   Debug("entering logOpen\n", 0);
+
+  if (handle == NULL || tagList == NULL)
+    return (LOG_INVALID);
+  handle->sockfd = -1;
 
   /* Build up valid log service id. Use default if NULL */
   if (serviceId == NULL) {
@@ -186,8 +204,6 @@ int logOpen(LOGHANDLE *handle, char *serviceId, char *sourceId,
     strcpy(log_service_id, serviceId);
   }
   Debug("log service id is %s\n", log_service_id);
-  strcpy(omsg, "*");
-  strcat(omsg, log_service_id);
 
   /* Validate the sourceId. Use default if NULL */
   if (sourceId == NULL) {
@@ -200,21 +216,27 @@ int logOpen(LOGHANDLE *handle, char *serviceId, char *sourceId,
     strcpy(handle->sourceId, sourceId);
   }
   Debug("sourceId is %s\n", handle->sourceId);
-  strcat(omsg, FIELD_DELIMITER);
-  strcat(omsg, handle->sourceId);
+  written = snprintf(omsg, sizeof(omsg), "*%s%s%s",
+                     log_service_id, FIELD_DELIMITER, handle->sourceId);
+  if (written < 0 || (size_t)written >= sizeof(omsg))
+    return (LOG_TOOBIG);
 
   /* Get environment variables if present, otherwise broadcast for server */
   if ((logger_host = (char *)getenv(LOGGER_HOST)) != (char *)NULL) {
     if ((logger_port = (char *)getenv(LOGGER_PORT)) != (char *)NULL) {
-      log_port = atoi(logger_port);
-      Debug("log server port found from env var: %s\n", log_port);
+      if (!parsePort(logger_port, &log_port))
+        return (LOG_INVALID);
+      Debug("log server port found from env var: %d\n", log_port);
     }
+    if (strlen(logger_host) >= sizeof(log_host))
+      return (LOG_TOOBIG);
     strcpy(log_host, logger_host);
     Debug("log server host found from env var: %s\n", log_host);
 
   } else {
     if ((logger_port = (char *)getenv(LOGGER_PORT)) != (char *)NULL) {
-      log_port = atoi(logger_port);
+      if (!parsePort(logger_port, &log_port))
+        return (LOG_INVALID);
       Debug("log server bcast port found from env var: %d\n", log_port);
     }
 
@@ -238,16 +260,16 @@ int logOpen(LOGHANDLE *handle, char *serviceId, char *sourceId,
     if ((bcastsockfd = BSipBroadcastOpen(&o_info, log_port)) == -1)
       return (LOG_ERROR);
 
-    if (BSbroadcastTrans(bcastsockfd, 3, &o_info, &i_info, omsg,
-                         strlen(omsg), &imsg, STDBUF) != strlen(DEF_BCAST_ACK))
+    i = BSbroadcastTrans(bcastsockfd, 3, &o_info, &i_info, omsg,
+                         strlen(omsg), &imsg, STDBUF);
+    close(bcastsockfd);
+    if (i != (int)strlen(DEF_BCAST_ACK))
       return (LOG_ERROR);
 
     if (!strncmp(imsg, DEF_BCAST_ACK, strlen(DEF_BCAST_ACK))) {
       int log_port1;
       BSgetAddressPort(&i_info, log_host, &log_port1);
-#if !defined(linux) && !defined(Linux) && !defined(LINUX)
       log_port = log_port1;
-#endif
     } else
       return (LOG_INVALID);
     Debug("log server found by broadcast, port: %d\n", log_port);
@@ -257,8 +279,11 @@ int logOpen(LOGHANDLE *handle, char *serviceId, char *sourceId,
   if ((handle->sockfd = BSopenListenerUDP(0)) == -1)
     return (LOG_ERROR);
 
-  if ((BSsetAddressPort(&(handle->bsData), log_host, log_port)) == -1)
+  if ((BSsetAddressPort(&(handle->bsData), log_host, log_port)) == -1) {
+    close(handle->sockfd);
+    handle->sockfd = -1;
     return (LOG_ERROR);
+  }
 
   return (LOG_OK);
 }
@@ -294,6 +319,9 @@ int logString(LOGHANDLE handle, char *valueList) {
   char sock_buffer[MAX_UDP_SIZE]; /* header plus message */
   char imsg[STDBUF];
   BSDATA i_info;
+
+  if (handle.sockfd < 0 || valueList == NULL)
+    return (LOG_INVALID);
 
   Debug("Entering logString\n", 0);
   Debug("Source id is %s\n", handle.sourceId);
@@ -351,8 +379,10 @@ int logString(LOGHANDLE handle, char *valueList) {
 
   Debug("sock_buffer=(%s)\n", &(sock_buffer[1]));
 
-  if (BSbroadcastTrans(handle.sockfd, 3, &(handle.bsData), &i_info,
-                       sock_buffer, buflen, &imsg, STDBUF) != strlen(DEF_LOGMSG_ACK))
+  i = BSbroadcastTrans(handle.sockfd, 3, &(handle.bsData), &i_info,
+                       sock_buffer, buflen, &imsg, STDBUF);
+  if (i != (int)strlen(DEF_LOGMSG_ACK) ||
+      memcmp(imsg, DEF_LOGMSG_ACK, strlen(DEF_LOGMSG_ACK)) != 0)
     return (LOG_ERROR);
 
   Debug("wrote %d bytes \n", buflen);
@@ -387,13 +417,16 @@ int logArguments(LOGHANDLE handle, ...) {
   struct timeval t;
 #endif
   char time_buf[STDBUF];
-  int buflen;
+  int buflen, response;
   char len[10];
   char *tagValue;
   char sock_buffer[MAX_UDP_SIZE]; /* header plus message */
   char imsg[STDBUF];
   BSDATA i_info;
   size_t sockIndex, tagValueLen;
+
+  if (handle.sockfd < 0)
+    return (LOG_INVALID);
 
   Debug("Entering logArguments\n", 0);
   Debug("Source id is %s\n", handle.sourceId);
@@ -424,6 +457,7 @@ int logArguments(LOGHANDLE handle, ...) {
   while ((tagValue = va_arg(ap, char *)) != NULL) {
     tagValueLen = strlen(tagValue) + 1;
     if ((sockIndex + tagValueLen - 5) >= MAX_MESSAGE_SIZE) {
+      va_end(ap);
       return (LOG_TOOBIG);
     }
     strcat(&(sock_buffer[sockIndex]), FIELD_DELIMITER);
@@ -443,8 +477,10 @@ int logArguments(LOGHANDLE handle, ...) {
 
   Debug("sock_buffer=(%s)\n", &(sock_buffer[1]));
 
-  if (BSbroadcastTrans(handle.sockfd, 3, &(handle.bsData), &i_info,
-                       sock_buffer, buflen, &imsg, STDBUF) != strlen(DEF_LOGMSG_ACK))
+  response = BSbroadcastTrans(handle.sockfd, 3, &(handle.bsData), &i_info,
+                              sock_buffer, buflen, &imsg, STDBUF);
+  if (response != (int)strlen(DEF_LOGMSG_ACK) ||
+      memcmp(imsg, DEF_LOGMSG_ACK, strlen(DEF_LOGMSG_ACK)) != 0)
     return (LOG_ERROR);
 
   Debug("wrote %d bytes \n", buflen);
@@ -479,12 +515,15 @@ int logArray(LOGHANDLE handle, char *valueArray[]) {
   struct timeval t;
 #endif
   char time_buf[STDBUF];
-  int buflen, i;
+  int buflen, i, response;
   char len[10];
   char sock_buffer[MAX_UDP_SIZE]; /* header plus message */
   char imsg[STDBUF];
   BSDATA i_info;
   size_t sockIndex, tagValueLen;
+
+  if (handle.sockfd < 0 || valueArray == NULL)
+    return (LOG_INVALID);
 
   Debug("Entering logArray\n", 0);
   Debug("Source id is %s\n", handle.sourceId);
@@ -534,8 +573,10 @@ int logArray(LOGHANDLE handle, char *valueArray[]) {
 
   Debug("sock_buffer=(%s)\n", &(sock_buffer[1]));
 
-  if (BSbroadcastTrans(handle.sockfd, 3, &(handle.bsData), &i_info,
-                       sock_buffer, buflen, &imsg, STDBUF) != strlen(DEF_LOGMSG_ACK))
+  response = BSbroadcastTrans(handle.sockfd, 3, &(handle.bsData), &i_info,
+                              sock_buffer, buflen, &imsg, STDBUF);
+  if (response != (int)strlen(DEF_LOGMSG_ACK) ||
+      memcmp(imsg, DEF_LOGMSG_ACK, strlen(DEF_LOGMSG_ACK)) != 0)
     return (LOG_ERROR);
 
   Debug("wrote %d bytes \n", buflen);

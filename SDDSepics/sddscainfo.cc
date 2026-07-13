@@ -1,10 +1,11 @@
 /**
- * @file sddscainfo.c
+ * @file sddscainfo.cc
  * @brief Retrieves meta information about PVs and stores the info in an SDDS file.
  *
  * @details
- * This program reads an SDDS file containing PV names, connects to them,
- * retrieves metadata, and writes the output back to an SDDS file.
+ * This program reads an SDDS file containing PV names, tries PVA and then CA,
+ * retrieves metadata, and writes the discovered provider and metadata to an
+ * SDDS file.
  *
  * @section Usage
  * ```
@@ -142,7 +143,7 @@ int nanosleep(const struct timespec *req, struct timespec *rem) {
 #endif
 
 int main(int argc, char **argv) {
-  PVA_OVERALL pva, pva_ca;
+  PVA_OVERALL pva{}, pva_ca{};
   PROG_DATA prog_data;
 
   if (ReadArguments(argc, argv, &prog_data) == 1) {
@@ -710,8 +711,9 @@ int ConnectPVs(PVA_OVERALL *pva, PVA_OVERALL *pva_ca, PROG_DATA *prog_data) {
 
 int compare_strings(const char *str1, const char *str2) {
     // Handle brace-enclosed strings without variable-length arrays
-    if (str1[0] == '{' && str1[strlen(str1) - 1] == '}') {
-        std::string temp(str1 + 1, strlen(str1) - 2);
+    size_t length = strlen(str1);
+    if (length >= 2 && str1[0] == '{' && str1[length - 1] == '}') {
+        std::string temp(str1 + 1, length - 2);
         return temp.compare(str2);
     }
 
@@ -741,6 +743,7 @@ int GetPVinfo(PVA_OVERALL *pva_pva, PVA_OVERALL *pva_ca, PROG_DATA *prog_data) {
   for (int32_t p = 0, j = 0; p < prog_data->inputPages; p++) {
     for (int32_t i = 0; i < prog_data->inputPage[p].pvCount; i++, j++) {
       prog_data->outputData.EnumNumOfChoices[j] = 0;
+      prog_data->outputData.EnumChoices[j] = NULL;
       SDDS_CopyString(&prog_data->outputData.ControlName[j], prog_data->inputPage[p].ControlName[i]);
       if (pva_pva->isConnected[j])
         pva = pva_pva;
@@ -793,10 +796,15 @@ int GetPVinfo(PVA_OVERALL *pva_pva, PVA_OVERALL *pva_ca, PROG_DATA *prog_data) {
 
       if (IsEnumFieldType(pva,j)) {
         validEnum = false;
-        for (uint32_t m = 0; m < prog_data->outputData.EnumNumOfChoices[j]; m++) {
-          if (compare_strings(prog_data->outputData.EnumChoices[j][m],pva->pvaData[j].getData[0].stringValues[0]) == 0) {
-            validEnum = true;
-            break;
+        if (pva->pvaData[j].numGetReadings > 0 &&
+            pva->pvaData[j].getData != NULL &&
+            pva->pvaData[j].getData[0].stringValues != NULL &&
+            pva->pvaData[j].getData[0].stringValues[0] != NULL) {
+          for (uint32_t m = 0; m < prog_data->outputData.EnumNumOfChoices[j]; m++) {
+            if (compare_strings(prog_data->outputData.EnumChoices[j][m], pva->pvaData[j].getData[0].stringValues[0]) == 0) {
+              validEnum = true;
+              break;
+            }
           }
         }
         if (validEnum == false) {

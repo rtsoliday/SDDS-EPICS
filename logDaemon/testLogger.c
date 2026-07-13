@@ -59,6 +59,20 @@ int main(int argc, char *argv[]) {
   char *sourceIdp;
   char sourceId[MAX_MESSAGE_SIZE + 256];
 
+  for (i = 1; i < argc; i++) {
+    if (!strncmp(argv[i], "-serviceId=", 11)) {
+      serviceId = argv[i] + 11;
+      if (!strlen(serviceId)) {
+        usage(argv[0]);
+        return (1);
+      }
+    } else {
+      fprintf(stderr, "%s: invalid option: %s\n", argv[0], argv[i]);
+      usage(argv[0]);
+      return (1);
+    }
+  }
+
   /* TEST1: overly long sourceId */
   fprintf(stdout, "TEST1:overly long sourceId\n");
   for (i = 0; i < STDBUF - 4; i++)

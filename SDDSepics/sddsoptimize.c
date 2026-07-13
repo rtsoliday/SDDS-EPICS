@@ -844,8 +844,8 @@ int main(int argc, char **argv) {
 #endif
   if (!simplex && !scan && !rcds)
     SDDS_Bomb("No method is given for optimization!");
-  if (simplex && scan)
-    SDDS_Bomb("only one method (simplex or 1dscan) should be given.");
+  if ((simplex ? 1 : 0) + (scan ? 1 : 0) + (rcds ? 1 : 0) != 1)
+    SDDS_Bomb("only one optimization method should be given.");
 #ifdef USE_RUNCONTROL
   if (rcParam.PV) {
     rcParam.handle[0] = (char)0;

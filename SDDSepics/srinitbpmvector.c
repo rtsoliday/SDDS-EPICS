@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
   read_bpm_vectors(inputFile, plane, &bpmVector, &bpmVectors, setpointFile, offsetFile, gainFile, pendIOTime);
   tmpTime1 = getTimeInSecs();
   if (verbose)
-    fprintf(stdout, "reading bpms spent %f seconds\n", tmpTime1 - tmpTime);
+    fprintf(stdout, "reading bpms spent %f seconds\n", tmpTime1 - startTime);
   /*reading RefAO pvs for FFwaveform */
   for (i = 0; i < bpmVectors; i++) {
     if (bpmVector[i].vectorType == 2) {
@@ -289,7 +289,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     if ((vectorRows = SDDS_RowCount(&SDDSvector)) <= 0)
       continue;
     if (vectors > 9) {
-      vector = SDDS_Realloc(vector, sizeof(vector) * (vectors + 1));
+      vector = SDDS_Realloc(vector, sizeof(*vector) * (vectors + 1));
     }
     vector[vectors].waveformPV = NULL;
     vector[vectors].waveformValue = vector[vectors].setpoint = vector[vectors].offset = NULL;

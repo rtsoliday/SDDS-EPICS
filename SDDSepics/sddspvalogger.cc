@@ -468,7 +468,7 @@ Glitch Logger Options:\n\
   [-holdoffTime=<seconds>]\n\
   [-autoHoldoff]\n\
 \n\
-It connects to PVs over the EPICS7 PVA and CA protocols and stores the data in an sdds file.\n\n\
+It connects to PVs over the EPICS 7 PVA and CA protocols and stores the data in an SDDS file.\n\n\
 inputfile        The file must contain the columns:\n\
                    ControlName (string type with PV names)\n\
                    Provider (string type with \"pva\" or \"ca\" values)\n\
@@ -520,7 +520,7 @@ int main(int argc, char *argv[]) {
   long j;
   long double targetTime = 0, timeToWait = 0;
   SDDS_TABLE *SDDS_table;
-  PVA_OVERALL pva, pva2, pva3, pva4, pva5;
+  PVA_OVERALL pva{}, pva2{}, pva3{}, pva4{}, pva5{};
   PVA_OVERALL *pvaConditions = NULL, *pvaInhibit = NULL, *pvaStrobe = NULL, *pvaGlitch = NULL;
   PVA_OVERALL **pvaArray;
   LOGGER_DATA logger;
@@ -2309,7 +2309,11 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
   holdoff.tv_sec = hold_off; //Converted into whole seconds
   holdoff.tv_nsec = (hold_off - holdoff.tv_sec) * 1e9L;
 
-  if (pvaST->isConnected[0] && (pvaST->pvaData[0].numMonitorReadings > 0)) {
+  if (pvaST->isConnected[0] &&
+      pvaST->pvaData[0].numMonitorReadings > 0 &&
+      pvaST->pvaData[0].numMonitorElements > 0 &&
+      pvaST->pvaData[0].monitorData != NULL &&
+      pvaST->pvaData[0].monitorData[0].values != NULL) {
     initStrobeValue = pvaST->pvaData[0].monitorData[0].values[0];
   }
 
@@ -2357,7 +2361,10 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
     if (numUpdated == -1) {
       return (1);
     }
-    if ((numUpdated == 1) && (pvaST->isConnected[0])) {
+    if ((numUpdated == 1) && pvaST->isConnected[0] &&
+        pvaST->pvaData[0].numMonitorReadings > 0 &&
+        pvaST->pvaData[0].monitorData != NULL &&
+        pvaST->pvaData[0].monitorData[0].values != NULL) {
       if (initStrobeValue != pvaST->pvaData[0].monitorData[0].values[0]) {
         lastTriggerTime = 0;
         thisTriggerTime = 0;
@@ -2396,7 +2403,10 @@ long pvaThreadSleepWithPollingAndDataStrobe(PVA_OVERALL **pva, long count, PVA_O
     if (numUpdated == -1) {
       return (1);
     }
-    if ((numUpdated == 1) && (pvaST->isConnected[0])) {
+    if ((numUpdated == 1) && pvaST->isConnected[0] &&
+        pvaST->pvaData[0].numMonitorReadings > 0 &&
+        pvaST->pvaData[0].monitorData != NULL &&
+        pvaST->pvaData[0].monitorData[0].values != NULL) {
       if (initStrobeValue != pvaST->pvaData[0].monitorData[0].values[0]) {
         if (hold_off > 1e-7) 
           nanosleep(&holdoff, NULL);
@@ -2444,6 +2454,29 @@ long VerifyPVTypes(PVA_OVERALL *pva, LOGGER_DATA *logger) {
   long preMinElements = minElements;
 
   for (j = 0; j < pva->numPVs; j++) {
+    if (logger->verifiedType[j] && pva->isConnected[j]) {
+      bool scalar = pva->pvaData[j].fieldType == epics::pvData::scalar ||
+                    pva->pvaData[j].pvEnumeratedStructure;
+      bool scalarArray = pva->pvaData[j].fieldType == epics::pvData::scalarArray;
+      bool numericMatches = (pva->pvaData[j].numeric && logger->expectNumeric[j]) ||
+                            (pva->pvaData[j].nonnumeric && !logger->expectNumeric[j]);
+      long elements = pva->pvaData[j].numGetElements;
+      if (logger->monitor && pva->pvaData[j].numMonitorReadings > 0)
+        elements = pva->pvaData[j].numMonitorElements;
+      bool elementsMatch = elements == logger->expectElements[j];
+      if (logger->truncateWaveforms && logger->expectScalarArray[j] &&
+          !logger->treatScalarArrayAsScalar[j])
+        elementsMatch = elements >= logger->expectElements[j];
+      if (!numericMatches ||
+          (logger->expectScalar[j] && !scalar) ||
+          (logger->expectScalarArray[j] && !scalarArray) ||
+          !elementsMatch) {
+        fprintf(stderr,
+                "Error (sddspvalogger): PV %s changed type or element count after output buffers were created\n",
+                pva->pvaChannelNames[j].c_str());
+        return (1);
+      }
+    }
     if ((logger->verifiedType[j] == false) && (pva->isConnected[j] == true)) {
       if (((pva->pvaData[j].numeric == true) && (logger->expectNumeric[j] == true)) ||
           ((pva->pvaData[j].nonnumeric == true) && (logger->expectNumeric[j] == false))) {
@@ -3325,11 +3358,23 @@ bool CheckGlitchPVA(PVA_OVERALL *pvaGlitch, LOGGER_DATA *logger) {
       logger->glitch_alarmedTemp[i] = 0;
       logger->glitch_alarmSeverityTemp[i] = 0;
       if (pvaGlitch->isConnected[i] == true) {
-        if ((logger->monitor) && (pvaGlitch->pvaData[i].numMonitorReadings > 0)) {
+        bool haveValue = false;
+        if (logger->monitor &&
+            pvaGlitch->pvaData[i].numMonitorReadings > 0 &&
+            pvaGlitch->pvaData[i].numMonitorElements > 0 &&
+            pvaGlitch->pvaData[i].monitorData != NULL &&
+            pvaGlitch->pvaData[i].monitorData[0].values != NULL) {
           value = pvaGlitch->pvaData[i].monitorData[0].values[0];
-        } else {
+          haveValue = true;
+        } else if (pvaGlitch->pvaData[i].numGetReadings > 0 &&
+                   pvaGlitch->pvaData[i].numGetElements > 0 &&
+                   pvaGlitch->pvaData[i].getData != NULL &&
+                   pvaGlitch->pvaData[i].getData[0].values != NULL) {
           value = pvaGlitch->pvaData[i].getData[0].values[0];
+          haveValue = true;
         }
+        if (!haveValue)
+          continue;
         if (logger->glitch_TransitionThresholdDefined && logger->glitch_TransitionDirectionDefined && (logger->glitch_transitionDirection[i] != 0)) {
           if (logger->glitch_transitionLastValue[i] == DBL_MAX) {
             //logger->glitch_transitionLastValue[i] = value;

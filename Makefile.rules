@@ -5,9 +5,43 @@ ifeq ($(findstring CYGWIN, $(OS)),CYGWIN)
     OS := Windows
 endif
 
+# Apple Clang does not ship an OpenMP runtime.  Use a MacPorts or Homebrew
+# libomp installation when available so executables can link against SDDS
+# libraries that were built with OpenMP enabled.
+ifeq ($(OS), Darwin)
+DARWIN_OPENMP_INCLUDE := $(firstword $(wildcard \
+    /opt/local/include/libomp \
+    /opt/homebrew/opt/libomp/include \
+    /usr/local/opt/libomp/include))
+DARWIN_OPENMP_LIBRARY := $(firstword $(wildcard \
+    /opt/local/lib/libomp/libomp.dylib \
+    /opt/homebrew/opt/libomp/lib/libomp.dylib \
+    /usr/local/opt/libomp/lib/libomp.dylib))
+DARWIN_OPENMP_LICENSE := $(firstword $(wildcard \
+    /opt/local/share/doc/libomp/LICENSE.TXT \
+    /opt/homebrew/opt/libomp/share/doc/libomp/LICENSE.TXT \
+    /usr/local/opt/libomp/share/doc/libomp/LICENSE.TXT))
+ifneq ($(DARWIN_OPENMP_INCLUDE),)
+ifneq ($(DARWIN_OPENMP_LIBRARY),)
+  DARWIN_OPENMP_CFLAGS := -Xpreprocessor -fopenmp -I$(DARWIN_OPENMP_INCLUDE)
+endif
+endif
+endif
+
 OBJ_DIR = O.$(OS)-$(ARCH)
 BIN_DIR = $(DD)../bin/$(OS)-$(ARCH)
 LIB_DIR = $(DD)../lib/$(OS)-$(ARCH)
+
+ifneq ($(DARWIN_OPENMP_LIBRARY),)
+  DARWIN_OPENMP_BUNDLE := $(LIB_DIR)/libomp.dylib
+  BUNDLED_RUNTIME_LIBS += $(DARWIN_OPENMP_BUNDLE)
+  BUNDLED_RUNTIME_FILES += $(DARWIN_OPENMP_BUNDLE)
+  DARWIN_OPENMP_LDFLAGS = -Wl,-rpath,@loader_path/../../lib/$(OS)-$(ARCH) -L$(LIB_DIR) -lomp
+  ifneq ($(DARWIN_OPENMP_LICENSE),)
+    DARWIN_OPENMP_BUNDLE_LICENSE := $(LIB_DIR)/LICENSE.libomp.txt
+    BUNDLED_RUNTIME_FILES += $(DARWIN_OPENMP_BUNDLE_LICENSE)
+  endif
+endif
 
 EPICS_HOST := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 EPICS_ARCH = $(ARCH)
@@ -328,11 +362,11 @@ ifeq ($(OS), Darwin)
   AR = libtool -static -o
   RANLIB = ranlib
   #MAC_VERSION = -mmacosx-version-min=10.13
-  CFLAGS = -Wno-deprecated-non-prototype -m64 -O3 -g -Wall -fPIC -fno-common $(MAC_VERSION) $(EXTRA_INC_DIRS)
-  CCFLAGS = -Wno-deprecated-non-prototype -m64 -O3 -g -Wall -fPIC -fno-common -std=c++11 $(MAC_VERSION) $(EXTRA_INC_DIRS)
+  CFLAGS = -Wno-deprecated-non-prototype -m64 -O3 -g -Wall -fPIC -fno-common $(DARWIN_OPENMP_CFLAGS) $(MAC_VERSION) $(EXTRA_INC_DIRS)
+  CCFLAGS = -Wno-deprecated-non-prototype -m64 -O3 -g -Wall -fPIC -fno-common -std=c++11 $(DARWIN_OPENMP_CFLAGS) $(MAC_VERSION) $(EXTRA_INC_DIRS)
   LDFLAGS = $(MAC_VERSION) -std=c++11
-  LIBRARY_SYS_LIBS = -lm
-  PROD_SYS_LIBS = -lm
+  LIBRARY_SYS_LIBS = $(DARWIN_OPENMP_LDFLAGS) -lm
+  PROD_SYS_LIBS = $(DARWIN_OPENMP_LDFLAGS) -lm
   OBJEXT = o
   LIBEXT = a
   LIBPRE = lib

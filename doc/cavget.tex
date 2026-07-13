@@ -11,10 +11,12 @@ cavget -list=my:pv
 cavget -repeat=number=10,pause=1 -labeled -list=quadrupole:current
 cavget -statistics=number=100,pause=0.1,format=SDDS,file=stats.sdds -list=cavit:readback
 cavget -list=Q -range=begin=1,end=4,format=%02d -list=:I
+cavget -list=Q01:I,Q02:I,Q03:I -delist=*02*
 \end{verbatim}
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
+      [-delist=<pattern>[,<pattern>...]]
       [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
       [-floatformat=<printfString>] [-charArray] [-delimiter=<string>] [-labeled]
       [-noQuotes] [-embrace=start=<string>,end=<string>] [-cavputForm]
@@ -33,6 +35,8 @@ usage: cavget [-list=<string>[=<value>][,<string>[=<value>]...]]
     \verb+-list+ entries are concatenated in order, so \verb+-list=quad -list=:readback+
     becomes \verb+quad:readback+. Appending \verb+=<value>+ sets a value for use with
     \verb+cavput+.
+  \item {\tt -delist} --- Exclude PV names matching any comma-separated glob
+    pattern. The patterns support \verb+*+ and \verb+?+ wildcards.
   \item {\tt -range} --- Append integer ranges to PV prefixes. \newline
     For example, \verb+-list=Q -range=begin=1,end=4,format=%02d -list=:I+ \newline
     produces names \verb+Q01:I+ through \verb+Q04:I+.

@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := all
+
 define make_prod_objs
 $(1)_OBJS = $(patsubst %.cpp, $(OBJ_DIR)/%.$(OBJEXT), $(patsubst %.cc, $(OBJ_DIR)/%.$(OBJEXT), $(patsubst %.c, $(OBJ_DIR)/%.$(OBJEXT), $($(1)_SRC))))
 endef
@@ -56,6 +58,16 @@ ifneq ($(PROD),)
  .SECONDARY: $(PROD_OBJECTS)
 endif
 
+ifneq ($(BUNDLED_RUNTIME_LIBS),)
+ $(FULLPROD): $(BUNDLED_RUNTIME_LIBS)
+ $(PYTHON_SHARED_LIBRARY): $(BUNDLED_RUNTIME_LIBS)
+endif
+
+# Parallel clean builds must create the object directory before any compiler,
+# archiver, or linker writes into it.  Listing OBJ_DIR only as an `all`
+# prerequisite does not impose ordering when make runs with -j.
+$(PROD_OBJECTS) $(LIBRARY_OBJS) $(FULLPROD) $(LIBRARY) $(PYTHON_SHARED_LIBRARY): | $(OBJ_DIR)
+
 ifeq ($(OS), Windows)
  ifneq ($(PROD_LIBS),)
   PROD_DEPS = $(addprefix $(LIB_DIR)/,$(filter-out gsl.lib gslcblas.lib, $(PROD_LIBS)))
@@ -78,7 +90,7 @@ else
  endif
 endif
 
-all: $(OBJ_DIR) $(BIN_DIR) $(LIB_DIR) $(EPICS_BIN_DIR) $(EPICS_LIB_DIR) $(EPICS_INC_DIR) $(LIBRARY) $(PYTHON_SHARED_LIBRARY) $(FULLPROD) $(SCRIPTS) $(INC)
+all: $(OBJ_DIR) $(BIN_DIR) $(LIB_DIR) $(EPICS_BIN_DIR) $(EPICS_LIB_DIR) $(EPICS_INC_DIR) $(BUNDLED_RUNTIME_FILES) $(LIBRARY) $(PYTHON_SHARED_LIBRARY) $(FULLPROD) $(SCRIPTS) $(INC)
 
 $(EPICS_BIN_DIR):
 	mkdir -p $(EPICS_BIN_DIR)
@@ -94,6 +106,18 @@ $(BIN_DIR):
 
 $(LIB_DIR):
 	mkdir -p $(LIB_DIR)
+
+ifneq ($(DARWIN_OPENMP_BUNDLE),)
+$(DARWIN_OPENMP_BUNDLE): $(DARWIN_OPENMP_LIBRARY) | $(LIB_DIR)
+	cp -f $< $@
+	install_name_tool -id @rpath/libomp.dylib $@
+	codesign --force --sign - $@
+endif
+
+ifneq ($(DARWIN_OPENMP_BUNDLE_LICENSE),)
+$(DARWIN_OPENMP_BUNDLE_LICENSE): $(DARWIN_OPENMP_LICENSE) | $(LIB_DIR)
+	cp -f $< $@
+endif
 
 $(OBJ_DIR):
 	mkdir $(OBJ_DIR)

@@ -143,6 +143,7 @@ DEVELOPMENT CENTER AT ARGONNE NATIONAL LABORATORY (708-252-2000).
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <signal.h>
 #include <memory.h>
 #include <sys/types.h>
@@ -275,6 +276,59 @@ TYPENODE **matchArray; /* Holds array of ptrs to TYPENODES which match
 size_t matchArraySize; /* number of ptrs allocated for matchArray */
 size_t nextFreeMatch;  /* next available element to store ptr */
 
+static int appendText(char *buffer, size_t capacity, const char *text) {
+  size_t used, added;
+
+  if (!buffer || !text || capacity == 0)
+    return 0;
+  used = strlen(buffer);
+  added = strlen(text);
+  if (used >= capacity || added >= capacity - used)
+    return 0;
+  memcpy(buffer + used, text, added + 1);
+  return 1;
+}
+
+static int setLogServiceId(const char *serviceId) {
+  int written;
+
+  if (!serviceId)
+    return 0;
+  written = snprintf(log_service_id, sizeof(log_service_id), "*%s", serviceId);
+  return written >= 0 && (size_t)written < sizeof(log_service_id);
+}
+
+static int parseLogPort(const char *text, int *port) {
+  char *end = NULL;
+  long value;
+
+  if (!text || !text[0] || !port)
+    return 0;
+  errno = 0;
+  value = strtol(text, &end, 10);
+  if (errno || !end || *end || value <= USER_RESERVED_UDP_PORT || value > 65535)
+    return 0;
+  *port = (int)value;
+  return 1;
+}
+
+static int ensureMatchArrayCapacity(size_t typeCount) {
+  TYPENODE **resized;
+  size_t required = typeCount + 1;
+  size_t blocks, newSize;
+
+  if (required <= matchArraySize)
+    return 1;
+  blocks = (required + CONFIG_BLOCK_SIZE - 1) / CONFIG_BLOCK_SIZE;
+  newSize = blocks * CONFIG_BLOCK_SIZE;
+  resized = (TYPENODE **)realloc(matchArray, newSize * sizeof(*matchArray));
+  if (!resized)
+    return 0;
+  matchArray = resized;
+  matchArraySize = newSize;
+  return 1;
+}
+
 extern int errno;
 
 #ifdef SDDS
@@ -353,7 +407,7 @@ int main(int argc, char *argv[]) {
   openlog(argv[0], LOG_PID, LOG_USER);
 
   /* store executable name in global for other functions */
-  strcpy(argv0, argv[0]);
+  snprintf(argv0, sizeof(argv0), "%s", argv[0]);
 
   /*
   if (stat(argv[0],&stat_buf) < 0) {
@@ -372,8 +426,10 @@ int main(int argc, char *argv[]) {
 #ifdef SDDS
   mode = SDDS_MODE;
 #endif
-  strcpy(log_service_id, "*");
-  strcat(log_service_id, DEF_LOGSERVER_ID);
+  if (!setLogServiceId(DEF_LOGSERVER_ID)) {
+    fprintf(stderr, "%s: default service id is too long\n", argv[0]);
+    exit(1);
+  }
   config_file = DEF_CONFIGFILE;
   log_port = DEF_LOGPORT;
   log_home = DEF_HOME;
@@ -385,12 +441,17 @@ int main(int argc, char *argv[]) {
   /* get environment variables if present */
 
   if ((logger_id = (char *)getenv(LOGGER_ID)) != (char *)NULL) {
-    strcpy(log_service_id, "*");
-    strcat(log_service_id, logger_id);
+    if (!setLogServiceId(logger_id)) {
+      fprintf(stderr, "%s: service id is too long\n", argv[0]);
+      exit(1);
+    }
   }
 
   if ((logger_port = (char *)getenv(LOGGER_PORT)) != (char *)NULL) {
-    log_port = (short)atoi(logger_port);
+    if (!parseLogPort(logger_port, &log_port)) {
+      fprintf(stderr, "%s: invalid UDP port: %s\n", argv[0], logger_port);
+      exit(1);
+    }
   }
   /* Validate UDP port number */
   if (log_port <= USER_RESERVED_UDP_PORT) {
@@ -437,15 +498,20 @@ int main(int argc, char *argv[]) {
       }
       break;
     case 'i':
-      strcpy(log_service_id, "*");
-      strcat(log_service_id, optarg);
+      if (!setLogServiceId(optarg)) {
+        fprintf(stderr, "%s: service id is too long\n", argv[0]);
+        exit(1);
+      }
       break;
     case 'f':
       config_file = (char *)malloc(strlen(optarg) + 2);
       strcpy(config_file, optarg);
       break;
     case 'p':
-      log_port = (short)atoi(optarg);
+      if (!parseLogPort(optarg, &log_port)) {
+        fprintf(stderr, "%s: invalid UDP port: %s\n", argv[0], optarg);
+        exit(1);
+      }
       printf("setting log port to: %d\n", log_port);
       break;
     case 'r':
@@ -477,15 +543,20 @@ int main(int argc, char *argv[]) {
   while ((opt = getopt(argc, argv, "i:f:p:rs:o:h:e")) != EOF) {
     switch (opt) {
     case 'i':
-      strcpy(log_service_id, "*");
-      strcat(log_service_id, optarg);
+      if (!setLogServiceId(optarg)) {
+        fprintf(stderr, "%s: service id is too long\n", argv[0]);
+        exit(1);
+      }
       break;
     case 'f':
       config_file = (char *)malloc(strlen(optarg) + 2);
       strcpy(config_file, optarg);
       break;
     case 'p':
-      log_port = (short)atoi(optarg);
+      if (!parseLogPort(optarg, &log_port)) {
+        fprintf(stderr, "%s: invalid UDP port: %s\n", argv[0], optarg);
+        exit(1);
+      }
       break;
     case 'r':
       Refresh = 1;
@@ -527,6 +598,9 @@ int main(int argc, char *argv[]) {
      upon receipt of the next log message.
   */
   signal(SIGHUP, logDaemonRequestReadConfig);
+#if !defined(_WIN32)
+  signal(SIGCHLD, SIG_IGN);
+#endif
 
   if (chdir(log_home) < 0) {
     syslog(LOG_ERR, "cannot change to logDaemon home directory: %m");
@@ -548,9 +622,11 @@ int main(int argc, char *argv[]) {
   ellInit(&typeList);
 
   /* Initialize the match array */
-  matchArray = (TYPENODE **)malloc(sizeof(TYPENODE *) * CONFIG_BLOCK_SIZE);
+  if (!ensureMatchArrayCapacity(0)) {
+    syslog(LOG_ERR, "unable to allocate log match array");
+    exit(1);
+  }
   matchArray[0] = NULL;
-  matchArraySize = CONFIG_BLOCK_SIZE;
   nextFreeMatch = 0;
 
   /* Read the config file and sourceId->tagList file */
@@ -577,15 +653,18 @@ int main(int argc, char *argv[]) {
 void logDaemonStartNewLog() {
   TYPENODE *typeNode;
   char *sourceId;
-  char defaultLogFile[STDBUF + 5];
+  char defaultLogFile[MAX_MESSAGE_SIZE];
 
   typeNode = (TYPENODE *)ellFirst(&typeList);
   /*  fprintf(stderr,"startHour=%f, hourNow=%f\n",startHour,getHourOfDay()); */
   while (typeNode != NULL) {
+    if (typeNode->area != 'l') {
+      typeNode = (TYPENODE *)ellNext((ELLNODE *)typeNode);
+      continue;
+    }
     sourceId = typeNode->sourceId;
     /*close old files */
-    if (typeNode->area == 'l')
-      logDaemonCloseLogfile(typeNode);
+    logDaemonCloseLogfile(typeNode);
     free(typeNode->log_file);
 
     /*open new files with updated date*/
@@ -597,8 +676,7 @@ void logDaemonStartNewLog() {
     typeNode->log_file = (char *)malloc(strlen(defaultLogFile) + 1);
     strcpy(typeNode->log_file, defaultLogFile);
     typeNode->log_file_fd = -1;
-    typeNode->area = 'l';
-    if (typeNode->area == 'l' && typeNode->sourceTagNode != NULL)
+    if (typeNode->sourceTagNode != NULL)
       logDaemonOpenLogfile(typeNode);
     typeNode = (TYPENODE *)ellNext((ELLNODE *)typeNode);
   }
@@ -645,13 +723,13 @@ void logDaemonReadConfig() {
   FILE *sourceId_fp;                /* sourceId->tagList file */
   char buffer[MAX_MESSAGE_SIZE];    /* buffer for config file entry */
   char tagValBuf[MAX_MESSAGE_SIZE]; /* for processing tag/Value field */
-  char tagName[STDBUF], defaultLogFile[STDBUF + 5];
+  char tagName[STDBUF], defaultLogFile[MAX_MESSAGE_SIZE];
   char tagPattern[MAX_MESSAGE_SIZE];
   int invalidEntry = 0;
   SOURCETAGNODE *sourceTagNode;
   TAGNODE *tagNode;
   TYPENODE *typeNode, *typeNode2;
-  size_t typeListLength, numBlocks;
+  size_t typeListLength;
 
   /* Reset the typeList linked list. */
   typeNode = (TYPENODE *)ellFirst(&typeList);
@@ -690,13 +768,31 @@ void logDaemonReadConfig() {
       for (i = 0, p = strtok(buffer, "~"); p; p = strtok(NULL, "~\n"), i++) {
         if (i == 0) {
           if (strlen(p) == 1)
-            continue;
+            break;
+          if (strlen(p) >= sizeof(sourceTagNode->sourceId)) {
+            syslog(LOG_ERR, "sourceId in %s is too long", DEF_SOURCEIDFILE);
+            break;
+          }
           sourceTagNode = (SOURCETAGNODE *)malloc(sizeof(SOURCETAGNODE));
+          if (!sourceTagNode) {
+            syslog(LOG_ERR, "memory allocation failure reading %s", DEF_SOURCEIDFILE);
+            break;
+          }
           strcpy(sourceTagNode->sourceId, p);
           ellInit(&sourceTagNode->tagList);
           ellAdd(&sourceIdList, (ELLNODE *)sourceTagNode);
         } else {
+          if (!sourceTagNode)
+            break;
+          if (strlen(p) >= sizeof(tagNode->tag)) {
+            syslog(LOG_ERR, "tag in %s is too long", DEF_SOURCEIDFILE);
+            break;
+          }
           tagNode = (TAGNODE *)malloc(sizeof(TAGNODE));
+          if (!tagNode) {
+            syslog(LOG_ERR, "memory allocation failure reading %s", DEF_SOURCEIDFILE);
+            break;
+          }
           strcpy(tagNode->tag, p);
           ellAdd(&(sourceTagNode->tagList), (ELLNODE *)tagNode);
         }
@@ -785,8 +881,11 @@ void logDaemonReadConfig() {
 
         default: /* trailing fields specify tag=value */
           Debug("Got tag value (%s)\n", p);
-          strcpy(tagValBuf, p);
-          strcat(tagValBuf, "\n");
+          if (snprintf(tagValBuf, sizeof(tagValBuf), "%s\n", p) >= (int)sizeof(tagValBuf)) {
+            syslog(LOG_ERR, "invalid tagName/Pattern field: too long");
+            invalidEntry = 1;
+            continue;
+          }
           for (k = 0, r = strtok(tagValBuf, "="); r; r = strtok(NULL, "=\n"), k++) {
             if (k == 0) {
               if ((int)strlen(r) < STDBUF) {
@@ -875,12 +974,11 @@ void logDaemonReadConfig() {
 
   /* Reallocate matchArray if we have a big config file. */
   typeListLength = (size_t)ellCount(&typeList);
-  if (typeListLength > matchArraySize) {
-    numBlocks = typeListLength / CONFIG_BLOCK_SIZE + 1;
-    free(matchArray);
-    matchArray =
-      (TYPENODE **)malloc(numBlocks * sizeof(TYPENODE *) * CONFIG_BLOCK_SIZE);
-    matchArraySize = numBlocks * CONFIG_BLOCK_SIZE;
+  if (!ensureMatchArrayCapacity(typeListLength)) {
+    syslog(LOG_ERR, "unable to grow log match array");
+    exit(1);
+  }
+  if (matchArray) {
     matchArray[0] = NULL;
   }
 }
@@ -1077,12 +1175,28 @@ void logDaemonFindMatchingEntries() {
  ************************************************************************/
 int logDaemonValidateSourceId(char *sourceIdTagString) {
   char *p;
+  const char *segment, *delimiter;
   int i, j;
   char arg1[MAX_UDP_SIZE + 1];
   FILE *sourceId_fp;
   SOURCETAGNODE *sourceTagNode = NULL;
   TAGNODE *tagNode;
   int numMatches = 0;
+
+  if (!sourceIdTagString || !sourceIdTagString[0] ||
+      strlen(sourceIdTagString) >= sizeof(arg1))
+    return (-1);
+  segment = sourceIdTagString;
+  while (*segment) {
+    size_t segmentLength;
+    delimiter = strchr(segment, '~');
+    segmentLength = delimiter ? (size_t)(delimiter - segment) : strlen(segment);
+    if (segmentLength == 0 || segmentLength >= STDBUF)
+      return (-1);
+    if (!delimiter)
+      break;
+    segment = delimiter + 1;
+  }
 
   arg1[0] = '\0';
   strcpy(arg1, sourceIdTagString);
@@ -1104,7 +1218,10 @@ int logDaemonValidateSourceId(char *sourceIdTagString) {
 
   Debug("validating sourceId: %s\n", arg1);
   /* Check to see if we already have given sourceId in database. */
-  for (i = 0, p = strtok(arg1, "~"); p; p = strtok(NULL, "~\n"), i++) {
+  p = strtok(arg1, "~");
+  if (!p)
+    return (-1);
+  for (i = 0; p; p = strtok(NULL, "~\n"), i++) {
     if (i == 0) { /* search for sourceId */
       sourceTagNode = logDaemonFindSourceTagNode(p);
       if (sourceTagNode == NULL) { /* didn't find it, so add new one */
@@ -1120,12 +1237,16 @@ int logDaemonValidateSourceId(char *sourceIdTagString) {
 
         /* Then to data structure */
         sourceTagNode = (SOURCETAGNODE *)malloc(sizeof(SOURCETAGNODE));
+        if (!sourceTagNode)
+          return (-1);
         sourceTagNode->sourceId[0] = '\0';
         strcpy(sourceTagNode->sourceId, p);
         ellInit(&sourceTagNode->tagList);
         ellAdd(&sourceIdList, (ELLNODE *)sourceTagNode);
         while ((p = strtok(NULL, "~\n")) != NULL) {
           tagNode = (TAGNODE *)malloc(sizeof(TAGNODE));
+          if (!tagNode)
+            return (-1);
           tagNode->tag[0] = '\0';
           strcpy(tagNode->tag, p);
           ellAdd(&(sourceTagNode->tagList), (ELLNODE *)tagNode);
@@ -1151,6 +1272,8 @@ int logDaemonValidateSourceId(char *sourceIdTagString) {
       }
     }
   }
+  if (!sourceTagNode)
+    return (-1);
   if (numMatches < ellCount(&sourceTagNode->tagList)) {
     Debug("invalid sourceId given\n", NULL);
     return (-1);
@@ -1172,8 +1295,8 @@ int logDaemonValidateSourceId(char *sourceIdTagString) {
  ************************************************************************/
 void logDaemonAddDefaultTypeNode(char *sourceId) {
   TYPENODE *typeNode;
-  char defaultLogFile[STDBUF + 5];
-  size_t typeListLength, numBlocks;
+  char defaultLogFile[MAX_MESSAGE_SIZE];
+  size_t typeListLength;
 
   typeNode = (TYPENODE *)malloc(sizeof(TYPENODE));
   ellInit(&(typeNode->tagList));
@@ -1201,12 +1324,11 @@ void logDaemonAddDefaultTypeNode(char *sourceId) {
 
   /* Reallocate matchArray if new node on typeList tips us over size. */
   typeListLength = (size_t)ellCount(&typeList);
-  if (typeListLength > matchArraySize) {
-    numBlocks = typeListLength / CONFIG_BLOCK_SIZE + 1;
-    free(matchArray);
-    matchArray =
-      (TYPENODE **)malloc(numBlocks * sizeof(TYPENODE *) * CONFIG_BLOCK_SIZE);
-    matchArraySize = numBlocks * CONFIG_BLOCK_SIZE;
+  if (!ensureMatchArrayCapacity(typeListLength)) {
+    syslog(LOG_ERR, "unable to grow log match array");
+    exit(1);
+  }
+  if (matchArray) {
     matchArray[0] = NULL;
   }
 }
@@ -1282,6 +1404,8 @@ int logDaemonMainLoop(int sockfd) {
   int nextFreeByte;
   int nextTagValue;
   int buflen;
+  int validMessage;
+  size_t fieldLength;
   char *p;
   char inbuffer[MAX_UDP_SIZE + 1];
   char ackbuffer[STDBUF];
@@ -1318,9 +1442,11 @@ int logDaemonMainLoop(int sockfd) {
       ackbuffer[0] = '\0';
       if (!strncmp(inbuffer, log_service_id, strlen(log_service_id))) {
         Debug("Responding to broadcast for %s\n", log_service_id + 1);
-        p = inbuffer;
-        while (*p != '~')
-          p++;
+        p = strchr(inbuffer, '~');
+        if (!p) {
+          syslog(LOG_ERR, "malformed logDaemon broadcast: missing field delimiter");
+          break;
+        }
         p++;
         validCode = logDaemonValidateSourceId(p);
         if (getHourOfDay() < startHour)
@@ -1350,8 +1476,12 @@ int logDaemonMainLoop(int sockfd) {
       Debug("read %d bytes from port\n", buflen);
 
       log_ent.field_buffer[0] = '\0';
+      log_ent.secs = NULL;
+      log_ent.usecs = NULL;
+      log_ent.sourceTagNode = NULL;
       nextFreeByte = 0;
       nextTagValue = 0;
+      validMessage = 1;
 
       p = inbuffer;
       for (i = 0, p = strtok(++p, "~"); p; i++) {
@@ -1360,21 +1490,30 @@ int logDaemonMainLoop(int sockfd) {
           Debug("Got length (%s)\n", p);
           if (atoi(p) != buflen) {
             syslog(LOG_ERR, "length field != received buffer size");
-            p = (char *)NULL;
-            continue;
+            validMessage = 0;
           }
           break;
         case 1: /* field one (secs) */
           Debug("Got secs (%s)\n", p);
-          strcpy(&(log_ent.field_buffer[nextFreeByte]), p);
+          fieldLength = strlen(p) + 1;
+          if (fieldLength > sizeof(log_ent.field_buffer) - nextFreeByte) {
+            validMessage = 0;
+            break;
+          }
+          memcpy(&(log_ent.field_buffer[nextFreeByte]), p, fieldLength);
           log_ent.secs = &(log_ent.field_buffer[nextFreeByte]);
-          nextFreeByte += strlen(p) + 1;
+          nextFreeByte += fieldLength;
           break;
         case 2: /* field two (usecs) */
           Debug("Got usecs (%s)\n", p);
-          strcpy(&(log_ent.field_buffer[nextFreeByte]), p);
+          fieldLength = strlen(p) + 1;
+          if (fieldLength > sizeof(log_ent.field_buffer) - nextFreeByte) {
+            validMessage = 0;
+            break;
+          }
+          memcpy(&(log_ent.field_buffer[nextFreeByte]), p, fieldLength);
           log_ent.usecs = &(log_ent.field_buffer[nextFreeByte]);
-          nextFreeByte += strlen(p) + 1;
+          nextFreeByte += fieldLength;
           break;
         case 3: /* field three (sourceId) */
           Debug("Got sourceId (%s)\n", p);
@@ -1382,21 +1521,34 @@ int logDaemonMainLoop(int sockfd) {
           sourceTagNode = logDaemonFindSourceTagNode(p);
           log_ent.sourceTagNode = sourceTagNode;
           if (sourceTagNode == NULL) {
-            syslog(LOG_ERR, "fatal error, unknown sourceId received: %s", p);
-            exit(1);
+            syslog(LOG_ERR, "unknown sourceId received: %s", p);
+            validMessage = 0;
           }
           break;
         default:
           Debug("Got tag value (%s)\n", p);
-          strcpy(&(log_ent.field_buffer[nextFreeByte]), p);
+          fieldLength = strlen(p) + 1;
+          if (nextTagValue >= MAX_MESSAGE_SIZE ||
+              fieldLength > sizeof(log_ent.field_buffer) - nextFreeByte) {
+            validMessage = 0;
+            break;
+          }
+          memcpy(&(log_ent.field_buffer[nextFreeByte]), p, fieldLength);
           log_ent.tagValues[nextTagValue++] =
             &(log_ent.field_buffer[nextFreeByte]);
-          nextFreeByte += strlen(p) + 1;
+          nextFreeByte += fieldLength;
         }
+        if (!validMessage)
+          break;
         if (getHourOfDay() < startHour)
           logDaemonStartNewLog();
         startHour = getHourOfDay();
         p = strtok(NULL, "~\n");
+      }
+      if (!validMessage || i < 4 || !log_ent.secs || !log_ent.usecs ||
+          !log_ent.sourceTagNode) {
+        syslog(LOG_ERR, "malformed log message ignored");
+        break;
       }
       log_ent.numTagValues = nextTagValue;
 
@@ -1445,7 +1597,7 @@ int logDaemonMainLoop(int sockfd) {
  * RETURNS  : 0
  ************************************************************************/
 int logDaemonWriteMessage(TYPENODE *typeNode) {
-  int outlen, log_entry_len;
+  int log_entry_len, written;
   char logbuff[MAX_MESSAGE_SIZE];
   double secs, usecs, Time;
   int nextTagValue = 0;
@@ -1459,40 +1611,57 @@ int logDaemonWriteMessage(TYPENODE *typeNode) {
 
 #ifdef SDDS
   if (mode == TEXT_MODE) {
-    sprintf(logbuff, "%f~%s", Time, log_ent.sourceTagNode->sourceId);
+    written = snprintf(logbuff, sizeof(logbuff), "%f~%s", Time, log_ent.sourceTagNode->sourceId);
+    if (written < 0 || (size_t)written >= sizeof(logbuff))
+      return (-1);
     while (nextTagValue < log_ent.numTagValues) {
-      strcat(logbuff, "~");
-      strcat(logbuff, log_ent.tagValues[nextTagValue++]);
+      if (!appendText(logbuff, sizeof(logbuff), "~") ||
+          !appendText(logbuff, sizeof(logbuff), log_ent.tagValues[nextTagValue++]))
+        return (-1);
     }
-    strcat(logbuff, "\n");
+    if (!appendText(logbuff, sizeof(logbuff), "\n"))
+      return (-1);
   } else { /* mode == SDDS_MODE */
-    sprintf(logbuff, "%f", Time);
+    written = snprintf(logbuff, sizeof(logbuff), "%f", Time);
+    if (written < 0 || (size_t)written >= sizeof(logbuff))
+      return (-1);
     while (nextTagValue < log_ent.numTagValues) {
-      strcat(logbuff, " \"");
-      strcat(logbuff, log_ent.tagValues[nextTagValue++]);
-      strcat(logbuff, "\"");
+      if (!appendText(logbuff, sizeof(logbuff), " \"") ||
+          !appendText(logbuff, sizeof(logbuff), log_ent.tagValues[nextTagValue++]) ||
+          !appendText(logbuff, sizeof(logbuff), "\""))
+        return (-1);
     }
-    strcat(logbuff, "\n");
+    if (!appendText(logbuff, sizeof(logbuff), "\n"))
+      return (-1);
     /* For SDDS format, we must update the row count */
     typeNode->row_count++;
   }
 #else
-  sprintf(logbuff, "%lf~%s", Time, log_ent.sourceTagNode->sourceId);
+  written = snprintf(logbuff, sizeof(logbuff), "%lf~%s", Time, log_ent.sourceTagNode->sourceId);
+  if (written < 0 || (size_t)written >= sizeof(logbuff))
+    return (-1);
   while (nextTagValue < log_ent.numTagValues) {
-    strcat(logbuff, "~");
-    strcat(logbuff, log_ent.tagValues[nextTagValue++]);
+    if (!appendText(logbuff, sizeof(logbuff), "~") ||
+        !appendText(logbuff, sizeof(logbuff), log_ent.tagValues[nextTagValue++]))
+      return (-1);
   }
-  strcat(logbuff, "\n");
+  if (!appendText(logbuff, sizeof(logbuff), "\n"))
+    return (-1);
 #endif
 
   /* Write the log message out to appropriate log file */
   log_entry_len = strlen(logbuff);
 #ifdef SDDS
-  if ((outlen = fprintf(typeNode->table.layout.fp, "%s", logbuff)) < 0)
-    syslog(LOG_ERR, "unable to write entry to log file: %m");
-  fflush(typeNode->table.layout.fp);
+  if (mode == TEXT_MODE) {
+    if (write(typeNode->log_file_fd, logbuff, log_entry_len) < 0)
+      syslog(LOG_ERR, "unable to write entry to log file: %m");
+  } else {
+    if (fprintf(typeNode->table.layout.fp, "%s", logbuff) < 0)
+      syslog(LOG_ERR, "unable to write entry to log file: %m");
+    fflush(typeNode->table.layout.fp);
+  }
 #else
-  if ((outlen = write(typeNode->log_file_fd, logbuff, log_entry_len)) < 0)
+  if (write(typeNode->log_file_fd, logbuff, log_entry_len) < 0)
     syslog(LOG_ERR, "unable to write entry to log file: %m");
 #endif
   typeNode->size += log_entry_len;
@@ -1518,8 +1687,9 @@ int logDaemonWriteMessage(TYPENODE *typeNode) {
 int logDaemonSendMail(TYPENODE *typeNode) {
   char mail_mess[MAX_MESSAGE_SIZE];
   int pfds[2];
-  char *mailArr[MAX_MAIL_RECIPIENTS];
-  int outlen, retval, i;
+  char *mailArr[MAX_MAIL_RECIPIENTS + 2];
+  int retval, i;
+  pid_t childPid;
   char *p;
   TAGNODE *tagNode;
   int nextTagValue = 0;
@@ -1527,32 +1697,40 @@ int logDaemonSendMail(TYPENODE *typeNode) {
   Debug("sending mail\n", 0);
 
   /* Build up body of email message */
-  strcpy(mail_mess, "!!Message From logDaemon!!\n\n");
-  strcat(mail_mess, "SourceId: ");
-  strcat(mail_mess, typeNode->sourceId);
+  snprintf(mail_mess, sizeof(mail_mess), "!!Message From logDaemon!!\n\n");
+  if (!appendText(mail_mess, sizeof(mail_mess), "SourceId: ") ||
+      !appendText(mail_mess, sizeof(mail_mess), typeNode->sourceId))
+    return (-1);
 
   tagNode = (TAGNODE *)ellFirst(&(typeNode->sourceTagNode->tagList));
   while (tagNode != NULL && nextTagValue < log_ent.numTagValues) {
-    strcat(mail_mess, "\n");
-    strcat(mail_mess, tagNode->tag);
-    strcat(mail_mess, ": ");
-    strcat(mail_mess, log_ent.tagValues[nextTagValue++]);
+    if (!appendText(mail_mess, sizeof(mail_mess), "\n") ||
+        !appendText(mail_mess, sizeof(mail_mess), tagNode->tag) ||
+        !appendText(mail_mess, sizeof(mail_mess), ": ") ||
+        !appendText(mail_mess, sizeof(mail_mess), log_ent.tagValues[nextTagValue++]))
+      return (-1);
     tagNode = (TAGNODE *)ellNext((ELLNODE *)tagNode);
   }
-  strcat(mail_mess, "\n");
+  if (!appendText(mail_mess, sizeof(mail_mess), "\n"))
+    return (-1);
 
   if (pipe(pfds) < 0) {
     syslog(LOG_ERR, "pipe call failed: %m");
     return (-1);
   }
 
-  switch (fork()) {
+  childPid = fork();
+  switch (childPid) {
   case -1:
     syslog(LOG_ERR, "cannot fork(): %m");
+    close(pfds[0]);
+    close(pfds[1]);
     return (-1);
   case 0: /* child */
-    close(0);
-    dup(pfds[0]);
+    close(pfds[1]);
+    if (dup2(pfds[0], STDIN_FILENO) < 0)
+      _exit(1);
+    close(pfds[0]);
 
     /* Split string of one or more space delimited e-mail addresses
        into separate string for execv call */
@@ -1564,18 +1742,17 @@ int logDaemonSendMail(TYPENODE *typeNode) {
 
     execv("/bin/mail", mailArr);
     syslog(LOG_ERR, "execv failed: %m");
-    retval = -1;
-    exit(0);
+    _exit(1);
   }
 
-  if ((outlen = write(pfds[1], mail_mess, strlen(mail_mess))) < 0) {
+  close(pfds[0]);
+  if (write(pfds[1], mail_mess, strlen(mail_mess)) < 0) {
     syslog(LOG_ERR, "unable to write mail: %m");
     retval = -1;
   } else
     retval = 0;
 
   close(pfds[1]);
-  /* used to have wait(0) here */
   return (retval);
 }
 
@@ -1595,7 +1772,8 @@ int logDaemonNewGeneration(TYPENODE *typeNode) {
   size_t logfilename_len;
   char errbuf[STDBUF];
   char newgeneration[STDBUF];
-  char *ptr, *ptr1;
+  const char *filename;
+  int written;
 
   Debug("file %s reached capacity\n", typeNode->log_file);
   /*
@@ -1606,21 +1784,17 @@ int logDaemonNewGeneration(TYPENODE *typeNode) {
   if ((dp = opendir(typeNode->sourceId)) == NULL) {
     syslog(LOG_ERR, "unable to open directory: %m");
     PERROR(errbuf);
+    return (-1);
   }
   max_generation = -1;
-  /*get the filename only */
-  SDDS_CopyString(&ptr, typeNode->log_file);
-  ptr1 = strtok(ptr, "/");
-  free(ptr);
-  while (ptr1 != NULL) {
-    SDDS_CopyString(&ptr, ptr1);
-    ptr1 = strtok(NULL, "/");
-  }
+  /* Get the filename without retaining pointers into temporary storage. */
+  filename = strrchr(typeNode->log_file, '/');
+  filename = filename ? filename + 1 : typeNode->log_file;
 
-  logfilename_len = strlen(ptr);
+  logfilename_len = strlen(filename);
   while ((dirp = readdir(dp)) != NULL) {
     if (strlen(dirp->d_name) > logfilename_len + 1 &&
-        !strncmp(ptr, dirp->d_name, logfilename_len) &&
+        !strncmp(filename, dirp->d_name, logfilename_len) &&
         atoi(&(dirp->d_name[logfilename_len + 1])) > max_generation) {
       max_generation = atoi(&(dirp->d_name[logfilename_len + 1]));
     }
@@ -1628,7 +1802,11 @@ int logDaemonNewGeneration(TYPENODE *typeNode) {
   if (closedir(dp) < 0)
     syslog(LOG_ERR, "unable to close directory: %m");
 
-  snprintf(newgeneration, sizeof(newgeneration), "%s.%05d", ptr, max_generation + 1);
+  written = snprintf(newgeneration, sizeof(newgeneration), "%s.%05d", filename, max_generation + 1);
+  if (written < 0 || (size_t)written >= sizeof(newgeneration)) {
+    syslog(LOG_ERR, "generated log filename is too long");
+    return (-1);
+  }
 
   /* Form destination path and rename file safely */
   {

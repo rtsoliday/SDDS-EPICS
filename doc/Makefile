@@ -5,8 +5,10 @@ all:: check-deps EPICStoolkit.ps EPICStoolkit.pdf EPICStoolkit \
 .PHONY: check-deps
 check-deps:
 	@command -v latex >/dev/null || (echo "Error: latex command not found. Install TeX Live packages." >&2; exit 1)
-	@command -v latex2html >/dev/null || (echo "Error: latex2html command not found. Install latex2html package." >&2; exit 1)
-	@command -v repstopdf >/dev/null || (echo "Error: repstopdf command not found. Install texlive-font-utils package." >&2; exit 1)
+	@command -v dvips >/dev/null || (echo "Error: dvips command not found. Install TeX Live binaries." >&2; exit 1)
+	@command -v ps2pdf13 >/dev/null || (echo "Error: ps2pdf13 command not found. Install Ghostscript." >&2; exit 1)
+	@command -v htlatex >/dev/null || (echo "Error: htlatex command not found. Install TeX4ht." >&2; exit 1)
+	@command -v convert >/dev/null || (echo "Error: convert command not found. Install ImageMagick." >&2; exit 1)
 	@echo "All documentation build dependencies are available."
 
 EPICStoolkit.ps:

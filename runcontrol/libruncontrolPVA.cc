@@ -128,33 +128,53 @@ int runControlInitPVA(PVA_OVERALL *pva, char *pv, char *desc, float timeout, cha
   /* First set the heartbeat timeout interval */
   ConnectPVA(pva, (*rcInfo).pendIOtime);
   if (pva->numNotConnected > 0) {
+    freePVA(pva);
     return (RUNCONTROL_ERROR);
   }
   if (GetPVAValues(pva) == 1) {
+    freePVA(pva);
+    return (RUNCONTROL_ERROR);
+  }
+  if (pva->pvaData[semIndex].numGetReadings == 0 ||
+      !pva->pvaData[semIndex].getData ||
+      !pva->pvaData[semIndex].getData[0].values ||
+      pva->pvaData[pidIndex].numGetReadings == 0 ||
+      !pva->pvaData[pidIndex].getData ||
+      !pva->pvaData[pidIndex].getData[0].stringValues ||
+      !pva->pvaData[pidIndex].getData[0].stringValues[0]) {
+    freePVA(pva);
     return (RUNCONTROL_ERROR);
   }
   if ((-.1 < pva->pvaData[semIndex].getData[0].values[0]) &&
       (.1 > pva->pvaData[semIndex].getData[0].values[0])) {
     if (strlen(pva->pvaData[pidIndex].getData[0].stringValues[0]) > 0) {
-      freePVAGetReadings(pva);
+      freePVA(pva);
       return (RUNCONTROL_DENIED);
     }
   }
   freePVAGetReadings(pva);
 
-  PrepPut(pva, hbtIndex, (double)timeout);
-  PrepPut(pva, semIndex, (int64_t)semTake);
+  if (PrepPut(pva, hbtIndex, (double)timeout) ||
+      PrepPut(pva, semIndex, (int64_t)semTake)) {
+    freePVA(pva);
+    return (RUNCONTROL_ERROR);
+  }
   if (PutPVAValues(pva) == 1) {
+    freePVA(pva);
     return (RUNCONTROL_ERROR);
   }
 
   /* Load record with user, host, pid, start time, and description */
-  PrepPut(pva, userIndex, username);
-  PrepPut(pva, hostIndex, hostname);
-  PrepPut(pva, pidIndex, pid);
-  PrepPut(pva, strtIndex, localtimestring);
-  PrepPut(pva, descIndex, desc);
+  if (PrepPut(pva, userIndex, username) ||
+      PrepPut(pva, hostIndex, hostname) ||
+      PrepPut(pva, pidIndex, pid) ||
+      PrepPut(pva, strtIndex, localtimestring) ||
+      PrepPut(pva, descIndex, desc)) {
+    freePVA(pva);
+    return (RUNCONTROL_ERROR);
+  }
   if (PutPVAValues(pva) == 1) {
+    freePVA(pva);
     return (RUNCONTROL_ERROR);
   }
 
@@ -186,10 +206,29 @@ int runControlPingPVA(PVA_OVERALL *pva, char *handle, RUNCONTROL_INFO *rcInfo) {
   double ping = 1.0;
 
   /* See if record is requesting abort, suspend, or has timed out. */
+  freePVAGetReadings(pva);
   if (GetPVAValues(pva) == 1) {
+    freePVAGetReadings(pva);
     return (RUNCONTROL_ERROR);
   }
   if (pva->numNotConnected > 0) {
+    freePVAGetReadings(pva);
+    return (RUNCONTROL_ERROR);
+  }
+  if (pva->pvaData[abrtIndex].numGetReadings == 0 ||
+      !pva->pvaData[abrtIndex].getData ||
+      !pva->pvaData[abrtIndex].getData[0].values ||
+      pva->pvaData[suspIndex].numGetReadings == 0 ||
+      !pva->pvaData[suspIndex].getData ||
+      !pva->pvaData[suspIndex].getData[0].values ||
+      pva->pvaData[hbtoIndex].numGetReadings == 0 ||
+      !pva->pvaData[hbtoIndex].getData ||
+      !pva->pvaData[hbtoIndex].getData[0].values ||
+      pva->pvaData[pidIndex].numGetReadings == 0 ||
+      !pva->pvaData[pidIndex].getData ||
+      !pva->pvaData[pidIndex].getData[0].stringValues ||
+      !pva->pvaData[pidIndex].getData[0].stringValues[0]) {
+    freePVAGetReadings(pva);
     return (RUNCONTROL_ERROR);
   }
   abrt = pva->pvaData[abrtIndex].getData[0].values[0];
@@ -214,6 +253,17 @@ int runControlPingPVA(PVA_OVERALL *pva, char *handle, RUNCONTROL_INFO *rcInfo) {
     while (susp) {
       epicsThreadSleep(1);
       if (GetPVAValues(pva) == 1) {
+        freePVAGetReadings(pva);
+        return (RUNCONTROL_ERROR);
+      }
+      if (pva->numNotConnected > 0 ||
+          pva->pvaData[abrtIndex].numGetReadings == 0 ||
+          !pva->pvaData[abrtIndex].getData ||
+          !pva->pvaData[abrtIndex].getData[0].values ||
+          pva->pvaData[suspIndex].numGetReadings == 0 ||
+          !pva->pvaData[suspIndex].getData ||
+          !pva->pvaData[suspIndex].getData[0].values) {
+        freePVAGetReadings(pva);
         return (RUNCONTROL_ERROR);
       }
       abrt = pva->pvaData[abrtIndex].getData[0].values[0];
@@ -225,7 +275,8 @@ int runControlPingPVA(PVA_OVERALL *pva, char *handle, RUNCONTROL_INFO *rcInfo) {
   }
 
   /* No suspend, abort, or timeout. So ping the record. */
-  PrepPut(pva, valIndex, ping);
+  if (PrepPut(pva, valIndex, ping))
+    return (RUNCONTROL_ERROR);
   if (PutPVAValues(pva) == 1) {
     return (RUNCONTROL_ERROR);
   }
@@ -247,10 +298,20 @@ int runControlExitPVA(PVA_OVERALL *pva, char *handle, RUNCONTROL_INFO *rcInfo) {
   short semGive = 1;
   int pid;
 
+  freePVAGetReadings(pva);
   if (GetPVAValues(pva) == 1) {
+    freePVAGetReadings(pva);
     return (RUNCONTROL_ERROR);
   }
   if (pva->numNotConnected > 0) {
+    freePVAGetReadings(pva);
+    return (RUNCONTROL_ERROR);
+  }
+  if (pva->pvaData[pidIndex].numGetReadings == 0 ||
+      !pva->pvaData[pidIndex].getData ||
+      !pva->pvaData[pidIndex].getData[0].stringValues ||
+      !pva->pvaData[pidIndex].getData[0].stringValues[0]) {
+    freePVAGetReadings(pva);
     return (RUNCONTROL_ERROR);
   }
   pid = atoi(pva->pvaData[pidIndex].getData[0].stringValues[0]);
@@ -259,7 +320,8 @@ int runControlExitPVA(PVA_OVERALL *pva, char *handle, RUNCONTROL_INFO *rcInfo) {
   if (pid != (int)((*rcInfo).myPid))
     return (RUNCONTROL_ERROR);
 
-  PrepPut(pva, semIndex, (int64_t)semGive);
+  if (PrepPut(pva, semIndex, (int64_t)semGive))
+    return (RUNCONTROL_ERROR);
   if (PutPVAValues(pva) == 1) {
     return (RUNCONTROL_ERROR);
   }
@@ -288,8 +350,9 @@ int runControlLogMessage(char *handle, char *message, short severity, RUNCONTROL
 int runControlLogMessagePVA(PVA_OVERALL *pva, char *handle, char *message, short severity, RUNCONTROL_INFO *rcInfo) {
   short sev = severity;
 
-  PrepPut(pva, alrmIndex, (int64_t)sev);
-  PrepPut(pva, msgIndex, message);
+  if (PrepPut(pva, alrmIndex, (int64_t)sev) ||
+      PrepPut(pva, msgIndex, message))
+    return (RUNCONTROL_ERROR);
   if (PutPVAValues(pva) == 1) {
     return (RUNCONTROL_ERROR);
   }

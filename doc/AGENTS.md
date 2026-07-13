@@ -35,24 +35,15 @@ Use the `verbatim` environment for both examples and synopsis sections to ensure
 - Keep LaTeX commands and environments consistent with the existing files.
 
 ## Building
-Before running `make`, install the required LaTeX packages:
+The build requires LaTeX and DVIPS from TeX Live, Ghostscript, TeX4ht, and
+ImageMagick. See `README.md` in this directory for package suggestions and the
+complete output list. Check the active environment before building:
 
-```bash
-apt-get update
-apt-get install -y --no-install-recommends \
-  texlive-base texlive-latex-base texlive-latex-extra \
-  texlive-fonts-recommended texlive-plain-generic \
-  texlive-extra-utils tex4ht ghostscript latex2html \
-  texlive-font-utils
+```
+make check-deps
 ```
 
-If an error related to `ca-certificates-java` appears, remove the OpenJDK packages:
-
-```bash
-apt-get remove --purge -y openjdk-*-jre-headless default-jre-headless default-jre
-```
-
-Use the provided `Makefile` to generate PostScript, PDF and HTML output:
+Use the provided `Makefile` to generate PostScript, PDF, and HTML output:
 
 ```
 make

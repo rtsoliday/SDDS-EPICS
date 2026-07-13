@@ -69,6 +69,7 @@ char *USAGE1 = (char *)"sddspcas <inputfiles> \n\
 [-executionTime=<execution time>] \n\
 [-pvPrefix=<PV name prefix>] \n\
 [-noise=<rate>] \n\
+[-arraySize=<bytes>] \n\
 [-runControlPV=string=<string>,pingTimeout=<value>] \n\
 [-runControlDescription=string=<string>] [-standalone]\n\n\
 sddspcas is a portable channel access server that is configured\n\
@@ -108,6 +109,7 @@ char *USAGE2 = (char *)"-masterPVFile   SDDS file containing all the IOC process
 -pvPrefix       Prefix used on all process variables.\n\
 -noise          Random noise is added to the process variables and updated\n\
                 at the given rate.\n\
+-arraySize      Sets EPICS_CA_MAX_ARRAY_BYTES for waveform transfers.\n\
 -debugLevel     The debugging level.\n\
 -runControlPV   Specifies a runControl PV name.\n\
 -runControlDescription\n\

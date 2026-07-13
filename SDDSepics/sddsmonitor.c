@@ -812,12 +812,12 @@ int main(int argc, char **argv) {
   int32_t InhibitWaitTime = 5;
   double InhibitPendIOTime = 10;
   chid inhibitID;
-  PV_VALUE InhibitPV;
+  PV_VALUE InhibitPV = {0};
 
   long useStop = 0;
   double stopPendIOTime = 10;
   chid stopID;
-  PV_VALUE stopPV;
+  PV_VALUE stopPV = {0};
 
   struct stat input_filestat;
   int watchInput = 0;

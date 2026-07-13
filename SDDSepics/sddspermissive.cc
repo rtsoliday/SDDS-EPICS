@@ -22,7 +22,7 @@
  * | `-runControlPV`         | Run control PV name with ping parameters. |
  * | `-runControlDescription`| Description string for the run control record. |
  * | `-verbose`              | Enable verbose output. |
- * | `-pendIOTime`           | Maximum time to wait for Channel Access I/O. |
+ * | `-pendIOTime`           | Maximum time to wait for connection and I/O. |
  *
  * @copyright
  *   - (c) 2002 The University of Chicago, as Operator of Argonne National Laboratory.
@@ -137,7 +137,7 @@ class permissiveMonitorRequester;
 typedef std::tr1::shared_ptr<permissiveMonitorRequester> permissiveMonitorRequesterPtr;
 
 int main(int argc, char **argv) {
-  PVA_OVERALL pva;
+  PVA_OVERALL pva{};
   MONITOR_DATA monitor;
   int64_t i, p;
   if (ReadArguments(argc, argv, &monitor) == 1) {
@@ -629,7 +629,10 @@ int EventLoop(PVA_OVERALL *pva, MONITOR_DATA *monitor) {
       j = mask_start;
       for (p = 0; p < monitor->pages; p++) {
         for (i = 0; i < monitor->page[p].pvMaskCount; i++) {
-          if (pva->isConnected[j] && (pva->pvaData[j].numMonitorReadings > 0)) {
+          if (pva->isConnected[j] && pva->pvaData[j].numMonitorReadings > 0 &&
+              pva->pvaData[j].numMonitorElements > 0 &&
+              pva->pvaData[j].monitorData != NULL &&
+              pva->pvaData[j].monitorData[0].values != NULL) {
             if ((pva->pvaData[j].monitorData[0].values[0] < monitor->page[p].MaskMinimumValue) ||
                 (pva->pvaData[j].monitorData[0].values[0] > monitor->page[p].MaskMaximumValue)) {
               if ((monitor->verbose) && (mask_alerts[p] != false)) {
@@ -663,7 +666,10 @@ int EventLoop(PVA_OVERALL *pva, MONITOR_DATA *monitor) {
           continue;
         }
         for (i = 0; i < monitor->page[p].pvCount; i++) {
-          if (pva->isConnected[j] && (pva->pvaData[j].numMonitorReadings > 0)) {
+          if (pva->isConnected[j] && pva->pvaData[j].numMonitorReadings > 0 &&
+              pva->pvaData[j].numMonitorElements > 0 &&
+              pva->pvaData[j].monitorData != NULL &&
+              pva->pvaData[j].monitorData[0].values != NULL) {
             if ((pva->pvaData[j].monitorData[0].values[0] < monitor->page[p].MinimumValue[i]) ||
                 (pva->pvaData[j].monitorData[0].values[0] > monitor->page[p].MaximumValue[i])) {
               pass = false;

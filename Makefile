@@ -38,11 +38,15 @@ DIRS += $(SDDS_REPO)/fftpack
 DIRS += $(SDDS_REPO)/matlib
 DIRS += $(SDDS_REPO)/mdbcommon
 DIRS += oagca
+DIRS += rampload
 DIRS += runcontrol
 DIRS += logDaemon
 DIRS += SDDSepics
 
-.PHONY: all $(DIRS) clean distclean
+SDDS_TEST_TOOL_NAMES = sdds2stream sddsquery
+SDDS_TEST_TOOL_TARGETS = $(addprefix O.$(OS)-$(ARCH)/,$(addsuffix $(EXEEXT),$(SDDS_TEST_TOOL_NAMES)))
+
+.PHONY: all $(DIRS) clean distclean test test-binaries
 
 all: $(DIRS)
 
@@ -78,6 +82,8 @@ $(SDDS_REPO)/mdbcommon: $(SDDS_REPO)/matlib
 	$(MAKE) -C $@
 oagca: $(SDDS_REPO)/mdbcommon
 	$(MAKE) -C $@
+rampload: oagca
+	$(MAKE) -C $@
 runcontrol: oagca
 	$(MAKE) -C $@
 logDaemon: runcontrol
@@ -85,8 +91,16 @@ logDaemon: runcontrol
 SDDSepics: logDaemon
 	$(MAKE) -C $@
 
+test-binaries: rampload logDaemon
+	$(MAKE) -C $(SDDS_REPO)/SDDSaps O.$(OS)-$(ARCH) ../bin/$(OS)-$(ARCH) $(SDDS_TEST_TOOL_TARGETS)
+	$(MAKE) -C SDDSepics test-programs
+
+test: test-binaries
+	python3 -m pytest tests
+
 clean:
 	$(MAKE) -C oagca clean
+	$(MAKE) -C rampload clean
 	$(MAKE) -C runcontrol clean
 	$(MAKE) -C logDaemon clean
 	$(MAKE) -C SDDSepics clean

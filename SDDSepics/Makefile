@@ -103,7 +103,7 @@ sddssynchlog_SRC = sddssynchlog.c SDDSepics.c
 sddsmonitor_SRC = sddsmonitor.c SDDSepics.c
 sddsstatmon_SRC = sddsstatmon.c SDDSepics.c
 sddsvmonitor_SRC = sddsvmonitor.c SDDSepics.c
-sddswmonitor_SRC = sddswmonitor.cc SDDSepics.c pvaSDDS.cc
+sddswmonitor_SRC = sddswmonitor.cc SDDSepics.c
 BPS16monitor_SRC = BPS16monitor.c SDDSepics.c
 squishPVs_SRC = squishPVs.c SDDSepics.c
 sddsalarmlog_SRC = sddsalarmlog.c SDDSepics.c
@@ -123,7 +123,7 @@ makesrbump_SRC = makesrbump.c SDDSepics.c
 sddsexperiment_SRC = sddsexperiment.c SDDSepics.c
 sddsvexperiment_SRC = sddsvexperiment.c SDDSepics.c
 sddspvalogger_SRC = sddspvalogger.cc SDDSepics.c pvaSDDS.cc
-sddswget_SRC = sddswget.cc SDDSepics.c pvaSDDS.cc
+sddswget_SRC = sddswget.cc SDDSepics.c
 sddspvasaverestore_SRC = sddspvasaverestore.cc SDDSepics.c pvaSDDS.cc
 sddspvaglitchlogger_SRC = sddspvaglitchlogger.cc SDDSepics.c pvaSDDS.cc
 sddscainfo_SRC = sddscainfo.cc pvaSDDS.cc
@@ -145,8 +145,15 @@ CFLAGS += -I$(EPICS_BASE)/include  -I$(SDDS_REPO)/include -DUSE_RUNCONTROL -I../
 CCFLAGS += -I$(EPICS_BASE)/include -I$(SDDS_REPO)/include -DUSE_RUNCONTROL -I../runcontrol -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\" -DACCESS_SECURITY -D_NO_PROTO
 
 ifneq ($(PCAS_INC_DIR),)
+  ifeq ($(OS),Windows)
 	CFLAGS += -I$(PCAS_INC_DIR)
 	CCFLAGS += -I$(PCAS_INC_DIR)
+  else
+	# PCAS is an external dependency. Treat its headers as system headers so
+	# compiler diagnostics remain focused on code maintained in this repository.
+	CFLAGS += -isystem $(PCAS_INC_DIR)
+	CCFLAGS += -isystem $(PCAS_INC_DIR)
+  endif
 endif
 
 ifeq ($(OS), Linux)
@@ -399,4 +406,11 @@ $(OBJ_DIR)/sddsSoftIOC$(EXEEXT): $(sddsSoftIOC_OBJS) $(PROD_DEPS)
 
 .PHONY: sddsSoftIOC
 sddsSoftIOC: $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/sddsSoftIOC$(EXEEXT)
+	@true
+
+TEST_PROD = $(PROD)
+TEST_PROD_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(TEST_PROD)))
+
+.PHONY: test-programs
+test-programs: $(OBJ_DIR) $(BIN_DIR) $(TEST_PROD_TARGETS)
 	@true

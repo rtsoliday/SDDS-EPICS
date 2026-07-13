@@ -2,7 +2,9 @@
 %
 \begin{sddsprog}{sddspvacontrollaw}
 \item \textbf{description:}
-\verb+sddspvacontrollaw+ performs feedback on process variables using PV Access. The
+\verb+sddspvacontrollaw+ performs feedback on process variables using Channel
+Access or PVAccess. Unprefixed PV names use CA; prefix a name with
+\verb+pva://+ to select PVA or \verb+ca://+ to select CA explicitly. The
 input file defines an inverse response matrix: each column names a readback PV and a
 string column lists the actuator PVs. The program adjusts actuators to regulate the
 readbacks to zero or to given offsets, optionally logging data and applying limits.

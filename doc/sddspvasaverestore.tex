@@ -1,7 +1,7 @@
 \begin{sddsprog}{sddspvasaverestore}
 \item \textbf{description:}
-  \verb+sddspvasaverestore+ saves or restores EPICS process variable values using the EPICS PVA
-  interface. It reads an SDDS input file listing process variables and either writes current
+  \verb+sddspvasaverestore+ saves or restores EPICS process variable values using
+  Channel Access or PVAccess on a per-PV basis. It reads an SDDS input file listing process variables and either writes current
   values to an output file or sets the PVs to values from the input file. Options allow daemon
   operation, run control integration, trigger PVs, and waveform handling.
 \item \textbf{examples:}
@@ -27,7 +27,13 @@ usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-  \item \textbf{input file:} SDDS file listing PVs to save or restore, including columns \verb|ControlName| and \verb|ValueString| for restoring.
+  \item \textbf{input file:} SDDS file listing PVs to save or restore. The
+    string column \verb|ControlName| is required, and \verb|ValueString| is
+    used for restoring scalar values. For mixed-provider or PVA input, provide
+    \verb|Provider|, \verb|ExpectNumeric|, \verb|ExpectFieldType|, and
+    \verb|ExpectElements|. If any of those metadata columns is absent, the
+    input is treated as numeric scalar CA data for compatibility with older
+    save files. \verb|IndirectName| is optional.
   \item \textbf{output file:} SDDS file receiving saved PV values when \texttt{-save} is used.
 \end{itemize}
 \item \textbf{switches:}
@@ -38,8 +44,8 @@ usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]
   \item {\tt -dailyFiles} --- append the current date to the output filename.
   \item {\tt -interval=<seconds>} --- loop interval when in daemon mode or when checking a trigger PV.
   \item {\tt -triggerPV=<pv>,<provider>} --- PV that causes a save when it changes from 0 to 1.
-  \item {\tt -inputFilePV=<pv>,<provider>} --- PV providing the input filename.
-  \item {\tt -outputFilePV=<pv>,<provider>} --- PV receiving the output filename.
+  \item {\tt -inputFilePV=<pv>,<provider>} --- string scalar or byte-waveform PV providing the input filename.
+  \item {\tt -outputFilePV=<pv>,<provider>} --- string scalar or byte-waveform PV receiving the output filename.
   \item {\tt -description=<string>|pv=<pv>,provider=<provider>} --- snapshot description or PV supplying it.
   \item {\tt -waveform=[...]} --- configure saving or restoring waveform PV data.
   \item {\tt -runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>} --- run control record and ping settings.

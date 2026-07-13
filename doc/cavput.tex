@@ -17,10 +17,12 @@
 \item \textbf{synopsis:}
     \begin{verbatim}
 usage: cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
+      [-delist=<pattern>[,<pattern>...]]
       [-range=begin=<integer>,end=<integer>[,format=<string>][,interval=<integer>]]
-      [-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=step=<n>,pause=<sec>]
+      [-pendIoTime=<seconds>] [-dryRun] [-deltaMode[=factor=<value>]] [-ramp=steps=<n>,pause=<sec>]
       [-numerical] [-charArray] [-blunderAhead[=silently]]
-      [-provider=\{ca|pva\}]
+      [-ezcaTiming] [-noGroups]
+      [-provider={ca|pva}]
     
 \end{verbatim}
 \item \textbf{switches:}
@@ -28,6 +30,8 @@ usage: cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
   \item {\tt -list} --- Specify PV name components with optional values. Repeating
     \verb+-list+ concatenates the components to form each PV name, and
     forms like \verb+-list=:Set=5+ assign the value \verb+5+.
+  \item {\tt -delist} --- Exclude PV names matching any comma-separated glob
+    pattern. The patterns support \verb+*+ and \verb+?+ wildcards.
   \item {\tt -range} --- Generate PV names from a range. \newline
     For example, \verb+-list=Q -range=begin=1,end=4,format=%02d -list=:Set=0+ \newline
     creates \verb+Q01:Set+ through \verb+Q04:Set+ with value \verb+0+.
@@ -39,6 +43,9 @@ usage: cavput [-list=<string>[=<value>][,<string>[=<value>]...]]
   \item {\tt -charArray} --- Use string mode for char array PVs.
   \item {\tt -blunderAhead} --- Continue puts even if some PVs fail to connect; \verb|silently| suppresses errors.
   \item {\tt -provider} --- Select Channel Access ({\tt ca}) or PVAccess ({\tt pva}).
+  \item {\tt -ezcaTiming}, {\tt -noGroups} --- accepted for compatibility
+    with older scripts but obsolete; \verb+-ezcaTiming+ should be replaced by
+    \verb+-pendIoTime+, and \verb+-noGroups+ has no effect.
 \end{itemize}
 \item \textbf{author:} Michael Borland, Robert Soliday, ANL/APS.
 \end{sddsprog}

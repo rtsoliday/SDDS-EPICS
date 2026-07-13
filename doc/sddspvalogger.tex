@@ -1,7 +1,7 @@
 % SDDS Toolkit manual entry for sddspvalogger
 \begin{sddsprog}{sddspvalogger}
 \item \textbf{description:}
-\verb+sddspvalogger+ connects to process variables over the EPICS7 PVA and CA protocols and logs the values to an SDDS file. The program supports conditional logging, data strobes, generation-based file rotation, and optional glitch capture.
+\verb+sddspvalogger+ connects to process variables over the EPICS 7 PVA and CA protocols and logs the values to an SDDS file. The program supports conditional logging, data strobes, generation-based file rotation, and optional glitch capture.
 \item \textbf{examples:}
 \begin{verbatim}
 sddspvalogger pvlist.sdds data.sdds -sampleInterval=1,seconds -steps=10
@@ -43,7 +43,18 @@ Glitch Logger Options:
 \end{verbatim}
 \item \textbf{files:}
 \begin{itemize}
-  \item \textbf{input file:} SDDS file with string column \verb|ControlName| listing PVs to log.
+  \item \textbf{input file:} SDDS file with required string columns
+    \verb|ControlName| and \verb|Provider|, where the provider is \verb|ca| or
+    \verb|pva|. \verb|ExpectFieldType| and \verb|ExpectElements| are also
+    required. The file must provide either the character column
+    \verb|ExpectNumeric| or the string column \verb|StorageType|. Optional
+    columns include \verb|ReadbackName|, \verb|ScaleFactor|, waveform slice
+    indices, \verb|Average|, and \verb|Units|.
+  \item \textbf{conditions file:} SDDS file with \verb|ControlName|,
+    \verb|Provider|, \verb|LowerLimit|, and \verb|UpperLimit| columns.
+  \item \textbf{trigger file:} SDDS file with \verb|TriggerControlName| and
+    \verb|Provider| columns plus optional alarm, transition, glitch, and script
+    settings.
   \item \textbf{output file:} SDDS file containing logged PV values.
 \end{itemize}
 

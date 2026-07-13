@@ -8429,9 +8429,6 @@ void cleanupTestWaveforms(WAVEFORM_TESTS *waveform_tests) {
       if (waveform_tests->ignore)
         if (waveform_tests->ignore[i])
           free(waveform_tests->ignore[i]);
-      if (waveform_tests->sleep)
-        if (waveform_tests->sleep[i])
-          free(waveform_tests->sleep[i]);
       if (waveform_tests->holdOff)
         if (waveform_tests->holdOff[i])
           free(waveform_tests->holdOff[i]);

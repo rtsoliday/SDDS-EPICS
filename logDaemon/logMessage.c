@@ -81,7 +81,15 @@ int main(int argc, char *argv[]) {
 
   for (i = 1; i < argc; i++) {
     if (*(argv[i]) != '-') {
+      if (strlen(argv[i]) >= sizeof(strNode->value)) {
+        fprintf(stderr, "%s: string too long\n", argv[0]);
+        exit(1);
+      }
       strNode = (STRNODE *)malloc(sizeof(STRNODE));
+      if (!strNode) {
+        fprintf(stderr, "%s: memory allocation failure\n", argv[0]);
+        exit(1);
+      }
       strcpy(strNode->value, argv[i]);
       ellAdd(&(valList), (ELLNODE *)strNode);
 
@@ -110,9 +118,21 @@ int main(int argc, char *argv[]) {
         usage(argv[0]);
         exit(1);
       }
+      if (strlen(p) >= sizeof(strNode->value)) {
+        fprintf(stderr, "%s: string too long\n", argv[0]);
+        exit(1);
+      }
       strNode = (STRNODE *)malloc(sizeof(STRNODE));
+      if (!strNode) {
+        fprintf(stderr, "%s: memory allocation failure\n", argv[0]);
+        exit(1);
+      }
       strcpy(strNode->value, p);
       ellAdd(&(tagList), (ELLNODE *)strNode);
+    } else {
+      fprintf(stderr, "%s: invalid option: %s\n", argv[0], argv[i]);
+      usage(argv[0]);
+      exit(1);
     }
   }
 
@@ -130,6 +150,10 @@ int main(int argc, char *argv[]) {
   strNode = (STRNODE *)ellFirst(&(tagList));
   tagString[0] = '\0';
   while (strNode != NULL) {
+    if (strlen(tagString) + strlen(strNode->value) + 1 >= sizeof(tagString)) {
+      fprintf(stderr, "%s: string too long\n", argv[0]);
+      exit(1);
+    }
     strcat(tagString, strNode->value);
     strcat(tagString, " ");
     strNode = (STRNODE *)ellNext((ELLNODE *)strNode);
@@ -148,6 +172,11 @@ int main(int argc, char *argv[]) {
   strNode = (STRNODE *)ellFirst(&(valList));
   valString[0] = '\0';
   while (strNode != NULL) {
+    if (strlen(valString) + strlen(strNode->value) + 3 >= sizeof(valString)) {
+      fprintf(stderr, "%s: string too long\n", argv[0]);
+      logClose(h);
+      exit(1);
+    }
     strcat(valString, "\"");
     strcat(valString, strNode->value);
     strcat(valString, "\"");

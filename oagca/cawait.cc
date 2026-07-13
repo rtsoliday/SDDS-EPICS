@@ -42,7 +42,7 @@
  * | `-postevent`            | Command to execute after an event clears.                                |
  * | `-onend`                | Command to execute after final event.                                    |
  * | `-subprocess`           | Spawn subprocess and send notifications.                                  |
- * | `-pendiotime`           | Time allowed for CA operations (default 10 s).                           |
+ * | `-pendiotime`           | Time allowed for connection and I/O operations (default 10 s).           |
  * | `-nowarnings`           | Suppress timeout warnings.                                               |
  * | `-provider`             | Choose Channel Access or PVAccess provider.                              |
  *
@@ -187,6 +187,7 @@ typedef struct
   unsigned long flags;
   double value;
   short eventSeen;
+  uint64_t monitorGeneration;
   char stringValue[256];
   long usrValue;
   short changeReferenceLoaded;
@@ -205,6 +206,7 @@ typedef struct
 #define EVENT 0
 #define TIMEOUT 1
 #define LOGIC_ERROR 2
+#define PVA_ERROR 3
 
 long waitForEvent(double timeLimit, double interval,
                   long invert);
@@ -241,7 +243,7 @@ int main(int argc, char **argv) {
   long noWarnings = 0;
   long providerMode = 0;
 #if (EPICS_VERSION > 3)
-  PVA_OVERALL pva;
+  PVA_OVERALL pva{};
 #endif
 
   SDDS_RegisterProgramName(argv[0]);
@@ -302,6 +304,8 @@ int main(int argc, char **argv) {
         waitFor[waitFors].operations = 0;
         waitFor[waitFors].operation = NULL;
         waitFor[waitFors].changeReferenceLoaded = 0;
+        waitFor[waitFors].eventSeen = 0;
+        waitFor[waitFors].monitorGeneration = 0;
         waitFors++;
         s_arg[i_arg].n_items += 2;
         break;
@@ -450,19 +454,40 @@ int main(int argc, char **argv) {
     for (j = 0; j < pva.numPVs; j++) {
       if (!pva.isConnected[j]) {
         fprintf(stderr, "Error (cawait): problem doing search for %s\n", waitFor[j].PVname);
+        freePVA(&pva);
         return (EXIT_FAILURE);
       }
     }
     //Get initial values
     if (GetPVAValues(&pva) == 1) {
+      freePVA(&pva);
       return (EXIT_FAILURE);
     }
+    for (j = 0; j < pva.numPVs; j++) {
+      unsigned long numericFlags = EQUALTO_GIVEN | LOWERLIMIT_GIVEN |
+                                   UPPERLIMIT_GIVEN | ABOVE_GIVEN |
+                                   BELOW_GIVEN | CHANGED_GIVEN;
+      if (pva.pvaData[j].fieldType != epics::pvData::scalar &&
+          !pva.pvaData[j].pvEnumeratedStructure) {
+        fprintf(stderr, "error (cawait): %s is not a scalar PV\n", waitFor[j].PVname);
+        freePVA(&pva);
+        return (EXIT_FAILURE);
+      }
+      if ((waitFor[j].flags & numericFlags) && !pva.pvaData[j].numeric) {
+        fprintf(stderr, "error (cawait): numeric comparison requested for nonnumeric PV %s\n", waitFor[j].PVname);
+        freePVA(&pva);
+        return (EXIT_FAILURE);
+      }
+    }
     if (MonitorPVAValues(&pva) == 1) {
+      freePVA(&pva);
       return (EXIT_FAILURE);
     }
     epicsThreadSleep(.1);
-    if (PollMonitoredPVA(&pva)) {
-      //fprintf(stderr, "something changed\n");
+    if (PollMonitoredPVA(&pva) < 0) {
+      fprintf(stderr, "Error (cawait): unable to poll PVA monitors\n");
+      freePVA(&pva);
+      return (EXIT_FAILURE);
     }
 #else
     fprintf(stderr, "-provider=pva is only available with newer versions of EPICS\n");
@@ -578,6 +603,13 @@ int main(int argc, char **argv) {
             ca_task_exit();
           return (EXIT_FAILURE);
         }
+        if (code == PVA_ERROR) {
+          fputs("PVA monitoring error (cawait)\n", stderr);
+#if (EPICS_VERSION > 3)
+          freePVA(&pva);
+#endif
+          return (EXIT_FAILURE);
+        }
 
         /* emit messages to standard output, as requested */
         if (emitOnEvent) {
@@ -669,6 +701,13 @@ int main(int argc, char **argv) {
 #endif
     } else {
       code = waitForEvent(timeLimit, interval, 1);
+    }
+    if (code == PVA_ERROR) {
+      fputs("PVA monitoring error (cawait)\n", stderr);
+#if (EPICS_VERSION > 3)
+      freePVA(&pva);
+#endif
+      return (EXIT_FAILURE);
     }
     if (code == TIMEOUT) {
       eventEndPending = 1;
@@ -864,8 +903,14 @@ long waitForEventPVA(PVA_OVERALL *pva, double timeLimit, double interval, long i
       hasStarted = 1;
     }
     for (j = 0; j < waitFors; j++) {
-      if ((pva->isConnected[j]) && (pva->pvaData[j].fieldType == epics::pvData::scalar)) {
+      if (!pva->isConnected[j])
+        return PVA_ERROR;
+      if (pva->isConnected[j] &&
+          (pva->pvaData[j].fieldType == epics::pvData::scalar ||
+           pva->pvaData[j].pvEnumeratedStructure)) {
         if (waitFor[j].flags & CHANGED_GIVEN && !waitFor[j].changeReferenceLoaded) {
+          if (!pva->pvaData[j].getData || !pva->pvaData[j].getData[0].values)
+            return PVA_ERROR;
           waitFor[j].changeReference = pva->pvaData[j].getData[0].values[0];
           waitFor[j].changeReferenceLoaded = 1;
         }
@@ -875,10 +920,23 @@ long waitForEventPVA(PVA_OVERALL *pva, double timeLimit, double interval, long i
     term = -1;
     for (j = 0; j < waitFors; j++) {
       if ((pva->isConnected[j]) && (pva->pvaData[j].numMonitorReadings > 0)) {
-        if (pva->pvaData[j].fieldType == epics::pvData::scalar) {
+        if (pva->pvaData[j].fieldType == epics::pvData::scalar ||
+            pva->pvaData[j].pvEnumeratedStructure) {
           term = 1;
           if (waitFor[j].flags & SAME_AS_GIVEN) {
-            term = !strcmp(pva->pvaData[j].monitorData[0].stringValues[0], waitFor[j].sameAs);
+            if (pva->pvaData[j].nonnumeric &&
+                pva->pvaData[j].monitorData[0].stringValues &&
+                pva->pvaData[j].monitorData[0].stringValues[0]) {
+              term = !strcmp(pva->pvaData[j].monitorData[0].stringValues[0], waitFor[j].sameAs);
+            } else if (pva->pvaData[j].numeric &&
+                       pva->pvaData[j].monitorData[0].values) {
+              char *endp = NULL;
+              double expected = strtod(waitFor[j].sameAs, &endp);
+              term = endp != waitFor[j].sameAs && endp && *endp == '\0' &&
+                     pva->pvaData[j].monitorData[0].values[0] == expected;
+            } else {
+              term = 0;
+            }
           } else if (waitFor[j].flags & EQUALTO_GIVEN) {
             if (pva->pvaData[j].monitorData[0].values[0] != waitFor[j].equalTo)
               term = 0;
@@ -897,6 +955,17 @@ long waitForEventPVA(PVA_OVERALL *pva, double timeLimit, double interval, long i
               term = 0;
             else
               waitFor[j].changeReference = pva->pvaData[j].monitorData[0].values[0];
+          } else if (waitFor[j].flags & MONITOR_GIVEN) {
+            if (!waitFor[j].eventSeen) {
+              /* The first monitor event is the subscription's initial value,
+                 matching the CA path: establish a baseline but do not fire. */
+              waitFor[j].monitorGeneration = pva->pvaData[j].monitorGeneration;
+              waitFor[j].eventSeen = 1;
+              term = 0;
+            } else {
+              term = pva->pvaData[j].monitorGeneration != waitFor[j].monitorGeneration;
+              waitFor[j].monitorGeneration = pva->pvaData[j].monitorGeneration;
+            }
           } else {
             fprintf(stderr, "no flags set for PV %s--this shouldn't happen\n", waitFor[j].PVname);
             exit(EXIT_FAILURE);
@@ -934,9 +1003,8 @@ long waitForEventPVA(PVA_OVERALL *pva, double timeLimit, double interval, long i
         return EVENT;
     }
     epicsThreadSleep(interval);
-    if (PollMonitoredPVA(pva)) {
-      //fprintf(stderr, "something changed\n");
-    }
+    if (PollMonitoredPVA(pva) < 0)
+      return PVA_ERROR;
     timeNow = getTimeInSecs();
   }
   return TIMEOUT;
