@@ -31,6 +31,8 @@
 /* Function Prototypes */
 int process_cmdline_args(int argc, char *argv[], char *spec);
 void usage(char *name);
+static int makePvName(char *destination, size_t destinationSize,
+                      const char *base, const char *suffix);
 
 /* PV name fields of interest in the ramptable record */
 struct ramp_rec_pvs {
@@ -172,7 +174,10 @@ int main(int argc, char *argv[]) {
       fprintf(stderr,"%s: dev ControlType no longer supported\n", argv[0]);
       exitstatus = 1;
     } else {                           /* pv name specified in input */
-      strcpy_ss(pvname, *name);
+      if (!makePvName(pvname, sizeof(pvname), *name, "")) {
+        fprintf(stderr, "%s: process variable name %s is too long\n", argv[0], *name);
+        return(1);
+      }
     }
     if (exitstatus) {
       fprintf(stderr,"%s: exiting, no rampload initiated\n",argv[0]);
@@ -185,15 +190,18 @@ int main(int argc, char *argv[]) {
     strcpy_ss(ramp.ramp_nelm, pvname);
     strcat(ramp.ramp_nelm, ".NELM");
     strcpy_ss(ramp.ramp_set, pvname); */
-    sprintf(ramp.ramp_set, "%s", pvname);
-    sprintf(ramp.ramp_time, "%s.TIMA", pvname);
-    sprintf(ramp.ramp_bias, "%s.BIAS", pvname);
-    sprintf(ramp.ramp_nelm, "%s.NELM", pvname);
-    sprintf(ramp.ramp_timf, "%s.TIMF", pvname);
-    sprintf(ramp.ramp_timl, "%s.TIML", pvname);
-    sprintf(ramp.ramp_gain, "%s.GAIN", pvname);
-    sprintf(ramp.ramp_drvh, "%s.DRVH", pvname);
-    sprintf(ramp.ramp_drvl, "%s.DRVL", pvname);
+    if (!makePvName(ramp.ramp_set, sizeof(ramp.ramp_set), pvname, "") ||
+        !makePvName(ramp.ramp_time, sizeof(ramp.ramp_time), pvname, ".TIMA") ||
+        !makePvName(ramp.ramp_bias, sizeof(ramp.ramp_bias), pvname, ".BIAS") ||
+        !makePvName(ramp.ramp_nelm, sizeof(ramp.ramp_nelm), pvname, ".NELM") ||
+        !makePvName(ramp.ramp_timf, sizeof(ramp.ramp_timf), pvname, ".TIMF") ||
+        !makePvName(ramp.ramp_timl, sizeof(ramp.ramp_timl), pvname, ".TIML") ||
+        !makePvName(ramp.ramp_gain, sizeof(ramp.ramp_gain), pvname, ".GAIN") ||
+        !makePvName(ramp.ramp_drvh, sizeof(ramp.ramp_drvh), pvname, ".DRVH") ||
+        !makePvName(ramp.ramp_drvl, sizeof(ramp.ramp_drvl), pvname, ".DRVL")) {
+      fprintf(stderr, "%s: process variable name %s is too long\n", argv[0], pvname);
+      return(1);
+    }
     
     if ((ca_search(ramp.ramp_nelm, &ramp.chid_nelm)!=ECA_NORMAL) ||
         (ca_search(ramp.ramp_time, &ramp.chid_time)!=ECA_NORMAL) ||
@@ -287,6 +295,23 @@ int main(int argc, char *argv[]) {
   }
   return(0);
 
+}
+
+/**
+ * Builds a process variable name from a record name and field suffix.
+ *
+ * @param destination Buffer that receives the process variable name.
+ * @param destinationSize Size of the destination buffer.
+ * @param base Record process variable name.
+ * @param suffix Optional record field suffix.
+ * @return Nonzero if the complete name fit in the destination buffer.
+ */
+static int makePvName(char *destination, size_t destinationSize,
+                      const char *base, const char *suffix) {
+  int length;
+
+  length = snprintf(destination, destinationSize, "%s%s", base, suffix);
+  return length >= 0 && (size_t)length < destinationSize;
 }
 
 /*************************************************************************
