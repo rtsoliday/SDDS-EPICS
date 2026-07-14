@@ -80,3 +80,16 @@ def test_booster_bump_lookahead_is_bounded() -> None:
   assert "if (abs(corrector_ramp[i].time" not in source
   assert source.count("j + 1 < corrector_ramp[i].nord") >= 5
   assert "dummyFlags = pipeFlags = 0;" in source
+
+
+def test_saverestore_expect_numeric_validation_is_strict_opt_in() -> None:
+  source = _source("SDDSepics/sddspvasaverestore.cc")
+  validation = source.split("bool validate_pva_reading", 2)[2].split(
+    "long setup_other_caconnections", 1
+  )[0]
+
+  assert '(char *)"strict"' in source
+  assert "case CLO_STRICT:" in source
+  assert "control_name->strict = 1;" in source
+  assert "if (control_name->strict &&" in validation
+  assert "does not match its ExpectNumeric setting" in validation

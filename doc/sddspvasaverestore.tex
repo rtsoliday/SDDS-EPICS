@@ -21,7 +21,7 @@ usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]
   [-unique] [-pidFile=<pidFile>] [-verbose]
   [-waveform=[rootname=<string>][,directory=<string>][,extension=<string>][,pingTimeout=<seconds>]
     [,onefile][,savewaveformFile][,fullname]]
-  [-numerical]
+  [-numerical] [-strict]
   [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>]
   [-runControlDescription={string=<string>|parameter=<string>}]
 \end{verbatim}
@@ -51,6 +51,9 @@ usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]
   \item {\tt -runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>} --- run control record and ping settings.
   \item {\tt -runControlDescription={string=<string>|parameter=<string>}} --- description string for run control logging.
   \item {\tt -numerical} --- output numeric strings for enumerated PV types.
+  \item {\tt -strict} --- require connected PV readings to match the
+    \verb|ExpectNumeric| metadata. Without this option, mismatches are accepted
+    for compatibility with older input files and the actual PV type is used.
   \item {\tt -pendIOTime=<seconds>} --- maximum time to wait for connections and value returns.
   \item {\tt -semaphore=<filename>} --- flag file written when connections are complete.
   \item {\tt -pidFile=<file>} --- file to store process ID.

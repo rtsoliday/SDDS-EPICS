@@ -101,7 +101,8 @@ void rc_interrupt_handler();
 #define CLO_WAVEFORM 17
 #define CLO_NUMERICAL 18
 #define CLO_INPUTFILEPV 19
-#define COMMANDLINE_OPTIONS 20
+#define CLO_STRICT 20
+#define COMMANDLINE_OPTIONS 21
 
 #define ONE_WAVEFORM_FILE 0x0001UL
 #define SAVE_WAVEFORM_FILE 0x0002UL
@@ -134,7 +135,7 @@ typedef struct
   short *newFlag; /*indicates if the PV is new or old */
   short *valid;   /*indicates if the PV is still valid, if not, do nothing about it */
   double pendIOTime;
-  short verbose, pvasave, pvarestore, numerical, verify;
+  short verbose, pvasave, pvarestore, numerical, verify, strict;
   FILE *logFp;                          /*file pointer for logfile to log the print out information*/
   char *logFile;                        /*logfile to log the print out information*/
   char *triggerPV, *triggerPV_provider; /*monitor pv to turn on/off sddspvasaverestore */
@@ -232,6 +233,7 @@ char *commandline_option[COMMANDLINE_OPTIONS] = {
   (char *)"waveform",
   (char *)"numerical",
   (char *)"inputFilePV",
+  (char *)"strict",
 };
 char *USAGE1 = (char *)"sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]] \n\
   [-save] [-restore[=verify]] \n\
@@ -243,7 +245,7 @@ char *USAGE1 = (char *)"sddspvasaverestore <inputfile> <outputRoot> [-pipe=[inpu
   [-dailyFiles] [-semaphore=<filename>] [-logFile=<filename>] \n\
   [-unique] [-pidFile=<pidFile>] [-verbose] \n\
   [-waveform=[rootname=<string>][,directory=<string>][,extension=<string>][,pingTimeout=<seconds>][,onefile][,saveWaveformFile][,fullname]] \n\
-  [-numerical] \n\
+  [-numerical] [-strict] \n\
   [-runControlPV={string=<string>|parameter=<string>},pingTimeout=<value>,pingInterval=<value>] \n\
   [-runControlDescription={string=<string>|parameter=<string>}] \n\
 inputFile      inputFile name (SDDS file). \n\
@@ -289,6 +291,7 @@ char *USAGE3 = (char *)"-pipe          input/output data to the pipe.\n\
                record.\n\
 -numerical     return a numerical string value rather than a string for enumerated\n\
                types.\n\
+-strict        require PV readings to match the ExpectNumeric metadata.\n\
 -waveform      provide the waveform rootname and directory for waveform PV's restore and save. \n\
                By default, the directory is pwd, \n\
                the rootname is the SnapshotFilename parameter in the input file. \n\
@@ -360,6 +363,9 @@ int main(int argc, char **argv) {
   for (i_arg = 1; i_arg < argc; i_arg++) {
     if (s_arg[i_arg].arg_type == OPTION) {
       switch (match_string(s_arg[i_arg].list[0], commandline_option, COMMANDLINE_OPTIONS, 0)) {
+      case CLO_STRICT:
+        control_name->strict = 1;
+        break;
       case CLO_NUMERICAL:
         control_name->numerical = 1;
         break;
@@ -740,6 +746,7 @@ void InitializeData(CONTROL_NAME *control_name) {
   }
   control_name->doubleValue = NULL;
   control_name->numerical = 0;
+  control_name->strict = 0;
   control_name->waveformRootname = NULL;
   control_name->waveformExtension = NULL;
   control_name->oneWaveformFile = 0;
@@ -2581,10 +2588,11 @@ bool validate_pva_reading(CONTROL_NAME *control_name, PVA_OVERALL *pva,
 
   bool expectNumeric = control_name->ExpectNumeric[index] == 'y' ||
                        control_name->ExpectNumeric[index] == 'Y';
-  if ((expectNumeric &&
-       (!reading->numeric || reading->getData[0].values == NULL)) ||
-      (!expectNumeric &&
-       (!reading->nonnumeric || reading->getData[0].stringValues == NULL))) {
+  if (control_name->strict &&
+      ((expectNumeric &&
+        (!reading->numeric || reading->getData[0].values == NULL)) ||
+       (!expectNumeric &&
+        (!reading->nonnumeric || reading->getData[0].stringValues == NULL)))) {
     fprintf(stderr, "Error: %s does not match its ExpectNumeric setting\n", name);
     return false;
   }
