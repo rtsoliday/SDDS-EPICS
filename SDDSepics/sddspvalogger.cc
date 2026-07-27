@@ -3230,40 +3230,50 @@ long ReadGlitchTriggerFile(LOGGER_DATA *logger) {
     return (1);
   }
 
+  /*
+   * CheckGlitchPVA resets all four temporary status arrays for every trigger,
+   * and GlitchLogicRoutines copies all four arrays when any trigger fires.
+   * Allocate them for every valid trigger file, including files that enable
+   * only transitions, only alarm changes, or only glitch thresholds.
+   */
+  logger->glitch_triggered = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_triggered));
+  logger->glitch_triggeredTemp = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_triggeredTemp));
+  logger->glitch_glitched = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_glitched));
+  logger->glitch_glitchedTemp = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_glitchedTemp));
+  logger->glitch_alarmed = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_alarmed));
+  logger->glitch_alarmedTemp = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_alarmedTemp));
+  logger->glitch_alarmSeverity = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_alarmSeverity));
+  logger->glitch_alarmSeverityTemp = (short *)calloc(logger->glitch_pvCount, sizeof(*logger->glitch_alarmSeverityTemp));
+  if (!logger->glitch_triggered || !logger->glitch_triggeredTemp ||
+      !logger->glitch_glitched || !logger->glitch_glitchedTemp ||
+      !logger->glitch_alarmed || !logger->glitch_alarmedTemp ||
+      !logger->glitch_alarmSeverity || !logger->glitch_alarmSeverityTemp) {
+    fprintf(stderr, "Unable to allocate trigger status arrays\n");
+    return (1);
+  }
+
   if (logger->glitch_TransitionThresholdDefined && logger->glitch_TransitionDirectionDefined) {
     logger->glitch_triggerIndex = (int32_t *)malloc(sizeof(int32_t) * logger->glitch_pvCount);
-    logger->glitch_triggered = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
-    logger->glitch_triggeredTemp = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
     logger->glitch_transitionLastValue = (double *)malloc(sizeof(double) * logger->glitch_pvCount);
     for (i = 0; i < logger->glitch_pvCount; i++) {
       logger->glitch_transitionLastValue[i] = DBL_MAX;
-      logger->glitch_triggeredTemp[i] = 0;
     }
   }
   if (logger->glitch_GlitchThresholdDefined && logger->glitch_GlitchBaselineSamplesDefined) {
     logger->glitch_glitchIndex = (int32_t *)malloc(sizeof(int32_t) * logger->glitch_pvCount);
-    logger->glitch_glitched = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
-    logger->glitch_glitchedTemp = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
     logger->glitch_glitchBaselineSamplesRead = (long *)malloc(sizeof(long) * logger->glitch_pvCount);
     logger->glitch_glitchBaselineSampleValues = (double **)malloc(sizeof(double *) * logger->glitch_pvCount);
     for (i = 0; i < logger->glitch_pvCount; i++) {
       logger->glitch_glitchBaselineSamplesRead[i] = 0;
       logger->glitch_glitchBaselineSampleValues[i] = (double *)malloc(sizeof(double) * logger->glitch_glitchBaselineSamples[i]);
-      logger->glitch_glitchedTemp[i] = 0;
     }
   }
   if (logger->glitch_MajorAlarmDefined || logger->glitch_MinorAlarmDefined || logger->glitch_NoAlarmDefined) {
     logger->glitch_alarmIndex = (int32_t *)malloc(sizeof(int32_t) * logger->glitch_pvCount);
     logger->glitch_alarmSeverityIndex = (int32_t *)malloc(sizeof(int32_t) * logger->glitch_pvCount);
-    logger->glitch_alarmed = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
-    logger->glitch_alarmedTemp = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
-    logger->glitch_alarmSeverity = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
-    logger->glitch_alarmSeverityTemp = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
     logger->glitch_alarmLastValue = (short *)malloc(sizeof(short) * logger->glitch_pvCount);
     for (i = 0; i < logger->glitch_pvCount; i++) {
       logger->glitch_alarmLastValue[i] = -1;
-      logger->glitch_alarmedTemp[i] = 0;
-      logger->glitch_alarmSeverityTemp[i] = 0;
     }
   }
 

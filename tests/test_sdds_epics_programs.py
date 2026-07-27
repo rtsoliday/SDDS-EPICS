@@ -210,6 +210,51 @@ def test_sddspvtest_any_fail_exit_condition(soft_ioc: SoftIOC, tmp_path: Path) -
   assert float(soft_ioc.get("integer")) == pytest.approx(9)
 
 
+def test_sddspvalogger_accepts_transition_only_trigger_file(
+  soft_ioc: SoftIOC,
+  tmp_path: Path,
+) -> None:
+  input_file = tmp_path / "pvalogger-input.sdds"
+  trigger_file = tmp_path / "pvalogger-trigger.sdds"
+  output_file = tmp_path / "pvalogger-output.sdds"
+  input_file.write_text(
+    "SDDS1\n"
+    "&column name=ControlName, type=string, &end\n"
+    "&column name=Provider, type=string, &end\n"
+    "&column name=ExpectNumeric, type=character, &end\n"
+    "&column name=ExpectFieldType, type=string, &end\n"
+    "&column name=ExpectElements, type=long, &end\n"
+    "&data mode=ascii, no_row_counts=1, &end\n"
+    f'"{soft_ioc.pv("double")}" ca y scalar 1\n',
+    encoding="ascii",
+  )
+  trigger_file.write_text(
+    "SDDS1\n"
+    "&column name=TriggerControlName, type=string, &end\n"
+    "&column name=Provider, type=string, &end\n"
+    "&column name=TransitionThreshold, type=double, &end\n"
+    "&column name=TransitionDirection, type=short, &end\n"
+    "&data mode=ascii, no_row_counts=1, &end\n"
+    f'"{soft_ioc.pv("double")}" ca 0 -1\n',
+    encoding="ascii",
+  )
+
+  result = soft_ioc.invoke(
+    "sddspvalogger",
+    str(input_file),
+    str(output_file),
+    "-sampleInterval=0.05,sec",
+    f"-triggerFile={trigger_file}",
+    "-time=0.2,sec",
+    "-overwrite",
+    "-pendIOtime=2",
+    timeout=5,
+  )
+
+  assert result.returncode == 0
+  assert output_file.read_bytes().startswith(b"SDDS1")
+
+
 def test_sddswget_wget_and_automatic_input_styles(soft_ioc: SoftIOC, tmp_path: Path) -> None:
   first_output = tmp_path / "wget-first.sdds"
   automatic_output = tmp_path / "wget-automatic.sdds"

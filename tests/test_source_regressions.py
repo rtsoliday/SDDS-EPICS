@@ -93,3 +93,24 @@ def test_saverestore_expect_numeric_validation_is_strict_opt_in() -> None:
   assert "control_name->strict = 1;" in source
   assert "if (control_name->strict &&" in validation
   assert "does not match its ExpectNumeric setting" in validation
+
+
+def test_pvalogger_allocates_all_status_arrays_for_every_trigger_file() -> None:
+  source = _source("SDDSepics/sddspvalogger.cc")
+  reader = source.split("long ReadGlitchTriggerFile(LOGGER_DATA *logger) {", 1)[1]
+  common_allocation = reader.split(
+    "if (logger->glitch_TransitionThresholdDefined &&",
+    1,
+  )[0]
+
+  for name in (
+    "glitch_triggered",
+    "glitch_triggeredTemp",
+    "glitch_glitched",
+    "glitch_glitchedTemp",
+    "glitch_alarmed",
+    "glitch_alarmedTemp",
+    "glitch_alarmSeverity",
+    "glitch_alarmSeverityTemp",
+  ):
+    assert f"logger->{name} = (short *)calloc" in common_allocation
