@@ -85,6 +85,7 @@ Glitch Logger Options:
   \item {\tt -onePvPerFile=<dirName>} --- write each PV to a separate file in the given directory.
   \item {\tt -triggerFile=<filename>} --- read glitch trigger definitions from an SDDS file.
   \item {\tt -circularBuffer=[before=<number>,][after=<number>]} --- samples to retain before and after a trigger.
+  The default is zero samples before and zero samples after, so only the trigger sample is written.
   \item {\tt -delay=<steps>} --- delay reading after a trigger (not yet implemented).
   \item {\tt -holdoffTime=<seconds>} --- minimum time between triggers.
   \item {\tt -autoHoldoff} --- compute holdoff time from post-trigger samples.

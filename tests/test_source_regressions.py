@@ -114,3 +114,11 @@ def test_pvalogger_allocates_all_status_arrays_for_every_trigger_file() -> None:
     "glitch_alarmSeverityTemp",
   ):
     assert f"logger->{name} = (short *)calloc" in common_allocation
+
+
+def test_pvalogger_default_circular_buffer_keeps_no_pretrigger_samples() -> None:
+  source = _source("SDDSepics/sddspvalogger.cc")
+
+  assert "#define GLITCH_BEFORE_DEFAULT 0" in source
+  assert "#define GLITCH_AFTER_DEFAULT 0" in source
+  assert "if (logger->circularbuffer_after == 0)" in source

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import SoftIOC, _binary_directory, _executable, _invoke, _unused_udp_port
+from conftest import SoftIOC, _binary_directory, _command_arguments, _executable, _invoke, _unused_udp_port
 
 
 def _write_control_names(path: Path, *control_names: str) -> None:
@@ -253,6 +253,83 @@ def test_sddspvalogger_accepts_transition_only_trigger_file(
 
   assert result.returncode == 0
   assert output_file.read_bytes().startswith(b"SDDS1")
+
+
+def test_sddspvalogger_default_buffer_writes_only_trigger_sample(
+  soft_ioc: SoftIOC,
+  tmp_path: Path,
+) -> None:
+  input_file = tmp_path / "pvalogger-single-sample-input.sdds"
+  trigger_file = tmp_path / "pvalogger-single-sample-trigger.sdds"
+  output_file = tmp_path / "pvalogger-single-sample-output.sdds"
+  input_file.write_text(
+    "SDDS1\n"
+    "&column name=ControlName, type=string, &end\n"
+    "&column name=Provider, type=string, &end\n"
+    "&column name=ExpectNumeric, type=character, &end\n"
+    "&column name=ExpectFieldType, type=string, &end\n"
+    "&column name=ExpectElements, type=long, &end\n"
+    "&data mode=ascii, no_row_counts=1, &end\n"
+    f'"{soft_ioc.pv("integer")}" ca y scalar 1\n',
+    encoding="ascii",
+  )
+  trigger_file.write_text(
+    "SDDS1\n"
+    "&column name=TriggerControlName, type=string, &end\n"
+    "&column name=Provider, type=string, &end\n"
+    "&column name=TransitionThreshold, type=double, &end\n"
+    "&column name=TransitionDirection, type=short, &end\n"
+    "&data mode=ascii, no_row_counts=1, &end\n"
+    f'"{soft_ioc.pv("double")}" ca 0.5 -1\n',
+    encoding="ascii",
+  )
+  soft_ioc.put("double", "1")
+
+  stdout_file = (tmp_path / "pvalogger-single-sample.stdout").open("w+")
+  stderr_file = (tmp_path / "pvalogger-single-sample.stderr").open("w+")
+  process = subprocess.Popen(
+    _command_arguments(
+      [
+        str(_executable("sddspvalogger")),
+        str(input_file),
+        str(output_file),
+        "-sampleInterval=0.05,sec",
+        f"-triggerFile={trigger_file}",
+        "-time=0.6,sec",
+        "-overwrite",
+        "-pendIOtime=2",
+      ]
+    ),
+    env=soft_ioc.environment,
+    text=True,
+    stdout=stdout_file,
+    stderr=stderr_file,
+  )
+  try:
+    deadline = time.monotonic() + 3
+    while not output_file.exists() and time.monotonic() < deadline:
+      if process.poll() is not None:
+        break
+      time.sleep(0.01)
+    time.sleep(0.15)
+    soft_ioc.put("double", "0")
+    process.wait(timeout=5)
+  finally:
+    if process.poll() is None:
+      process.terminate()
+      process.wait(timeout=5)
+    stdout_file.flush()
+    stderr_file.flush()
+    stdout_file.seek(0)
+    stderr_file.seek(0)
+    stdout = stdout_file.read()
+    stderr = stderr_file.read()
+    stdout_file.close()
+    stderr_file.close()
+
+  assert process.returncode == 0, f"stdout:\n{stdout}\nstderr:\n{stderr}"
+  steps = soft_ioc.run_sdds("sdds2stream", str(output_file), "-columns=Step")
+  assert [int(value) for value in steps.stdout.split()] == [0]
 
 
 def test_sddswget_wget_and_automatic_input_styles(soft_ioc: SoftIOC, tmp_path: Path) -> None:

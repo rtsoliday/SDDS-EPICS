@@ -181,8 +181,8 @@ static char *onerror_options[ONERROR_OPTIONS] = {
 #define GLITCH_FILTERFRAC 0x00100000UL
 #define GLITCH_NORESET 0x00200000UL
 
-#define GLITCH_BEFORE_DEFAULT 100
-#define GLITCH_AFTER_DEFAULT 1
+#define GLITCH_BEFORE_DEFAULT 0
+#define GLITCH_AFTER_DEFAULT 0
 
 #define TRIGGER_HOLDOFF GLITCH_HOLDOFF
 #define TRIGGER_AUTOHOLD GLITCH_AUTOHOLD
@@ -5029,6 +5029,16 @@ long GlitchLogicRoutines(SDDS_TABLE *SDDS_table, PVA_OVERALL *pva, PVA_OVERALL *
           runCommandNoShell(executeScript[i]);
         }
         free(executeScript);
+      }
+      /*
+       * The normal write check runs before trigger detection and therefore
+       * cannot flush a capture with zero post-trigger samples.  Write it now
+       * so before=0,after=0 produces exactly the trigger sample.
+       */
+      if (logger->circularbuffer_after == 0) {
+        if (WriteGlitchPage(SDDS_table, pva, logger) == 1) {
+          return (1);
+        }
       }
       return (2);
     } else {
