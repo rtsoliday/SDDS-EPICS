@@ -638,7 +638,7 @@ int WriteOutput(PROG_DATA *prog_data) {
             }
           }
           if (!EnumChoicesExists) {
-            if (SDDS_SetRowValues(&output, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, i, "EnumChoices", prog_data->outputData.EnumChoices[index], NULL) != 1) {
+            if (SDDS_SetRowValues(&output, SDDS_SET_BY_NAME | SDDS_PASS_BY_VALUE, i, "EnumChoices", EnumChoices[index], NULL) != 1) {
               SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
               return(1);
             }
