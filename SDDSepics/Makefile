@@ -2,69 +2,15 @@ SDDS_REPO = $(firstword $(wildcard ../../SDDS))
 ifeq ($(SDDS_REPO),)
   $(error SDDS source code not found. Run 'git clone https://github.com/rtsoliday/SDDS.git' next to the SDDS-EPICS repository)
 endif
-EPICS_BASE = $(firstword $(wildcard /usr/local/oag/base ../../epics-base ../../../../base $(HOME)/epics/base))
-ifeq ($(EPICS_BASE),)
-  $(error EPICS base not found. Run 'git clone --recursive -b 7.0 https://github.com/epics-base/epics-base.git' next to the SDDS-EPICS repository)
-endif
 
+EPICS_REQUIRED_LIBS := pvaClient nt pvAccessCA pvAccess pvData ca Com
+# Retain the compiler-default C++ mode for legacy Windows builds.
+WINDOWS_CXX_STD_FLAGS :=
+ENABLE_OPENMP := 1
+BUNDLE_OPENMP := 1
 include ../Makefile.rules
 
-# Check if libCom was built with readline support by examining the library
-# Only on Unix-like systems (Linux, Darwin) - Windows doesn't use readline
-ifneq ($(OS),Windows)
-  # First, try libCom.so/dylib with ldd/otool, then fall back to checking libCom.a with nm
-  ifeq ($(OS),Darwin)
-    LIBCOM_SO = $(wildcard $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.dylib)
-  else
-    LIBCOM_SO = $(wildcard $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.so)
-  endif
-  LIBCOM_A = $(wildcard $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a)
-
-  ifneq ($(LIBCOM_SO),)
-    # Check if libCom.so/dylib depends on libreadline
-    # Darwin uses otool -L, Linux uses ldd
-    ifeq ($(OS),Darwin)
-      NEEDS_READLINE := $(shell otool -L $(LIBCOM_SO) 2>/dev/null | grep -q libreadline && echo yes)
-    else
-      NEEDS_READLINE := $(shell ldd $(LIBCOM_SO) 2>/dev/null | grep -q libreadline && echo yes)
-    endif
-  else ifneq ($(LIBCOM_A),)
-    # Check if libCom.a has undefined readline symbols (rl_readline_name is a common one)
-    # nm works on both Darwin and Linux
-    NEEDS_READLINE := $(shell nm $(LIBCOM_A) 2>/dev/null | grep -q "U rl_readline_name" && echo yes)
-  endif
-
-	ifeq ($(NEEDS_READLINE),yes)
-		# Prefer a standalone readline over the system libedit shim on macOS
-		ifeq ($(OS),Darwin)
-			ifneq ($(wildcard /opt/local/lib/libreadline.a),)
-				READLINE_LIBS = /opt/local/lib/libreadline.a
-			else ifneq ($(wildcard /opt/local/lib/libreadline.dylib),)
-				READLINE_LIBS = /opt/local/lib/libreadline.dylib
-			else ifneq ($(wildcard /opt/homebrew/opt/readline/lib/libreadline.dylib),)
-				READLINE_LIBS = /opt/homebrew/opt/readline/lib/libreadline.dylib
-			else ifneq ($(wildcard /usr/local/opt/readline/lib/libreadline.dylib),)
-				READLINE_LIBS = /usr/local/opt/readline/lib/libreadline.dylib
-			else
-				READLINE_LIBS = -lreadline
-			endif
-			# Readline on macOS needs termcap/ncurses
-			ifneq ($(wildcard /opt/local/lib/libncurses.a),)
-				NCURSES_LIBS = /opt/local/lib/libncurses.a
-			else ifneq ($(wildcard /opt/local/lib/libncurses.dylib),)
-				NCURSES_LIBS = /opt/local/lib/libncurses.dylib
-			else ifneq ($(wildcard /opt/homebrew/opt/ncurses/lib/libncurses.dylib),)
-				NCURSES_LIBS = /opt/homebrew/opt/ncurses/lib/libncurses.dylib
-			else ifneq ($(wildcard /usr/local/opt/ncurses/lib/libncurses.dylib),)
-				NCURSES_LIBS = /usr/local/opt/ncurses/lib/libncurses.dylib
-			else
-				NCURSES_LIBS = -lncurses
-			endif
-		else
-			READLINE_LIBS = -lreadline
-		endif
-	endif
-endif
+READLINE_LIBS = $(EPICS_READLINE_LIBS)
 
 PROD = MV20image2sdds sddssnapshot sddscontrollaw sddscaramp sddsgencontrolbits sddslogTurnByTurnDAQ \
        degauss standardize \
@@ -142,277 +88,168 @@ else
 endif
 
 CFLAGS += -I$(EPICS_BASE)/include  -I$(SDDS_REPO)/include -DUSE_RUNCONTROL -I../runcontrol -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\" -DACCESS_SECURITY -D_NO_PROTO
-CCFLAGS += -I$(EPICS_BASE)/include -I$(SDDS_REPO)/include -DUSE_RUNCONTROL -I../runcontrol -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\" -DACCESS_SECURITY -D_NO_PROTO
+override CXXFLAGS += -I$(EPICS_BASE)/include -I$(SDDS_REPO)/include -DUSE_RUNCONTROL -I../runcontrol -I$(OBJ_DIR) -DSVN_VERSION=\"$(SVN_VERSION)\" -DACCESS_SECURITY -D_NO_PROTO
 
 ifneq ($(PCAS_INC_DIR),)
   ifeq ($(OS),Windows)
 	CFLAGS += -I$(PCAS_INC_DIR)
-	CCFLAGS += -I$(PCAS_INC_DIR)
+	override CXXFLAGS += -I$(PCAS_INC_DIR)
   else
 	# PCAS is an external dependency. Treat its headers as system headers so
 	# compiler diagnostics remain focused on code maintained in this repository.
 	CFLAGS += -isystem $(PCAS_INC_DIR)
-	CCFLAGS += -isystem $(PCAS_INC_DIR)
+	override CXXFLAGS += -isystem $(PCAS_INC_DIR)
   endif
 endif
 
 ifeq ($(OS), Linux)
   CFLAGS += -I$(EPICS_BASE)/include/compiler/gcc -I$(EPICS_BASE)/include/os/$(OS) -DUSE_LOGDAEMON -I../logDaemon
-  CCFLAGS += -fpermissive -I$(EPICS_BASE)/include/compiler/gcc -I$(EPICS_BASE)/include/os/$(OS) -DUSE_LOGDAEMON -I../logDaemon
+  override CXXFLAGS += -fpermissive -I$(EPICS_BASE)/include/compiler/gcc -I$(EPICS_BASE)/include/os/$(OS) -DUSE_LOGDAEMON -I../logDaemon
 	LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH) -fopenmp $(LDFLAGS)
 	ifneq ($(PCAS_LIB_DIR),)
 		LDFLAGS := -L$(PCAS_LIB_DIR) $(LDFLAGS)
 	endif
-  PROD_SYS_LIBS := -lrunControl -lLogD $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvaClient.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libnt.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccessCA.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccess.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
-	$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
+  PROD_SYS_LIBS := -lrunControl -lLogD $(EPICS_LIBS) \
 	$(LZMA_LIB) $(GSL_LINK_LIBS) $(Z_LIB) $(READLINE_LIBS) $(NCURSES_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Darwin)
   CFLAGS += -I$(EPICS_BASE)/include/compiler/clang -I$(EPICS_BASE)/include/os/$(OS) -Wno-overloaded-virtual -Wno-deprecated-builtins -DUSE_LOGDAEMON -I../logDaemon
-  CCFLAGS += -fpermissive -Wvla-cxx-extension -I$(EPICS_BASE)/include/compiler/clang -I$(EPICS_BASE)/include/os/$(OS) -Wno-overloaded-virtual -Wno-deprecated-builtins -DUSE_LOGDAEMON -I../logDaemon
+  override CXXFLAGS += -fpermissive -Wvla-cxx-extension -I$(EPICS_BASE)/include/compiler/clang -I$(EPICS_BASE)/include/os/$(OS) -Wno-overloaded-virtual -Wno-deprecated-builtins -DUSE_LOGDAEMON -I../logDaemon
 	LDFLAGS := -L$(SDDS_REPO)/lib/$(OS)-$(ARCH) -L$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH) $(LDFLAGS)
 	ifneq ($(PCAS_LIB_DIR),)
 		LDFLAGS := -L$(PCAS_LIB_DIR) $(LDFLAGS)
 	endif
-  PROD_SYS_LIBS := -lrunControl -lLogD $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvaClient.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libnt.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccessCA.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvAccess.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libpvData.a \
-    $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libca.a \
-	$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/libCom.a \
+  PROD_SYS_LIBS := -lrunControl -lLogD $(EPICS_LIBS) \
 	$(LZMA_LIB) $(GSL_LINK_LIBS) $(Z_LIB) $(READLINE_LIBS) $(NCURSES_LIBS) $(PROD_SYS_LIBS)
   PROD_LIBS_SDDS = -lmdbcommon -lmatlib -lfftpack -lSDDS1 -lnamelist -lrpnlib -lmdbmth -lmdblib
 endif
 
 ifeq ($(OS), Windows)
   CFLAGS += -wd4101 -wd4244 -wd4250 -wd4267 -wd4275 -w44355 -w44344 -w44251 -I$(EPICS_BASE)/include/compiler/msvc -I$(EPICS_BASE)/include/os/WIN32 -I$(SDDS_REPO)/lzma -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING -DEPICS_CALL_DLL
-  CCFLAGS += -wd4101 -wd4244 -wd4250 -wd4267 -wd4275 -w44355 -w44344 -w44251 -I$(EPICS_BASE)/include/compiler/msvc -I$(EPICS_BASE)/include/os/WIN32 -I$(SDDS_REPO)/lzma -permissive -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING -DEPICS_CALL_DLL
+  override CXXFLAGS += -wd4101 -wd4244 -wd4250 -wd4267 -wd4275 -w44355 -w44344 -w44251 -I$(EPICS_BASE)/include/compiler/msvc -I$(EPICS_BASE)/include/os/WIN32 -I$(SDDS_REPO)/lzma -permissive -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING -DEPICS_CALL_DLL
   PROD_LIBS += runControl.lib $(GSL_LINK_LIBS)
   PROD_LIBS_SDDS = mdbcommon.lib matlib.lib fftpack.lib SDDS1.lib namelist.lib rpnlib.lib mdbmth.lib mdblib.lib lzma.lib z.lib
-  EPICS_PROD_LIBS = pvaClient.lib nt.lib pvAccessCA.lib pvAccess.lib pvData.lib pvDatabase.lib ca.lib Com.lib
-  PROD_SYS_LIBS += $(EPICS_PROD_LIBS) ws2_32.lib
-  PROD_SYS_DEPS += $(addprefix $(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)/,$(EPICS_PROD_LIBS))
+  PROD_SYS_LIBS += $(EPICS_LIBS) ws2_32.lib
   LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)
 endif
+CUSTOM_LINK_PRODUCTS += sddssynchlog sddsmonitor sddsstatmon sddsvmonitor sddswmonitor BPS16monitor squishPVs sddsalarmlog toggle sddslogger sddsfeedforward sdds2dfeedforward sddspcas sddsglitchlogger sddsoptimize sddspvtest sddslogonchange sddswput sddsbcontrol sddscasr sddsimagemonitor makesrbump sddsexperiment sddsvexperiment sddspvalogger sddswget sddspvasaverestore sddspvaglitchlogger sddscainfo sddspermissive sddspvacontrollaw sddsSoftIOC
 
 include ../Makefile.build
 
 $(OBJ_DIR)/sddssynchlog$(EXEEXT): $(sddssynchlog_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddssynchlog_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsmonitor$(EXEEXT): $(sddsmonitor_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsmonitor_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsstatmon$(EXEEXT): $(sddsstatmon_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsstatmon_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsvmonitor$(EXEEXT): $(sddsvmonitor_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsvmonitor_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddswmonitor$(EXEEXT): $(sddswmonitor_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddswmonitor_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/BPS16monitor$(EXEEXT): $(BPS16monitor_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(BPS16monitor_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/squishPVs$(EXEEXT): $(squishPVs_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(squishPVs_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsalarmlog$(EXEEXT): $(sddsalarmlog_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsalarmlog_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/toggle$(EXEEXT): $(toggle_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(toggle_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddslogger$(EXEEXT): $(sddslogger_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddslogger_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsfeedforward$(EXEEXT): $(sddsfeedforward_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsfeedforward_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sdds2dfeedforward$(EXEEXT): $(sdds2dfeedforward_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sdds2dfeedforward_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddspcas$(EXEEXT): $(sddspcas_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddspcas_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) \
 	  $(if $(PCAS_LIB_DIR),$(PCAS_LIB_DIR)/libcas.a $(PCAS_LIB_DIR)/libgdd.a,) \
 	  $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsglitchlogger$(EXEEXT): $(sddsglitchlogger_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsglitchlogger_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsoptimize$(EXEEXT): $(sddsoptimize_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsoptimize_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddspvtest$(EXEEXT): $(sddspvtest_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddspvtest_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddslogonchange$(EXEEXT): $(sddslogonchange_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddslogonchange_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddswput$(EXEEXT): $(sddswput_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddswput_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsbcontrol$(EXEEXT): $(sddsbcontrol_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsbcontrol_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddscasr$(EXEEXT): $(sddscasr_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddscasr_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsimagemonitor$(EXEEXT): $(sddsimagemonitor_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsimagemonitor_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/makesrbump$(EXEEXT): $(makesrbump_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(makesrbump_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsexperiment$(EXEEXT): $(OBJ_DIR)/sddsexperiment.h $(sddsexperiment_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsexperiment_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsexperiment.h: sddsexperiment.nl
 	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp sddsexperiment.nl $(OBJ_DIR)/sddsexperiment.h
 
 $(OBJ_DIR)/sddsvexperiment$(EXEEXT): $(OBJ_DIR)/sddsvexperiment.h $(sddsvexperiment_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsvexperiment_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddsvexperiment.h: sddsvexperiment.nl
 	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp sddsvexperiment.nl $(OBJ_DIR)/sddsvexperiment.h
 
 $(OBJ_DIR)/sddspvalogger$(EXEEXT): $(sddspvalogger_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddspvalogger_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddswget$(EXEEXT): $(sddswget_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddswget_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddspvasaverestore$(EXEEXT): $(sddspvasaverestore_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddspvasaverestore_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddspvaglitchlogger$(EXEEXT): $(sddspvaglitchlogger_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddspvaglitchlogger_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 $(OBJ_DIR)/sddscainfo$(EXEEXT): $(sddscainfo_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddscainfo_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
  
 $(OBJ_DIR)/sddspermissive$(EXEEXT): $(sddspermissive_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddspermissive_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
  
 $(OBJ_DIR)/sddspvacontrollaw$(EXEEXT): $(sddspvacontrollaw_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddspvacontrollaw_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 
 $(OBJ_DIR)/sddsSoftIOC$(EXEEXT): $(sddsSoftIOC_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsSoftIOC_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
-	cp -f $@ $(BIN_DIR)/
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then echo cp -f $@ $(EPICS_BIN_DIR)/; fi
-	@if [ -n "$(EPICS_BIN_DIR)" ]; then cp -f $@ $(EPICS_BIN_DIR)/; fi
 
 .PHONY: sddsSoftIOC
 sddsSoftIOC: $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/sddsSoftIOC$(EXEEXT)
-	@true
+	$(MAKE) install-programs INSTALL_PROGRAMS="$(OBJ_DIR)/sddsSoftIOC$(EXEEXT)"
 
 TEST_PROD = $(PROD)
 TEST_PROD_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(TEST_PROD)))
 
 .PHONY: test-programs
-test-programs: $(OBJ_DIR) $(BIN_DIR) $(TEST_PROD_TARGETS)
+test-programs: $(OBJ_DIR) $(BIN_DIR) $(TEST_PROD_TARGETS) install-programs
 	@true

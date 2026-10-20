@@ -22,6 +22,10 @@ ifeq ($(OS), Linux)
   GSL_LOCAL = $(wildcard $(SDDS_REPO)/gsl)
 endif
 
+# Discover Base here; individual components enforce their own requirements.
+EPICS_OPTIONAL_LIBS := ca Com
+ENABLE_OPENMP := 1
+BUNDLE_OPENMP := 1
 include Makefile.rules
 
 DIRS = $(GSL_REPO)
@@ -103,7 +107,7 @@ SDDSepics: logDaemon
 	$(MAKE) -C $@
 
 test-binaries: rampload logDaemon
-	$(MAKE) -C $(SDDS_REPO)/SDDSaps O.$(OS)-$(ARCH) ../bin/$(OS)-$(ARCH) $(SDDS_TEST_TOOL_TARGETS)
+	$(MAKE) -C $(SDDS_REPO)/SDDSaps O.$(OS)-$(ARCH) install-programs INSTALL_PROGRAMS="$(SDDS_TEST_TOOL_TARGETS)"
 	$(MAKE) -C SDDSepics test-programs
 
 test: test-binaries
