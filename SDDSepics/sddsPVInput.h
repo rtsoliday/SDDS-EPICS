@@ -58,4 +58,51 @@ static inline int checkPVRegistryInput(SDDS_DATASET *input, int includeHost) {
   return 1;
 }
 
+/**
+ * @brief Validate primitive storage before updating a PV registry.
+ *
+ * New rows only supply names and hosts. An extra enum column would receive
+ * an unspecified zero key, which its dictionary need not contain. Cleanup
+ * recreates registries without extra metadata, so enum parameters and arrays
+ * also require rejection before any update.
+ * @param input Initialized writable registry dataset.
+ * @return One on success, zero for invalid names or unsupported enum storage.
+ */
+static inline int checkPVRegistryOutput(SDDS_DATASET *input) {
+  int32_t i;
+  if (!checkPVRegistryInput(input, 1))
+    return 0;
+  for (i = 0; i < input->layout.n_columns; i++) {
+    if (input->layout.column_definition[i].type == SDDS_ENUM) {
+      char message[1024];
+      snprintf(message, sizeof(message),
+               "PV registry column %s cannot have enum type when updating the registry",
+               input->layout.column_definition[i].name);
+      SDDS_SetError(message);
+      return 0;
+    }
+  }
+  for (i = 0; i < input->layout.n_parameters; i++) {
+    if (input->layout.parameter_definition[i].type == SDDS_ENUM) {
+      char message[1024];
+      snprintf(message, sizeof(message),
+               "PV registry parameter %s cannot have enum type when updating the registry",
+               input->layout.parameter_definition[i].name);
+      SDDS_SetError(message);
+      return 0;
+    }
+  }
+  for (i = 0; i < input->layout.n_arrays; i++) {
+    if (input->layout.array_definition[i].type == SDDS_ENUM) {
+      char message[1024];
+      snprintf(message, sizeof(message),
+               "PV registry array %s cannot have enum type when updating the registry",
+               input->layout.array_definition[i].name);
+      SDDS_SetError(message);
+      return 0;
+    }
+  }
+  return 1;
+}
+
 #endif

@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
   if (SDDS_CheckColumn(&shuntTable, "CorrName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
       !(shuntCorr = (char **)SDDS_GetColumn(&shuntTable, "CorrName")) ||
       !(shuntCoef = (double *)SDDS_GetColumnInDoubles(&shuntTable, "ShuntCoeff")) ||
-      !(SDDS_Terminate(&shuntTable))) {
+      !checkRemainingEnumPages(&shuntTable) || !(SDDS_Terminate(&shuntTable))) {
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
   }
   if (!(templateTime = SDDS_GetColumnInDoubles(&templateTable, "RampTime")) ||
       !(templateSetpoint = SDDS_GetColumnInDoubles(&templateTable, "RampSetpoint")) ||
-      !(SDDS_Terminate(&templateTable))) {
+      !checkRemainingEnumPages(&templateTable) || !(SDDS_Terminate(&templateTable))) {
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   }
   if (verbose)
@@ -387,7 +387,8 @@ int main(int argc, char *argv[]) {
       if (pageUsed == correctors) /*all needed corrector have reference setpoint */
         break;
     }
-    if (laterPageReadFailed(&refTable, pageCode) || !SDDS_Terminate(&refTable))
+    if (laterPageReadFailed(&refTable, pageCode) ||
+        (pageCode > 0 && !checkRemainingEnumPages(&refTable)) || !SDDS_Terminate(&refTable))
       SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     for (i = 0; i < correctors; i++) {
       if (!corrRamp[i].foundmatch) {
@@ -636,7 +637,8 @@ void readConfigFile(char *configFile, char ***corrList, long *correctors) {
       break;
     }
   }
-  if (laterPageReadFailed(&configData, pageCode) || !SDDS_Terminate(&configData))
+  if (laterPageReadFailed(&configData, pageCode) ||
+      (pageCode > 0 && !checkRemainingEnumPages(&configData)) || !SDDS_Terminate(&configData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if (!(*correctors)) {
     fprintf(stderr, "readConfigFile error1: no correctors found in config file %s\n", configFile);

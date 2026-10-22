@@ -836,7 +836,7 @@ void exServer::ReadMasterSDDSpcasPVFile(const char *const pvPrefix) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+  if (!checkPVRegistryOutput(&SDDS_masterlist))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", this->pcasPVFile);
@@ -904,7 +904,7 @@ void exServer::AppendMasterSDDSpcasPVFile(const char *const pvPrefix) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+  if (!checkPVRegistryOutput(&SDDS_masterlist))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   if (!SDDS_LengthenTable(&SDDS_masterlist, pvListNElem)) {
@@ -1003,6 +1003,11 @@ bool exServer::pvConflictsMasterFiles(const char *pvAliasMaster20) const {
       SDDS_Terminate(&SDDS_masterlist);
       return true;
     }
+    if (!checkPVRegistryOutput(&SDDS_masterlist)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&SDDS_masterlist);
+      return true;
+    }
     {
       rows = SDDS_RowCount(&SDDS_masterlist);
       if (rows > 0 && (rec_name = (char **)SDDS_GetColumn(&SDDS_masterlist, (char *)"rec_name"))) {
@@ -1045,7 +1050,7 @@ void exServer::appendMasterSddspcasPvFileForAliases(const std::vector<std::strin
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return;
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+  if (!checkPVRegistryOutput(&SDDS_masterlist)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&SDDS_masterlist);
     return;

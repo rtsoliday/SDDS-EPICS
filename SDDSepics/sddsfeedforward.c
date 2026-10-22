@@ -1565,7 +1565,7 @@ void readTestsFile(TESTS *test, CONTROL_DATA *readbackData, CONTROL_DATA *actuat
     SDDS_Terminate(&testValuesPage);
     SDDS_Bomb("Memory allocation failure4");
   }
-  if (!SDDS_Terminate(&testValuesPage))
+  if (!checkRemainingEnumPages(&testValuesPage) || !SDDS_Terminate(&testValuesPage))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 
   if (loopParam->verbose) {

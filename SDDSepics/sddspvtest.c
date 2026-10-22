@@ -1062,7 +1062,6 @@ long getInputInfo(char ***ControlName, double **MaximumValue, double **MinimumVa
                   char **Monitor, double **ChangeLimit, long *pvNumber, char *inputFile) {
   SDDS_DATASET inSet;
   int monitorColumnFound = 0, changeLimitFound = 0;
-  int32_t pageCode;
 
   *ControlName = NULL;
   *MaximumValue = *MinimumValue = *ChangeLimit = NULL;
@@ -1170,13 +1169,10 @@ long getInputInfo(char ***ControlName, double **MaximumValue, double **MinimumVa
   /* Only the first page supplies limits (extra pages are ignored silently),
    * but in a file defining enums an invalid extra page must not hide an SDDS6
    * enum validation error. */
-  if (inputHasEnums(&inSet)) {
-    pageCode = SDDS_ReadPage(&inSet);
-    if (laterPageReadFailed(&inSet, pageCode)) {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-      SDDS_Terminate(&inSet);
-      return (0);
-    }
+  if (!checkRemainingEnumPages(&inSet)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&inSet);
+    return (0);
   }
   SDDS_Terminate(&inSet);
   return (1);

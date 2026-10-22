@@ -152,6 +152,7 @@
 #include "mdb.h"
 #include "scan.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include "match_string.h"
 #include <string.h>
@@ -1061,7 +1062,7 @@ void ObtainInformationFromPresetTable(char *presetFile, char *presetLabel, long 
     free(data);
   } else
     accumulatorMode[0] = accumulatorMode[1] = accumulatorMode[2] = accumulatorMode[3] = planeMode[0];
-  if (!SDDS_Terminate(&presetData))
+  if (!checkRemainingEnumPages(&presetData) || !SDDS_Terminate(&presetData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   return;
 }
@@ -1943,7 +1944,7 @@ void ObtainInformationFromBunchPatternTable(char *bunchFile, char *bunchPattern0
   free((char *)stringData[0]);
   free((char **)stringData);
 
-  if (!SDDS_Terminate(&bunchData))
+  if (!checkRemainingEnumPages(&bunchData) || !SDDS_Terminate(&bunchData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   return;
 }
@@ -2170,7 +2171,7 @@ void ReadInputRAM(char *inputRAMFile, long *waveformLength, uint32_t **waveform,
     *transitionDeadTime = getRAMLongParameter(&ramData, "TransitionDeadTime");
   else if (isRAMLongParameter(&ramData, "TransistionDeadTime"))
     *transitionDeadTime = getRAMLongParameter(&ramData, "TransistionDeadTime");
-  if (!SDDS_Terminate(&ramData))
+  if (!checkRemainingEnumPages(&ramData) || !SDDS_Terminate(&ramData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 }
 

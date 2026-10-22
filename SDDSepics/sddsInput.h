@@ -119,6 +119,50 @@ static inline int laterPageReadFailed(SDDS_DATASET *input, int32_t pageCode) {
 }
 
 /**
+ * @brief Validate all ignored pages of a configuration that defines enums.
+ *
+ * Call only after extracting the first page's data. Reading a single extra
+ * page misses invalid dictionary keys on the third or any later page.
+ * Enum-free inputs retain their historical first-page-only behavior.
+ * @param input Dataset with its first page already read successfully.
+ * @return One on success, zero if a remaining enum page cannot be read.
+ */
+static inline int checkRemainingEnumPages(SDDS_DATASET *input) {
+  int32_t pageCode;
+  if (!inputHasEnums(input))
+    return 1;
+  while ((pageCode = SDDS_ReadPage(input)) > 0)
+    ;
+  return !laterPageReadFailed(input, pageCode);
+}
+
+/**
+ * @brief Validate ignored enum pages while retaining the current page's data.
+ *
+ * Save and waveform readers may copy the first page's metadata into output
+ * after validating the rest of the input. A memory copy also supports stdin.
+ * @param input Dataset with its first page already read successfully.
+ * @return One on success, zero if copying or validation fails.
+ */
+static inline int checkRemainingEnumPagesPreservePage(SDDS_DATASET *input) {
+  SDDS_DATASET savedPage;
+  int32_t copied;
+
+  if (!inputHasEnums(input))
+    return 1;
+  if (!SDDS_InitializeCopy(&savedPage, input, NULL, (char *)"m"))
+    return 0;
+  if (!SDDS_CopyPage(&savedPage, input) || !checkRemainingEnumPages(input)) {
+    SDDS_Terminate(&savedPage);
+    return 0;
+  }
+  copied = SDDS_CopyPage(input, &savedPage);
+  if (!SDDS_Terminate(&savedPage))
+    return 0;
+  return copied;
+}
+
+/**
  * @brief Carry non-fixed enum parameter values into a page appended to a file.
  *
  * Appended pages start with zero-initialized parameters. Programs that set only

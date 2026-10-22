@@ -323,7 +323,7 @@ int main(int argc, char **argv) {
         SDDS_Bomb("Invalid ControlName type in reference file");
       if (!(refName = (char **)SDDS_GetColumn(&SDDSref, "ControlName")) ||
           !(refValue = (double *)SDDS_GetColumnInDoubles(&SDDSref, "Value")) ||
-          !SDDS_Terminate(&SDDSref))
+          !checkRemainingEnumPages(&SDDSref) || !SDDS_Terminate(&SDDSref))
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       for (i = 0; i < bpm_mat.names; i++) {
         rIndex = match_string(bpm_mat.name[i], refName, refRows, EXACT_MATCH);
@@ -715,7 +715,7 @@ long setupCorrectorMatrix(char *filename, CORRBPM_MAT *corr_mat, char **bpm, lon
       corr_mat->matrix[i][j] = data[j][i];
     }
   }
-  if (!SDDS_Terminate(&SDDSin))
+  if (!checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   for (i = 0; i < bpms; i++)
     free(data[i]);
@@ -768,7 +768,7 @@ long setupBPMmatrix(char *filename, CORRBPM_MAT *bpm_mat, CORRBPM_MAT *corr_mat,
       for (j = 0; j < corr_mat->names; j++)
         bpm_mat->matrix[i][j] = data[j][i];
     }
-    if (!SDDS_Terminate(&SDDSin))
+    if (!checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     for (i = 0; i < corr_mat->names; i++)
       free(data[i]);
@@ -933,7 +933,7 @@ double computeRFdelta(CORRBPM_MAT *corr_mat, char *twissFile) {
   if (!(name = (char **)SDDS_GetColumn(&SDDSin, "ElementName")) ||
       !(etax = SDDS_GetColumnInDoubles(&SDDSin, "etax")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-  if (!SDDS_Terminate(&SDDSin))
+  if (!checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   deltaRF = 0;
   for (i = 0; i < rows; i++) {

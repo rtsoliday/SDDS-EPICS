@@ -1186,8 +1186,11 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, char *inputFile, 
   /* Saves write primitive strings into ValueString; restores can resolve its
    * dictionary without changing the input layout. */
   if (!control_name->carestore) {
-    const char *columns[] = {"ValueString", NULL};
-    if (!checkNonEnumInputs(&inSet, columns, NULL))
+    const char *columns[] = {"ValueString", "CAError", "Count", "Lineage", NULL};
+    const char *parameters[] = {"TimeStamp", "StartTime", "Time", "LoginID", "EffectiveUID",
+                                "GroupID", "SnapType", "SnapshotDescription", "SnapshotFilename",
+                                "RequestFile", "ElapsedTimeToCAConnect", "ElapsedTimeToSave", "PendIOTime", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, parameters))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (SDDS_CheckColumn(&inSet, "ControlName", NULL, SDDS_STRING, NULL) != SDDS_CHECK_OK) {
@@ -1239,6 +1242,8 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, char *inputFile, 
   if (control_name->carestore && !valuestringExist)
     SDDS_Bomb("The ValueString column is missing in the input file, unable to restore pv values!");
   if (control_name->casave) {
+    if (!checkRemainingEnumPagesPreservePage(&inSet))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!SDDS_InitializeCopy(outTable, &inSet, outputFile, "w"))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!WriteOutputLayout(outTable, &inSet))

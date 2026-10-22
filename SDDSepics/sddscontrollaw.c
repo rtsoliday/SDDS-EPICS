@@ -3029,7 +3029,7 @@ void setupReadbackLimitFile(LIMITS *readbackLimits) {
     readbackLimits->minValue = (double *)SDDS_GetColumn(&readbackLimitPage, "minValue");
     readbackLimits->maxValue = (double *)SDDS_GetColumn(&readbackLimitPage, "maxValue");
 
-    if (!SDDS_Terminate(&readbackLimitPage)) {
+    if (!checkRemainingEnumPages(&readbackLimitPage) || !SDDS_Terminate(&readbackLimitPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3085,7 +3085,7 @@ void setupDeltaLimitFile(LIMITS *delta) {
     delta->n = SDDS_CountRowsOfInterest(&deltaLimitPage);
     delta->controlName = (char **)SDDS_GetColumn(&deltaLimitPage, "ControlName");
     delta->value = (double *)SDDS_GetColumn(&deltaLimitPage, "DeltaLimit");
-    if (!SDDS_Terminate(&deltaLimitPage)) {
+    if (!checkRemainingEnumPages(&deltaLimitPage) || !SDDS_Terminate(&deltaLimitPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3140,7 +3140,7 @@ void setupActionLimitFile(LIMITS *action) {
     action->n = SDDS_CountRowsOfInterest(&actionLimitPage);
     action->controlName = (char **)SDDS_GetColumn(&actionLimitPage, "ControlName");
     action->value = (double *)SDDS_GetColumn(&actionLimitPage, "ActionLimit");
-    if (!SDDS_Terminate(&actionLimitPage)) {
+    if (!checkRemainingEnumPages(&actionLimitPage) || !SDDS_Terminate(&actionLimitPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3294,7 +3294,7 @@ void setupInputFile(CORRECTION *correction) {
   K->m = control->n;
   K->n = readback->n;
   K->a = (double **)SDDS_GetMatrixOfRows(&inputPage, &(control->n));
-  if (!SDDS_Terminate(&inputPage)) {
+  if (!checkRemainingEnumPages(&inputPage) || !SDDS_Terminate(&inputPage)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -3428,7 +3428,7 @@ void setupInputFile(CORRECTION *correction) {
     free(bcoef);
     bcoef = NULL;
 
-    if (!SDDS_Terminate(&coefPage)) {
+    if (!checkRemainingEnumPages(&coefPage) || !SDDS_Terminate(&coefPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3571,7 +3571,7 @@ void setupCompensationFiles(CORRECTION *compensation) {
   K->m = control->n;
   K->n = readback->n;
   K->a = (double **)SDDS_GetMatrixOfRows(&inputPage, &(control->n));
-  if (!SDDS_Terminate(&inputPage)) {
+  if (!checkRemainingEnumPages(&inputPage) || !SDDS_Terminate(&inputPage)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -3683,7 +3683,7 @@ void setupCompensationFiles(CORRECTION *compensation) {
     /* allocate arrays for history */
     m_alloc(&control->history, (border + 1), control->n);
     m_alloc(&control->historyFiltered, (aorder + 1), control->n);
-    if (!SDDS_Terminate(&coefPage)) {
+    if (!checkRemainingEnumPages(&coefPage) || !SDDS_Terminate(&coefPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3754,7 +3754,7 @@ void assignControlName(CORRECTION *correction, char *definitionFile) {
     rows = SDDS_CountRowsOfInterest(&definitionPage);
     def_symbolicName = (char **)SDDS_GetColumn(&definitionPage, "SymbolicName");
     def_controlName = (char **)SDDS_GetColumn(&definitionPage, "ControlName");
-    if (!SDDS_Terminate(&definitionPage)) {
+    if (!checkRemainingEnumPages(&definitionPage) || !SDDS_Terminate(&definitionPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -4067,7 +4067,7 @@ void setupTestsFile(TESTS *test, double interval, long verbose, double pendIOTim
       fprintf(stderr, "\n");
     }
   }
-  if (!SDDS_Terminate(&testValuesPage)) {
+  if (!checkRemainingEnumPages(&testValuesPage) || !SDDS_Terminate(&testValuesPage)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -4153,7 +4153,7 @@ void setupDespikeFile(DESPIKE_PARAM *despikeParam, CONTROL_NAME *readback, long 
       readback->despike[row_match] = despikeParam->despike[i];
   }
 
-  if (!SDDS_Terminate(&despikePage)) {
+  if (!checkRemainingEnumPages(&despikePage) || !SDDS_Terminate(&despikePage)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -7456,7 +7456,7 @@ void readOffsetValues(double *offset, long n, char **controlName, char *offsetFi
      free(inputName);
      free(inputOffset);
    */
-  if (!SDDS_Terminate(&SDDSin)) {
+  if (!checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -7524,7 +7524,7 @@ void readOffsetPV(char **offsetPVs, long n, char **controlName, char *PVOffsetFi
      free(inputName);
      free(inputOffsetPV);
    */
-  if (!SDDS_Terminate(&SDDSin)) {
+  if (!checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);

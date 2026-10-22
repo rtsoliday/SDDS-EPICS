@@ -682,7 +682,7 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
         exit(1);
       }
     }
-    if (!SDDS_Terminate(&SDDSscr))
+    if (!checkRemainingEnumPages(&SDDSscr) || !SDDS_Terminate(&SDDSscr))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (!SDDS_InitializeInput(&SDDSin, inputfile))
@@ -889,7 +889,7 @@ void readResponseDataAndIDsectorFile(char *respFile, char *IDsectorFile, RESPONS
   if (!(ds = SDDS_GetColumnInLong(&SDDSin, "Downstream")) ||
       !(us = SDDS_GetColumnInLong(&SDDSin, "Upstream")) ||
       !(sector = SDDS_GetColumnInLong(&SDDSin, "Sector")) ||
-      !SDDS_Terminate(&SDDSin))
+      !checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   resp_matrix->resp_rows = respRows;
@@ -936,7 +936,7 @@ void readResponseDataAndIDsectorFile(char *respFile, char *IDsectorFile, RESPONS
       IDs++;
     }
   }
-  if (!SDDS_Terminate(&SDDSresp))
+  if (!checkRemainingEnumPages(&SDDSresp) || !SDDS_Terminate(&SDDSresp))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   resp_matrix->IDs = IDs;
   /*assign matrix to each bpm (transpose matrix) */

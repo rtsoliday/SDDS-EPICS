@@ -1399,9 +1399,9 @@ static void filterOutMasterSddspcasPvConflicts(const std::string &pcasPvFile, co
     SDDS_Terminate(&SDDS_masterlist);
     return;
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+  if (!checkPVRegistryOutput(&SDDS_masterlist)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-    if (registryNamesUnsafe(&SDDS_masterlist, 1))
+    if (registryNamesUnsafe(&SDDS_masterlist, 1) || inputHasEnums(&SDDS_masterlist))
       candidates.clear();
     SDDS_Terminate(&SDDS_masterlist);
     return;
@@ -1705,7 +1705,7 @@ static void readMasterSddspcasPvFile(const std::string &pcasPvFile, const std::s
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+  if (!checkPVRegistryOutput(&SDDS_masterlist))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", pcasPvFile.c_str());
@@ -1770,7 +1770,7 @@ static void appendMasterSddspcasPvFile(const std::string &pcasPvFile, const std:
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+  if (!checkPVRegistryOutput(&SDDS_masterlist))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_LengthenTable(&SDDS_masterlist, (int64_t)pvs.size())) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1811,7 +1811,7 @@ extern "C" void CleanMasterSDDSpcasPVFile() {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return;
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+  if (!checkPVRegistryOutput(&SDDS_masterlist)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&SDDS_masterlist);
     return;

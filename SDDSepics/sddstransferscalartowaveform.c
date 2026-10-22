@@ -605,7 +605,7 @@ int runControlPingWhileSleep(double sleepTime, LOOP_PARAM *loopParam) {
     case RUNCONTROL_TIMEOUT:
       if (loopParam->verbose)
         fprintf(stderr, "Run control sddstransferscalarstowaveform timed out.\n");
-      strcpy(rcParam.message, "sddstransferscalarstowaveform timed-out");
+      strcpy(rcParam.message, "scalar-to-waveform transfer timed out");
       runControlLogMessage(rcParam.handle, rcParam.message, MAJOR_ALARM, &(rcParam.rcInfo));
       exit(1);
       break;
@@ -680,7 +680,10 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
 
   {
     const char *parameters[] = {"Prefix", "Suffix", "Suffix1", "IsSum", NULL};
-    if (!checkNonEnumInputs(&SDDSin, NULL, parameters)) {
+    const char *requiredColumns[] = {"DeviceName", NULL};
+    const char *requiredParameters[] = {"WaveformPV", NULL};
+    if (!checkNonEnumInputs(&SDDSin, NULL, parameters) ||
+        (reload && !checkNonEnumInputs(&SDDSin, requiredColumns, requiredParameters))) {
       if (!reload)
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);

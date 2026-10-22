@@ -2012,7 +2012,6 @@ bool PassesInhibitPVA(LOGGER_DATA *logger, PVA_OVERALL *pvaInhibit) {
 
 long getConditionsDataInfo(LOGGER_DATA *logger) {
   SDDS_DATASET inSet;
-  int32_t pageCode;
   char *ControlNameColumnName = NULL, *MessageColumnName = NULL;
   short MessageDefined, ScaleFactorDefined, HoldoffDefined, ProviderDefined;
   long i;
@@ -2220,8 +2219,7 @@ long getConditionsDataInfo(LOGGER_DATA *logger) {
 
   /* Conditions use the first page; as in getConditionsData, a failed read of
    * a later page of an enum file (e.g. an undefined key) is an error. */
-  pageCode = SDDS_ReadPage(&inSet);
-  if (laterPageReadFailed(&inSet, pageCode)) {
+  if (!checkRemainingEnumPages(&inSet)) {
     SDDS_Terminate(&inSet);
     if (ControlNameColumnName)
       free(ControlNameColumnName);
@@ -2660,7 +2658,7 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
     } else {
       if (page > 1) {
         fprintf(stderr, "file %s has multi-pages, only the first page is used.\n", logger->inputfile);
-        return 1;
+        return checkRemainingEnumPages(&inSet) && SDDS_Terminate(&inSet);
       }
     }
     /*if triggerFile is given, found=0, only read the columns in the first page of inputFile */
@@ -3460,6 +3458,9 @@ long getTriggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, l
     if (!(expectNumeric = (char *)SDDS_GetColumn(&inSet, (char *)"ExpectNumeric")))
       SDDS_Bomb((char *)"Memory allocation failure (getTriggerData)");
   }
+
+  if (!checkRemainingEnumPages(&inSet) || !SDDS_Terminate(&inSet))
+    return 0;
 
   /*assign values to trigger requests */
   for (i = 0; i < rows; i++) {

@@ -1130,7 +1130,7 @@ int main(int argc, char **argv) {
       }
     }
     SDDS_FreeStringArray(dcolName, control->Variables);
-    if (!SDDS_Terminate(&dmatTable))
+    if (!checkRemainingEnumPages(&dmatTable) || !SDDS_Terminate(&dmatTable))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (param->verbose)
@@ -1580,7 +1580,8 @@ long getVariablesData(CONTROL_NAME *control, char *inputFile, char *restartFile,
     control->RelativeLimit= SDDS_GetColumnInDoubles(&inSet, "RelativeLimit");
   if (ControlNameColumnName)
     free(ControlNameColumnName);
-  SDDS_Terminate(&inSet);
+  if (!checkRemainingEnumPages(&inSet) || !SDDS_Terminate(&inSet))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   control->KnobFlag = (short *)calloc(control->Variables, sizeof(*(control->KnobFlag)));
   if (knobFiles)
     SetKnobArray(knobFile, knobFiles, control);
@@ -1883,7 +1884,8 @@ long getMeasurementData(READBACK_NAME *readback, char *inputFile, unsigned long 
       free(info);
     }
   }
-  SDDS_Terminate(&inSet);
+  if (!checkRemainingEnumPages(&inSet) || !SDDS_Terminate(&inSet))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return 1;
 }
 
@@ -2341,7 +2343,7 @@ void setupOutputFile(SDDS_DATASET *outTable, COMMON_PARAM *param, char *outputFi
       if (!(name = (char**)SDDS_GetColumn(&extraLog, "ControlName")))
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       column = (char**)SDDS_GetColumnNames(outTable, &cols);
-      if (!SDDS_Terminate(&extraLog))
+      if (!checkRemainingEnumPages(&extraLog) || !SDDS_Terminate(&extraLog))
 	SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       param->extra_pvs=0;
       param->extra_pvname=NULL;
@@ -2687,6 +2689,9 @@ void setupTestsFile(TESTS *test) {
     test->sleep = SDDS_GetColumnInDoubles(&testValuesPage, "SleepTime");
   if (resetTimeColumnPresent)
     test->reset = SDDS_GetColumnInDoubles(&testValuesPage, "ResetTime");
+
+  if (!checkRemainingEnumPages(&testValuesPage))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   test->controlPVchid = (chid *)malloc(sizeof(chid) * test->n);
   for (i = 0; i < test->n; i++) {

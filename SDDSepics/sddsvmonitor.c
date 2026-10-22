@@ -1157,7 +1157,8 @@ long readSuffixFile(char *suffixFile, char ***suffix) {
   if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             suffixFile);
-  if (laterPageReadFailed(&inTable, code))
+  if (laterPageReadFailed(&inTable, code) ||
+      (code > 0 && !checkRemainingEnumPages(&inTable)))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -1182,7 +1183,8 @@ long readRootnameFile(char *rootnameFile, char ***rootname) {
   if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             rootnameFile);
-  if (laterPageReadFailed(&inTable, code))
+  if (laterPageReadFailed(&inTable, code) ||
+      (code > 0 && !checkRemainingEnumPages(&inTable)))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);

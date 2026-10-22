@@ -917,7 +917,7 @@ extern "C" void CleanMasterSDDSpcasPVFile() {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return;
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+  if (!checkPVRegistryOutput(&SDDS_masterlist)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&SDDS_masterlist);
     return;

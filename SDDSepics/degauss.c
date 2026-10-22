@@ -42,6 +42,7 @@
 #include <stddef.h>
 #include <cadef.h>
 #include <SDDS.h> /* SDDS library header */
+#include "sddsInput.h"
 #include <mdb.h>
 
 #define CA_TIMEOUT 10.0
@@ -310,6 +311,9 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+  if (!checkRemainingEnumPages(&table))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+
   ndevs = (int *)malloc(sizeof(int) * nrows);
 
   for (i = 0, nsupplies = 0; i < nrows; i++) {

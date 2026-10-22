@@ -3001,6 +3001,12 @@ long ReadInputFiles(LOGGER_DATA *logger) {
 
   //Not sure if I need to setup DeadBand column code. I may add this in the future.
 
+  if (!checkRemainingEnumPages(&SDDS_table)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&SDDS_table);
+    return (1);
+  }
+
   if (!SDDS_Terminate(&SDDS_table)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
@@ -3107,7 +3113,7 @@ long ReadConditionsFile(LOGGER_DATA *logger) {
 
   /* Conditions use the first page; a failed read of a later page of an enum
    * file (e.g. an undefined key) is an error, as in the CA loggers. */
-  if (laterPageReadFailed(&SDDS_table, SDDS_ReadPage(&SDDS_table))) {
+  if (!checkRemainingEnumPages(&SDDS_table)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&SDDS_table);
     return (1);
@@ -3253,7 +3259,7 @@ long ReadGlitchTriggerFile(LOGGER_DATA *logger) {
     }
   }
 
-  if (!SDDS_Terminate(&SDDS_table)) {
+  if (!checkRemainingEnumPages(&SDDS_table) || !SDDS_Terminate(&SDDS_table)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
   }

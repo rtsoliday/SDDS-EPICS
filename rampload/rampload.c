@@ -309,6 +309,7 @@ int main(int argc, char *argv[]) {
  */
 static char *getTextParameter(SDDS_TABLE *table, char *parameterName) {
   int32_t index, type;
+  char *value = NULL;
 
   if ((index = SDDS_GetParameterIndex(table, parameterName)) < 0)
     return NULL;
@@ -317,6 +318,9 @@ static char *getTextParameter(SDDS_TABLE *table, char *parameterName) {
     SDDS_SetError("Ramp control parameters must have string or enum type");
     return NULL;
   }
+  /* The formatted getter uses a fixed-size buffer for primitive strings. */
+  if (type == SDDS_STRING)
+    return SDDS_GetParameter(table, parameterName, &value) ? value : NULL;
   return SDDS_GetParameterAsString(table, parameterName, NULL);
 }
 

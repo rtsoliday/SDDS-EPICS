@@ -331,8 +331,6 @@ int main(int argc, char **argv) {
 }
 
 long ProcessWmonitorInputData(char ***readbackPV, long *readbacks, SDDS_DATASET *SDDSin) {
-  int32_t pageCode;
-
   *readbacks = 0;
   *readbackPV = NULL;
 
@@ -353,13 +351,10 @@ long ProcessWmonitorInputData(char ***readbackPV, long *readbacks, SDDS_DATASET 
     SDDS_SetError("Unable to find WaveformPV or WaveformName columns");
     return 0;
   }
-  /* Only the first page is used; check the next page of enum input so an
+  /* Only the first page is used; check all later pages of enum input so an
    * undefined key is reported. Enum-free input is read as before. */
-  if (inputHasEnums(SDDSin)) {
-    pageCode = SDDS_ReadPage(SDDSin);
-    if (laterPageReadFailed(SDDSin, pageCode))
-      return 0;
-  }
+  if (!checkRemainingEnumPages(SDDSin))
+    return 0;
   if (!SDDS_Terminate(SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return 1;

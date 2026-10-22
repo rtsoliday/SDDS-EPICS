@@ -1297,28 +1297,9 @@ long ProcessWmonitorInputData(
     SDDS_SetError((char *)"Unable to find WaveformPV or WaveformName columns");
     return 0;
   }
-  /* Enum-free input is read as before: only the first page is used. */
-  if (!inputHasEnums(SDDSin))
-    return 1;
-  /* Keep the first page's metadata while checking the extra page, including
-   * enum codes that SDDS validates only when the page is read. The memory copy
-   * also works with stdin, where rewinding the input is not possible. */
-  SDDS_DATASET firstPage;
-  if (!SDDS_InitializeCopy(&firstPage, SDDSin, NULL, (char *)"m"))
-    return 0;
-  if (!SDDS_CopyPage(&firstPage, SDDSin)) {
-    SDDS_Terminate(&firstPage);
-    return 0;
-  }
-  int32_t pageCode = SDDS_ReadPage(SDDSin);
-  if (laterPageReadFailed(SDDSin, pageCode)) {
-    SDDS_Terminate(&firstPage);
-    return 0;
-  }
-  int32_t copied = SDDS_CopyPage(SDDSin, &firstPage);
-  if (!SDDS_Terminate(&firstPage) || !copied)
-    return 0;
-  return 1;
+  /* Keep first-page metadata while validating every later enum page. The
+   * in-memory copy also supports stdin, which cannot be rewound. */
+  return checkRemainingEnumPagesPreservePage(SDDSin);
 }
 
 long ProcessWgetInputData(

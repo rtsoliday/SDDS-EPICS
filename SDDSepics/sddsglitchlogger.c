@@ -2117,7 +2117,7 @@ long getGlitchLoggerData(DATASETS **datasets, long *numDatasets, GLITCH_REQUEST 
     } else {
       if (page > 1) {
         fprintf(stderr, "file %s has multi-pages, only the first page is used.\n", inputFile);
-        return 1;
+        return checkRemainingEnumPages(&inSet) && SDDS_Terminate(&inSet);
       }
     }
     /*if triggerFile is given, found=0, only read the columns in the first page of inputFile */
@@ -2901,6 +2901,9 @@ long getTriggerData(GLITCH_REQUEST **glitchRequest, long *glitchChannels,
   if (SDDS_CheckColumn(&inSet, "GlitchScript", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OKAY &&
       !(glitchScript = (char **)SDDS_GetColumn(&inSet, "GlitchScript")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+
+  if (!checkRemainingEnumPages(&inSet) || !SDDS_Terminate(&inSet))
+    return 0;
 
   /*assign values to trigger requests */
   for (i = 0; i < rows; i++) {

@@ -1123,7 +1123,8 @@ long getScalarMonitorData(char ***DeviceName, char ***ReadMessage,
 
   if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (laterPageReadFailed(&inSet, pageCode))
+  if (laterPageReadFailed(&inSet, pageCode) ||
+      (pageCode > 0 && !checkRemainingEnumPages(&inSet)))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);
@@ -1135,7 +1136,6 @@ long getConditionsData(char ***DeviceName, char ***ReadMessage,
                        double **UpperLimit, double **HoldoffTime,
                        long *variables, char *inputFile) {
   SDDS_DATASET inSet;
-  int32_t pageCode;
   char *ControlNameColumnName = NULL, *MessageColumnName = NULL;
   short MessageDefined, ScaleFactorDefined, HoldoffDefined;
   long i;
@@ -1258,15 +1258,9 @@ long getConditionsData(char ***DeviceName, char ***ReadMessage,
       !(*HoldoffTime = SDDS_GetColumnInDoubles(&inSet, "HoldoffTime")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
-  /* Conditions use the first page; for files defining enums, reject a failed
-   * extra-page read (e.g., an undefined enum key) just as the scalar and
-   * waveform configuration readers do. Extra pages are ignored silently. */
-  if (inputHasEnums(&inSet)) {
-    pageCode = SDDS_ReadPage(&inSet);
-    if (laterPageReadFailed(&inSet, pageCode)) {
-      SDDS_Terminate(&inSet);
-      return 0;
-    }
+  if (!checkRemainingEnumPages(&inSet)) {
+    SDDS_Terminate(&inSet);
+    return 0;
   }
   SDDS_Terminate(&inSet);
   if (ControlNameColumnName)
@@ -1282,7 +1276,6 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
                             int32_t **readbackDataType, long *readbacks,
                             long *waveformLength, int32_t **waveformOffset, char *inputFile, long desiredDataType) {
   SDDS_DATASET inSet;
-  int32_t pageCode;
   long code, dataTypeColumnGiven, pvIndex;
 
   *readbacks = 0;
@@ -1441,15 +1434,9 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
     }
   }
 
-  /* The configuration comes from the first page, but for files defining
-   * enums a failed read of an extra page must not be mistaken for the end of
-   * a valid SDDS6 file. Extra pages are ignored silently. */
-  if (inputHasEnums(&inSet)) {
-    pageCode = SDDS_ReadPage(&inSet);
-    if (laterPageReadFailed(&inSet, pageCode)) {
-      SDDS_Terminate(&inSet);
-      return 0;
-    }
+  if (!checkRemainingEnumPages(&inSet)) {
+    SDDS_Terminate(&inSet);
+    return 0;
   }
   if (!SDDS_Terminate(&inSet)) {
     SDDS_SetError("problem termining input file");
@@ -2485,7 +2472,8 @@ long getScalarMonitorDataModified(char ***DeviceName, char ***ReadMessage,
 
   if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (laterPageReadFailed(&inSet, pageCode))
+  if (laterPageReadFailed(&inSet, pageCode) ||
+      (pageCode > 0 && !checkRemainingEnumPages(&inSet)))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);

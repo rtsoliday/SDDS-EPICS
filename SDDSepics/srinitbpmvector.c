@@ -261,7 +261,7 @@ void readPVvaluesFromFile(char *filename, char ***pvName, char ***valueString, i
       SDDS_CheckColumn(&SDDSin, "ValueString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
       !(*pvName = (char **)SDDS_GetColumn(&SDDSin, "ControlName")) ||
       !(*valueString = (char **)SDDS_GetColumn(&SDDSin, "ValueString")) ||
-      !SDDS_Terminate(&SDDSin)) {
+      !checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     exit(1);
   }

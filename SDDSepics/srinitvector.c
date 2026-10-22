@@ -385,7 +385,7 @@ void read_corr_waveform(char *plane, CORR_VECTOR *vector, double pendIOTime, lon
   if (SDDS_CheckColumn(&SDDSconfig, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
       !(configPVName = (char **)SDDS_GetColumn(&SDDSconfig, "DeviceName")) ||
       !(nonExist = (short *)SDDS_GetColumnInShort(&SDDSconfig, "Nonexistent")) ||
-      !SDDS_Terminate(&SDDSconfig)) {
+      !checkRemainingEnumPages(&SDDSconfig) || !SDDS_Terminate(&SDDSconfig)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     exit(1);
   }
@@ -396,7 +396,7 @@ void read_corr_waveform(char *plane, CORR_VECTOR *vector, double pendIOTime, lon
       !(SDDS_GetParameter(&SDDSvector, "FeedforwardWaveformPV", &FFPV)) ||
       !(SDDS_GetParameter(&SDDSvector, "SetpointWaveformPV", &setpointPV)) ||
       !(deviceName = (char **)SDDS_GetColumn(&SDDSvector, "DeviceName")) ||
-      !SDDS_Terminate(&SDDSvector)) {
+      !checkRemainingEnumPages(&SDDSvector) || !SDDS_Terminate(&SDDSvector)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     exit(1);
   }
@@ -487,7 +487,7 @@ void readPVvaluesFromFile(char *filename, char ***pvName, char ***valueString, i
       SDDS_CheckColumn(&SDDSin, "ValueString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
       !(*pvName = (char **)SDDS_GetColumn(&SDDSin, "ControlName")) ||
       !(*valueString = (char **)SDDS_GetColumn(&SDDSin, "ValueString")) ||
-      !SDDS_Terminate(&SDDSin)) {
+      !checkRemainingEnumPages(&SDDSin) || !SDDS_Terminate(&SDDSin)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     exit(1);
   }

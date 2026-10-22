@@ -253,7 +253,10 @@ PV server registries require string `rec_name` columns when they have rows;
 `-pcasPVFile` also requires a string `host_name` column. Both servers validate
 these types before reading name buffers, checking dynamic PV additions,
 appending entries, or cleaning the registry on exit. An enum in a
-name column is a type error; unrelated enum metadata remains valid for lookup.
+name column is a type error; unrelated enum metadata remains valid in the
+read-only `-masterPVFile` lookup. Writable `-pcasPVFile` registries reject enum
+columns, parameters, and arrays before updates, since adding rows cannot supply
+their dictionary keys and cleanup cannot preserve that metadata.
 In a registry that defines enums, a failed registry page read, including an
 undefined enum key, also prevents dynamic PV additions; `sddsSoftIOC` skips an
 unreadable enum-free registry with a warning, as for a registry that cannot be

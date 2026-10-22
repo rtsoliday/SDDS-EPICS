@@ -42,6 +42,7 @@
 #include <stddef.h>
 #include <cadef.h>
 #include <SDDS.h> /* SDDS library header */
+#include "sddsInput.h"
 #include <mdb.h>
 
 #define CA_TIMEOUT 10.0
@@ -256,6 +257,9 @@ int main(int argc, char *argv[]) {
     }
   } else
     rejectEnumColumn(&table, "SuffixName");
+
+  if (!checkRemainingEnumPages(&table))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   /*
     if (outb) {

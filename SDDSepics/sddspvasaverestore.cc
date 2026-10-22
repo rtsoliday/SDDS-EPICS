@@ -1013,8 +1013,11 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
   /* Saves write primitive strings into ValueString; restores can resolve its
    * dictionary without changing the input layout. */
   if (!control_name->pvarestore) {
-    const char *columns[] = {"ValueString", NULL};
-    if (!checkNonEnumInputs(&inSet, columns, NULL))
+    const char *columns[] = {"ValueString", "CAError", "Count", "Lineage", NULL};
+    const char *parameters[] = {"TimeStamp", "StartTime", "Time", "LoginID", "EffectiveUID",
+                                "GroupID", "SnapType", "SnapshotDescription", "SnapshotFilename",
+                                "RequestFile", "ElapsedTimeToCAConnect", "ElapsedTimeToSave", "PendIOTime", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, parameters))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (SDDS_CheckColumn(&inSet, (char *)"ControlName", NULL, SDDS_STRING, NULL) != SDDS_CHECK_OK) {
@@ -1096,6 +1099,8 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
   }
   if (control_name->pvarestore && !valuestringExist)
     SDDS_Bomb((char *)"The ValueString column is missing in the input file, unable to restore pv values!");
+  if (control_name->pvasave && !checkRemainingEnumPagesPreservePage(&inSet))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if ((control_name->pvasave) && (firstTime)) {
     if (!SDDS_InitializeCopy(outTable, &inSet, outputFile, (char *)"w"))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -1330,17 +1335,22 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
   }
 
   for (i = 0; i < pva->numPVs; i++) {
+    bool restoredWaveform = control_name->pvarestore && channelInfo[i].stringValue;
     if (pva->isConnected[i] == false) {
       //If initial connection fails, need good defaults.
       control_name->channelInfo[i].isEnumPV = 0;
-      if ((control_name->ExpectNumeric[i] == 'Y') || (control_name->ExpectNumeric[i] == 'y'))
-        control_name->channelInfo[i].dataType = SDDS_DOUBLE;
-      else
-        control_name->channelInfo[i].dataType = SDDS_STRING;
+      /* The expected PV capacity is not the allocation size of a restored
+       * waveform. Keep its file count and type even without a connection. */
+      if (!restoredWaveform) {
+        if ((control_name->ExpectNumeric[i] == 'Y') || (control_name->ExpectNumeric[i] == 'y'))
+          control_name->channelInfo[i].dataType = SDDS_DOUBLE;
+        else
+          control_name->channelInfo[i].dataType = SDDS_STRING;
+        control_name->channelInfo[i].length = control_name->ExpectElements[i];
+      }
       if (control_name->IndirectName[i])
         free(control_name->IndirectName[i]);
       SDDS_CopyString(&control_name->IndirectName[i], "-");
-      control_name->channelInfo[i].length = control_name->ExpectElements[i];
       continue;
     }
     if (!validate_pva_reading(control_name, pva, i, -1, true))
@@ -1348,7 +1358,6 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
     /* Check the destination separately from the restored buffer: its capacity
      * must not become the number of strings read from the waveform file. */
     long elements = pva->pvaData[i].numGetElements;
-    bool restoredWaveform = control_name->pvarestore && channelInfo[i].stringValue;
     if (!restoredWaveform)
       channelInfo[i].length = elements;
     if (elements != control_name->ExpectElements[i]) {
