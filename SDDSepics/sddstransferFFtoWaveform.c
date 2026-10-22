@@ -382,7 +382,7 @@ int main(int argc, char **argv) {
     waveformData[waveforms].scalarCID = malloc(sizeof(chid) * waveformData[waveforms].waveformRows);
     waveforms++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
+  if (laterPageReadFailed(&SDDSin, pageCode) || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   ca_task_initialize();

@@ -20,6 +20,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 #ifdef _WIN32
@@ -352,11 +353,13 @@ long ProcessWmonitorInputData(char ***readbackPV, long *readbacks, SDDS_DATASET 
     SDDS_SetError("Unable to find WaveformPV or WaveformName columns");
     return 0;
   }
-  pageCode = SDDS_ReadPage(SDDSin);
-  if (pageCode > 0)
-    fprintf(stderr, "Warning: extra pages in waveform input---they are ignored\n");
-  if (pageCode == 0)
-    return 0;
+  /* Only the first page is used; check the next page of enum input so an
+   * undefined key is reported. Enum-free input is read as before. */
+  if (inputHasEnums(SDDSin)) {
+    pageCode = SDDS_ReadPage(SDDSin);
+    if (laterPageReadFailed(SDDSin, pageCode))
+      return 0;
+  }
   if (!SDDS_Terminate(SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return 1;
@@ -383,7 +386,7 @@ long ProcessWgetInputData(char ***readbackPV, long *readbacks, SDDS_DATASET *SDD
     pages++;
   }
   *readbacks = pages;
-  if (pageCode == 0 || !SDDS_Terminate(SDDSin))
+  if (laterPageReadFailed(SDDSin, pageCode) || !SDDS_Terminate(SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return 1;
 }

@@ -2394,7 +2394,7 @@ long getGlitchLoggerData(DATASETS **datasets, long *numDatasets, GLITCH_REQUEST 
   if (OutputRootname)
     free(OutputRootname);
 
-  if (page == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, (int32_t)page) || !SDDS_Terminate(&inSet))
     return 0;
   return 1;
 }

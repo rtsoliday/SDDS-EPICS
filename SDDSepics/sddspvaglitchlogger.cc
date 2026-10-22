@@ -2012,6 +2012,7 @@ bool PassesInhibitPVA(LOGGER_DATA *logger, PVA_OVERALL *pvaInhibit) {
 
 long getConditionsDataInfo(LOGGER_DATA *logger) {
   SDDS_DATASET inSet;
+  int32_t pageCode;
   char *ControlNameColumnName = NULL, *MessageColumnName = NULL;
   short MessageDefined, ScaleFactorDefined, HoldoffDefined, ProviderDefined;
   long i;
@@ -2217,6 +2218,17 @@ long getConditionsDataInfo(LOGGER_DATA *logger) {
       !(logger->CondHoldoff = SDDS_GetColumnInDoubles(&inSet, (char *)"HoldoffTime")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
+  /* Conditions use the first page; as in getConditionsData, a failed read of
+   * a later page of an enum file (e.g. an undefined key) is an error. */
+  pageCode = SDDS_ReadPage(&inSet);
+  if (laterPageReadFailed(&inSet, pageCode)) {
+    SDDS_Terminate(&inSet);
+    if (ControlNameColumnName)
+      free(ControlNameColumnName);
+    if (MessageColumnName)
+      free(MessageColumnName);
+    return 0;
+  }
   SDDS_Terminate(&inSet);
   if (ControlNameColumnName)
     free(ControlNameColumnName);
@@ -2951,7 +2963,7 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
   if (OutputRootname)
     free(OutputRootname);
 
-  if (page == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, (int32_t)page) || !SDDS_Terminate(&inSet))
     return 0;
   return 1;
 }

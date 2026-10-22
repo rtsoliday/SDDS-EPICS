@@ -1028,7 +1028,9 @@ void logDaemonOpenLogfile(TYPENODE *typeNode) {
 
     table = &(typeNode->table);
     typeNode->size = 0;
-    if (access(typeNode->log_file, F_OK) == 0) { /* file exists */
+    /* An existing but empty file (e.g. left by an interrupted start) has no
+     * header to append to, so it is initialized like a new log. */
+    if (stat(typeNode->log_file, &stat_buf) == 0 && stat_buf.st_size > 0) { /* file exists */
       /* Move log file to save directory as a new generation */
       /*logDaemonNewGeneration(typeNode);*/
       /*append*/
@@ -1941,33 +1943,42 @@ int logDaemonWriteSDDSHeader(SDDS_TABLE *table, TYPENODE *typeNode) {
  ************************************************************************/
 void logDaemonAppendPageToLogFile(TYPENODE *typeNode) {
   SDDS_DATASET input;
-  int32_t i, pageCode;
+  int32_t i;
   int64_t initialRow = 0;
 
   /* Messages are appended as primitive ASCII values, bypassing SDDS setters.
-   * Enum columns would interpret those values as dictionary keys or labels.
-   * Check before opening for append, and validate any enum metadata as well. */
-  if (!SDDS_InitializeInput(&input, typeNode->log_file))
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-  for (i = 0; i < input.layout.n_columns; i++) {
-    if (input.layout.column_definition[i].type == SDDS_ENUM) {
-      fprintf(stderr, "logDaemon: column %s has enum type; log columns require primitive storage\n",
-              input.layout.column_definition[i].name);
-      syslog(LOG_ERR, "cannot append primitive messages to enum column %s in %s",
-             input.layout.column_definition[i].name, typeNode->log_file);
-      SDDS_Terminate(&input);
-      exit(1);
+   * Enum columns would interpret those values as dictionary keys or labels,
+   * so check the layout before opening for append. Only the header is read:
+   * existing rows are not validated, so logs that were appendable before
+   * (e.g. with rows holding fewer values than tag columns) remain appendable,
+   * and a bad log never stops the daemon for other sources. */
+  if (!SDDS_InitializeInput(&input, typeNode->log_file)) {
+    syslog(LOG_WARNING, "unable to read SDDS header of existing log file %s", typeNode->log_file);
+    SDDS_ClearErrors();
+  } else {
+    for (i = 0; i < input.layout.n_columns; i++) {
+      if (input.layout.column_definition[i].type == SDDS_ENUM) {
+        fprintf(stderr, "logDaemon: column %s has enum type; log columns require primitive storage\n",
+                input.layout.column_definition[i].name);
+        syslog(LOG_ERR, "cannot append primitive messages to enum column %s in %s",
+               input.layout.column_definition[i].name, typeNode->log_file);
+        SDDS_Terminate(&input);
+        exit(1);
+      }
     }
+    if (!SDDS_Terminate(&input))
+      SDDS_ClearErrors();
   }
-  while ((pageCode = SDDS_ReadPage(&input)) > 0) {
-  }
-  if (pageCode == 0 || !SDDS_Terminate(&input))
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   if (!SDDS_InitializeAppendToPage(&(typeNode->table), typeNode->log_file, 1,
                                    &initialRow)) {
     syslog(LOG_ERR, "cannot append to log file %s: %m", typeNode->log_file);
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    /* Without an open file the descriptor below cannot be obtained, which
+     * previously crashed in fileno(NULL). If the file was opened but its header
+     * is unreadable, keep the historical behavior and continue appending. */
+    if (!typeNode->table.layout.fp)
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
   }
   typeNode->log_file_fd = fileno(typeNode->table.layout.fp);
   logDaemonGetSDDSHeaderOffset(&(typeNode->table), &(typeNode->size));

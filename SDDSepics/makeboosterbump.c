@@ -25,6 +25,7 @@
 #include "mdb.h"
 #include "scan.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "mdb.h"
 
 #define VERSION "V1.0"
@@ -386,7 +387,7 @@ int main(int argc, char *argv[]) {
       if (pageUsed == correctors) /*all needed corrector have reference setpoint */
         break;
     }
-    if (pageCode == 0 || !SDDS_Terminate(&refTable))
+    if (laterPageReadFailed(&refTable, pageCode) || !SDDS_Terminate(&refTable))
       SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     for (i = 0; i < correctors; i++) {
       if (!corrRamp[i].foundmatch) {
@@ -635,7 +636,7 @@ void readConfigFile(char *configFile, char ***corrList, long *correctors) {
       break;
     }
   }
-  if (pageCode == 0 || !SDDS_Terminate(&configData))
+  if (laterPageReadFailed(&configData, pageCode) || !SDDS_Terminate(&configData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if (!(*correctors)) {
     fprintf(stderr, "readConfigFile error1: no correctors found in config file %s\n", configFile);

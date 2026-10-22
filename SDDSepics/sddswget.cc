@@ -45,6 +45,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 #define CLO_PVNAMES 0
@@ -1296,6 +1297,9 @@ long ProcessWmonitorInputData(
     SDDS_SetError((char *)"Unable to find WaveformPV or WaveformName columns");
     return 0;
   }
+  /* Enum-free input is read as before: only the first page is used. */
+  if (!inputHasEnums(SDDSin))
+    return 1;
   /* Keep the first page's metadata while checking the extra page, including
    * enum codes that SDDS validates only when the page is read. The memory copy
    * also works with stdin, where rewinding the input is not possible. */
@@ -1307,12 +1311,10 @@ long ProcessWmonitorInputData(
     return 0;
   }
   int32_t pageCode = SDDS_ReadPage(SDDSin);
-  if (pageCode == 0) {
+  if (laterPageReadFailed(SDDSin, pageCode)) {
     SDDS_Terminate(&firstPage);
     return 0;
   }
-  if (pageCode > 0)
-    fprintf(stderr, "Warning: extra pages in waveform input---they are ignored\n");
   int32_t copied = SDDS_CopyPage(SDDSin, &firstPage);
   if (!SDDS_Terminate(&firstPage) || !copied)
     return 0;
@@ -1391,7 +1393,7 @@ long ProcessWgetInputData(
     (*rows)[pages] = SDDS_CountRowsOfInterest(SDDSin);
     pages++;
   }
-  if (pageCode == 0) {
+  if (laterPageReadFailed(SDDSin, pageCode)) {
     SDDS_SetError((char *)"Unable to read waveform input page");
     return 0;
   }

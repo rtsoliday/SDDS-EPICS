@@ -48,7 +48,17 @@ DIRS += logDaemon
 DIRS += SDDSepics
 
 SDDS_TEST_TOOL_NAMES = sdds2stream sddsquery
-SDDS_TEST_TOOL_TARGETS = $(addprefix O.$(OS)-$(ARCH)/,$(addsuffix $(EXEEXT),$(SDDS_TEST_TOOL_NAMES)))
+# OBJ_DIR comes from Makefile.rules, so DEV_BUILD=1 selects the same -dev
+# directory that the SDDSaps makefile uses.
+SDDS_TEST_TOOL_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(SDDS_TEST_TOOL_NAMES)))
+
+# Test-only programs remain in their component build directories instead of
+# being installed with the production programs. Pytest searches these
+# directories through SDDS_EPICS_TEST_BIN_DIRS.
+TEST_BIN_DIR_EMPTY :=
+TEST_BIN_DIR_SPACE := $(TEST_BIN_DIR_EMPTY) $(TEST_BIN_DIR_EMPTY)
+TEST_BIN_DIR_SEPARATOR = $(if $(filter Windows,$(OS)),;,:)
+SDDS_EPICS_TEST_BIN_DIRS = $(subst $(TEST_BIN_DIR_SPACE),$(TEST_BIN_DIR_SEPARATOR),$(strip $(abspath SDDSepics/$(OBJ_DIR) rampload/$(OBJ_DIR))))
 
 PYTEST ?= python3 -m pytest
 
@@ -60,6 +70,7 @@ ifeq ($(OS), Windows)
 	SDDS_EPICS_BIN_DIR="$(SDDS_EPICS_TEST_BIN)" \
 	SDDS_BIN_DIR="$(SDDS_TEST_BIN)"
 endif
+TEST_ENV += SDDS_EPICS_TEST_BIN_DIRS="$(SDDS_EPICS_TEST_BIN_DIRS)"
 
 .PHONY: all $(DIRS) clean distclean test test-binaries
 
@@ -107,8 +118,8 @@ SDDSepics: logDaemon
 	$(MAKE) -C $@
 
 test-binaries: all
-	$(MAKE) -C rampload PROD=ramploadnew
-	$(MAKE) -C $(SDDS_REPO)/SDDSaps O.$(OS)-$(ARCH) install-programs INSTALL_PROGRAMS="$(SDDS_TEST_TOOL_TARGETS)"
+	$(MAKE) -C rampload test-programs
+	$(MAKE) -C $(SDDS_REPO)/SDDSaps $(OBJ_DIR) install-programs INSTALL_PROGRAMS="$(SDDS_TEST_TOOL_TARGETS)"
 	$(MAKE) -C SDDSepics test-programs
 
 test: test-binaries

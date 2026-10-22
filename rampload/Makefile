@@ -43,6 +43,26 @@ ifeq ($(OS), Windows)
   LIB_LINK_DIRS += -LIBPATH:$(SDDS_REPO)/lib/$(OS)-$(ARCH) -LIBPATH:$(EPICS_BASE)/lib/$(EPICS_HOST)-$(EPICS_ARCH)
 endif
 
+# The legacy ramploadnew utility is compiled for the test suite without being
+# added to PROD. Overriding PROD would rewrite this component's build
+# configuration and rebuild the production programs on the next build. MSVC
+# lacks the <sys/time.h> header that ramploadnew includes.
+ifneq ($(OS), Windows)
+  LEGACY_TEST_PROD = ramploadnew
+endif
+LEGACY_TEST_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(LEGACY_TEST_PROD)))
+BUILD_OBJECTS += $(addprefix $(OBJ_DIR)/,$(addsuffix .$(OBJEXT),$(LEGACY_TEST_PROD)))
+
 include ../Makefile.build
+
+ifneq ($(LEGACY_TEST_TARGETS),)
+$(LEGACY_TEST_TARGETS): %$(EXEEXT): %.$(OBJEXT) $(PROD_DEPS)
+	$(LINKEXE) $(OUTPUTEXE) $< $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(GSL_LIBS) $(PROD_SYS_LIBS)
+endif
+
+# Test-only programs stay in OBJ_DIR; they are not installed with PROD.
+.PHONY: test-programs
+test-programs: $(OBJ_DIR) $(LEGACY_TEST_TARGETS)
+	@true
 
 

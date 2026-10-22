@@ -363,6 +363,8 @@ typedef struct
   char stringValue[MAX_STRING_SIZE];
   long elementCount;
   double *waveformValues;
+  /* output column index of this PV in -sddslogger mode */
+  long sddsColumn;
 } CHANNEL_INFO;
 
 long GetControlNames(char *file, char ***name0, char ***readbackName0, char ***readbackUnits0, char ***relatedName0, char ***description0, double **tolerance0, short **expectNumeric0, char ***expectFieldType0, int32_t **expectElements0);
@@ -1387,16 +1389,18 @@ void LogEventToFile(long index, double theTime, double theTimeWS, double Hour, d
     }
   } else {
     long i;
+    /* Column indices come from SetupSDDSLoggerFile, so appended files need not
+     * use the column order of a newly created file. */
     if ((theTime == lastLogTime) && (theTimeWS == lastLogTimeWS)) {
       logfileRow--;
       for (i = 0; i < controlNames; i++) {
         if (chInfo[i].isString) {
-          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 1, chInfo[i].stringValue, -1)) {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, (int32_t)chInfo[i].sddsColumn, chInfo[i].stringValue, -1)) {
             SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
             exit(1);
           }
         } else {
-          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 1, chInfo[i].value, -1)) {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, (int32_t)chInfo[i].sddsColumn, chInfo[i].value, -1)) {
             SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
             exit(1);
           }
@@ -1405,22 +1409,22 @@ void LogEventToFile(long index, double theTime, double theTimeWS, double Hour, d
     } else {
       lastLogTime = theTime;
       lastLogTimeWS = theTimeWS;
-      if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, 0, theTime, -1)) {
+      if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, (int32_t)iTime, theTime, -1)) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
         exit(1);
       }
-      if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, 1, theTimeWS, -1)) {
+      if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, (int32_t)iTimeWS, theTimeWS, -1)) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
         exit(1);
       }
       for (i = 0; i < controlNames; i++) {
         if (chInfo[i].isString) {
-          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 2, chInfo[i].stringValue, -1)) {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, (int32_t)chInfo[i].sddsColumn, chInfo[i].stringValue, -1)) {
             SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
             exit(1);
           }
         } else {
-          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, i + 2, chInfo[i].value, -1)) {
+          if (!SDDS_SetRowValues(&logDataset, SDDS_PASS_BY_VALUE | SDDS_SET_BY_INDEX, logfileRow, (int32_t)chInfo[i].sddsColumn, chInfo[i].value, -1)) {
             SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
             exit(1);
           }
@@ -1680,18 +1684,21 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (0);
     }
-    if (0 > SDDS_DefineColumn(logSet, "Time", NULL, "s", "IOC time since start of epoch", NULL, SDDS_DOUBLE, 0)) {
+    if (0 > (iTime = SDDS_DefineColumn(logSet, "Time", NULL, "s", "IOC time since start of epoch", NULL, SDDS_DOUBLE, 0))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (0);
     }
-    if (0 > SDDS_DefineColumn(logSet, "TimeWS", NULL, "s", "Workstation time since start of epoch", NULL, SDDS_DOUBLE, 0)) {
+    if (0 > (iTimeWS = SDDS_DefineColumn(logSet, "TimeWS", NULL, "s", "Workstation time since start of epoch", NULL, SDDS_DOUBLE, 0))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (0);
     }
     for (i = 0; i < cNames; i++) {
       long colType = (chInfo && chInfo[i].isString) ? SDDS_STRING : SDDS_DOUBLE;
-      if (SDDS_DefineColumn(logSet, rName ? rName[i] : cName[i], NULL, rUnits ? rUnits[i] : NULL, cName[i], NULL, colType, 0) < 0)
+      int32_t column;
+      if ((column = SDDS_DefineColumn(logSet, rName ? rName[i] : cName[i], NULL, rUnits ? rUnits[i] : NULL, cName[i], NULL, colType, 0)) < 0)
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      if (chInfo)
+        chInfo[i].sddsColumn = column;
     }
     if (!SDDS_SetRowCountMode(logSet, SDDS_FIXEDROWCOUNT) ||
         !SDDS_WriteLayout(logSet) ||
@@ -1713,10 +1720,6 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
     if (!ColumnName) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       SDDS_Terminate(&original);
-      return (0);
-    }
-    if (!SDDS_Terminate(&original)) {
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (0);
     }
     for (i = 0; i < cNames; i++) {
@@ -1751,6 +1754,35 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
     }
     SDDS_FreeStringArray(ColumnName, ColumnNames);
     free(ColumnName);
+    /* Rows are written by column index, so locate each column by name and check
+     * that its type accepts the value passed by LogEventToFile: a double for the
+     * times and numeric PVs, a string for string PVs. */
+    if (SDDS_CheckColumn(&original, "Time", NULL, SDDS_DOUBLE, stderr) != SDDS_CHECK_OK ||
+        SDDS_CheckColumn(&original, "TimeWS", NULL, SDDS_DOUBLE, stderr) != SDDS_CHECK_OK) {
+      fprintf(stderr, "Output file %s requires double Time and TimeWS columns.\n", output);
+      SDDS_Terminate(&original);
+      return (0);
+    }
+    iTime = SDDS_GetColumnIndex(&original, "Time");
+    iTimeWS = SDDS_GetColumnIndex(&original, "TimeWS");
+    for (i = 0; i < cNames; i++) {
+      char *columnName = rName ? rName[i] : cName[i];
+      int32_t column = SDDS_GetColumnIndex(&original, columnName), type;
+      short isString = (chInfo && chInfo[i].isString) ? 1 : 0;
+      type = SDDS_GetColumnType(&original, column);
+      if (isString ? type != SDDS_STRING : (type != SDDS_DOUBLE && type != SDDS_FLOAT)) {
+        fprintf(stderr, "Column %s in output file %s has type %s, but %s data are logged for %s.\n",
+                columnName, output, SDDS_GetTypeName(type), isString ? "string" : "numeric", cName[i]);
+        SDDS_Terminate(&original);
+        return (0);
+      }
+      if (chInfo)
+        chInfo[i].sddsColumn = column;
+    }
+    if (!SDDS_Terminate(&original)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      return (0);
+    }
     getTimeBreakdown(NULL, NULL, NULL, NULL, NULL, NULL, &pageTimeStamp);
     if (!CheckLogOnChangeLogFile(output, &startTime, &startDay, &startHour,
                                  &startJulianDay, &startMonth, &startYear,
@@ -1766,7 +1798,8 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
         SDDS_Bomb("unable to get data from existing file---try -append=recover (may truncate file)");
       }
     }
-    if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0)) {
+    if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0) ||
+        !copyExistingEnumParameters(logSet, output)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (0);
     }
@@ -1910,7 +1943,8 @@ long SetupLogFile(SDDS_DATASET *logSet, char *output, char *input,
         SDDS_Bomb("unable to get data from existing file---try -append=recover (may truncate file)");
       }
     }
-    if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0)) {
+    if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0) ||
+        !copyExistingEnumParameters(logSet, output)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return (0);
     }
@@ -1967,7 +2001,8 @@ long GetControlNames(char *file, char ***name0,
                      char ***expectFieldType0, int32_t **expectElements0) {
   char **name, **newName, **readback, **newReadback = NULL, **readbackUnits = NULL, **newReadbackUnits = NULL, **newDescription, **description, **relatedName, **newRelatedName;
   double *tolerances, *newTolerances = NULL;
-  short *expectNumeric = NULL, *newExpectNumeric = NULL;
+  short *expectNumeric = NULL;
+  char *newExpectNumeric = NULL; /* ExpectNumeric is a character column */
   char **expectFieldType = NULL, **newExpectFieldType = NULL;
   int32_t *expectElements = NULL;
   double *newExpectElementsD = NULL;
@@ -2336,17 +2371,20 @@ long CheckLogOnChangeLogFile(char *filename, double *StartTime, double *StartDay
 }
 
 long GetLogFileIndices(SDDS_DATASET *outSet, unsigned long mode) {
+  /* Look up the columns that SetupLogFile defines for a new file with the same
+   * options; CheckForRequiredElements has already checked their presence. */
   if ((iPreviousRow = SDDS_GetColumnIndex(outSet, "PreviousRow")) < 0) {
-    fprintf(stderr, "error (sddsalarmlog): PreviousRow index unobtainable.\n");
+    fprintf(stderr, "error (sddslogonchange): PreviousRow index unobtainable.\n");
     return (0);
   }
   if ((outputMode & TIMEOFDAY &&
-       (iHour = SDDS_GetColumnIndex(outSet, "TimeOfDay")) < 0)) {
-    fprintf(stderr, "error (sddsalarmlog): TimeOfDay index unobtainable.\n");
+       ((iHour = SDDS_GetColumnIndex(outSet, "TimeOfDayWS")) < 0 ||
+        (iHourIOC = SDDS_GetColumnIndex(outSet, "TimeOfDay")) < 0))) {
+    fprintf(stderr, "error (sddslogonchange): TimeOfDay or TimeOfDayWS index unobtainable.\n");
     return (0);
   }
   if ((iValue = SDDS_GetColumnIndex(outSet, "Value")) < 0) {
-    fprintf(stderr, "error (sddsalarmlog): Value index unobtainable.\n");
+    fprintf(stderr, "error (sddslogonchange): Value index unobtainable.\n");
     return (0);
   }
   /* StringValue is optional for backward compatibility with older files */
@@ -2355,30 +2393,53 @@ long GetLogFileIndices(SDDS_DATASET *outSet, unsigned long mode) {
   iWaveformIndex = SDDS_GetColumnIndex(outSet, "WaveformIndex");
   iWaveformLength = SDDS_GetColumnIndex(outSet, "WaveformLength");
   if ((iTime = SDDS_GetColumnIndex(outSet, "Time")) < 0) {
-    fprintf(stderr, "error (sddsalarmlog): Time index unobtainable.\n");
+    fprintf(stderr, "error (sddslogonchange): Time index unobtainable.\n");
     return (0);
   }
   if ((iTimeWS = SDDS_GetColumnIndex(outSet, "TimeWS")) < 0) {
-    fprintf(stderr, "error (sddsalarmlog): TimeWS index unobtainable.\n");
+    fprintf(stderr, "error (sddslogonchange): TimeWS index unobtainable.\n");
     return (0);
   }
   if (!(mode & NOINDICES) &&
-      ((iControlNameIndex = SDDS_GetColumnIndex(outSet, "ControlNameIndex")) < 0 ||
-       (iAlarmStatusIndex = SDDS_GetColumnIndex(outSet, "AlarmStatusIndex")) < 0 ||
+      (iControlNameIndex = SDDS_GetColumnIndex(outSet, "ControlNameIndex")) < 0) {
+    fprintf(stderr, "error (sddslogonchange): ControlNameIndex index unobtainable.\n");
+    return (0);
+  }
+  /* Alarm columns exist only with -logAlarms, as in SetupLogFile. */
+  if (!(mode & NOINDICES) && mode & LOGALARMS &&
+      ((iAlarmStatusIndex = SDDS_GetColumnIndex(outSet, "AlarmStatusIndex")) < 0 ||
        (iAlarmSeverityIndex = SDDS_GetColumnIndex(outSet, "AlarmSeverityIndex")) < 0)) {
-    fprintf(stderr, "error (sddsalarmlog): ControlNameIndex, AlarmStatusIndex, or AlarmSeverityIndex index unobtainable.\n");
+    fprintf(stderr, "error (sddslogonchange): AlarmStatusIndex or AlarmSeverityIndex index unobtainable.\n");
     return (0);
   }
   if (mode & DURATIONS &&
       (iDuration = SDDS_GetColumnIndex(outSet, "Duration")) < 0) {
-    fprintf(stderr, "error (sddsalarmlog): Duration index unobtainable.\n");
+    fprintf(stderr, "error (sddslogonchange): Duration index unobtainable.\n");
     return (0);
   }
+  /* Optional for older files: a missing column leaves the index at -1, which
+   * makes the corresponding SDDS_SetRowValues call write nothing. */
+  if (mode & RELATEDVALUES)
+    iRelatedValueString = SDDS_GetColumnIndex(outSet, "RelatedValueString");
   if (mode & EXPLICIT &&
-      ((iControlName = SDDS_GetColumnIndex(outSet, "ControlName")) < 0 ||
-       (iAlarmStatus = SDDS_GetColumnIndex(outSet, "AlarmStatus")) < 0 ||
+      (iControlName = SDDS_GetColumnIndex(outSet, "ControlName")) < 0) {
+    fprintf(stderr, "error (sddslogonchange): ControlName index unobtainable.\n");
+    return (0);
+  }
+  if (mode & EXPLICIT && mode & LOGALARMS &&
+      ((iAlarmStatus = SDDS_GetColumnIndex(outSet, "AlarmStatus")) < 0 ||
        (iAlarmSeverity = SDDS_GetColumnIndex(outSet, "AlarmSeverity")) < 0)) {
-    fprintf(stderr, "error (sddsalarmlog): ControlName, AlarmStatus, or AlarmSeverity index unobtainable.\n");
+    fprintf(stderr, "error (sddslogonchange): AlarmStatus or AlarmSeverity index unobtainable.\n");
+    return (0);
+  }
+  if (mode & EXPLICIT) {
+    iDescription = SDDS_GetColumnIndex(outSet, "Description");
+    iRelatedName = SDDS_GetColumnIndex(outSet, "RelatedControlName");
+  }
+  if ((iRelatedValueString >= 0 && SDDS_GetColumnType(outSet, iRelatedValueString) != SDDS_STRING) ||
+      (iDescription >= 0 && SDDS_GetColumnType(outSet, iDescription) != SDDS_STRING) ||
+      (iRelatedName >= 0 && SDDS_GetColumnType(outSet, iRelatedName) != SDDS_STRING)) {
+    fprintf(stderr, "error (sddslogonchange): RelatedValueString, Description, or RelatedControlName is not a string column.\n");
     return (0);
   }
   return (1);

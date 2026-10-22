@@ -386,7 +386,7 @@ int ReadInput(MONITOR_DATA *monitor) {
       }
     }
   }
-  if (pageCode == 0) {
+  if (laterPageReadFailed(&input, pageCode)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&input);
     return (1);

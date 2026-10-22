@@ -1125,9 +1125,13 @@ long getScalarMonitorDataModifiedWithOffset(char ***DeviceName, char ***ReadMess
     return 0;
 
   {
-    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName",
-                             "ReadMessage", "Message", "ReadMsg", NULL};
-    if (!checkNonEnumInputs(&inSet, columns, NULL))
+    /* Only check optional name columns that the caller requested. */
+    const char *names[] = {"ControlName", "Device", "DeviceName", NULL};
+    const char *readbackNames[] = {"ReadbackName", NULL};
+    const char *messages[] = {"ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, names, NULL) ||
+        (ReadbackName && !checkNonEnumInputs(&inSet, readbackNames, NULL)) ||
+        (ReadMessage && !checkNonEnumInputs(&inSet, messages, NULL)))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
 
@@ -1371,7 +1375,7 @@ long getScalarMonitorDataModifiedWithOffset(char ***DeviceName, char ***ReadMess
 
   if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (pageCode == 0)
+  if (laterPageReadFailed(&inSet, pageCode))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);

@@ -894,9 +894,13 @@ long getScalarMonitorData(char ***DeviceName, char ***ReadMessage,
     return 0;
 
   {
-    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName",
-                             "ReadMessage", "Message", "ReadMsg", NULL};
-    if (!checkNonEnumInputs(&inSet, columns, NULL))
+    /* Only reject enums in the optional fields this caller reads. */
+    const char *columns[] = {"ControlName", "Device", "DeviceName", NULL};
+    const char *readbackColumns[] = {"ReadbackName", NULL};
+    const char *messageColumns[] = {"ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL) ||
+        (ReadbackName && !checkNonEnumInputs(&inSet, readbackColumns, NULL)) ||
+        (ReadMessage && !checkNonEnumInputs(&inSet, messageColumns, NULL)))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
 
@@ -1119,7 +1123,7 @@ long getScalarMonitorData(char ***DeviceName, char ***ReadMessage,
 
   if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (pageCode == 0)
+  if (laterPageReadFailed(&inSet, pageCode))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);
@@ -1254,17 +1258,17 @@ long getConditionsData(char ***DeviceName, char ***ReadMessage,
       !(*HoldoffTime = SDDS_GetColumnInDoubles(&inSet, "HoldoffTime")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
-  /* Conditions use the first page; reject a failed extra-page read just as
-   * the scalar and waveform configuration readers do. */
-  pageCode = SDDS_ReadPage(&inSet);
-  if (pageCode > 0)
-    fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (pageCode == 0) {
-    SDDS_Terminate(&inSet);
-    return 0;
+  /* Conditions use the first page; for files defining enums, reject a failed
+   * extra-page read (e.g., an undefined enum key) just as the scalar and
+   * waveform configuration readers do. Extra pages are ignored silently. */
+  if (inputHasEnums(&inSet)) {
+    pageCode = SDDS_ReadPage(&inSet);
+    if (laterPageReadFailed(&inSet, pageCode)) {
+      SDDS_Terminate(&inSet);
+      return 0;
+    }
   }
-  if (!SDDS_Terminate(&inSet))
-    return 0;
+  SDDS_Terminate(&inSet);
   if (ControlNameColumnName)
     free(ControlNameColumnName);
   if (MessageColumnName)
@@ -1302,9 +1306,13 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
     return 0;
 
   {
-    const char *columns[] = {"rmsPVPrefix", "ReadbackOffset", "ReadbackScale", NULL};
+    /* Only reject enums in the optional fields this caller reads. */
     const char *parameters[] = {"WaveformLength", NULL};
-    if (!checkNonEnumInputs(&inSet, columns, parameters))
+    const char *prefixColumns[] = {"rmsPVPrefix", NULL};
+    const char *scaleColumns[] = {"ReadbackOffset", "ReadbackScale", NULL};
+    if (!checkNonEnumInputs(&inSet, NULL, parameters) ||
+        (rmsPVPrefix && !checkNonEnumInputs(&inSet, prefixColumns, NULL)) ||
+        (readbackOffset && readbackScale && !checkNonEnumInputs(&inSet, scaleColumns, NULL)))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
 
@@ -1433,14 +1441,15 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
     }
   }
 
-  /* The configuration comes from the first page, but a failed read of an
-   * extra page must not be mistaken for the end of a valid SDDS6 file. */
-  pageCode = SDDS_ReadPage(&inSet);
-  if (pageCode > 0)
-    fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (pageCode == 0) {
-    SDDS_Terminate(&inSet);
-    return 0;
+  /* The configuration comes from the first page, but for files defining
+   * enums a failed read of an extra page must not be mistaken for the end of
+   * a valid SDDS6 file. Extra pages are ignored silently. */
+  if (inputHasEnums(&inSet)) {
+    pageCode = SDDS_ReadPage(&inSet);
+    if (laterPageReadFailed(&inSet, pageCode)) {
+      SDDS_Terminate(&inSet);
+      return 0;
+    }
   }
   if (!SDDS_Terminate(&inSet)) {
     SDDS_SetError("problem termining input file");
@@ -1543,7 +1552,7 @@ void addScalarParameters(SDDS_TABLE *outTable, char ***processVariable,
     free(PVname);
     free(readbackName);
   }
-  if (pageCode == 0)
+  if (laterPageReadFailed(&inTable, pageCode))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   unitsBuffer = tmalloc(sizeof(*unitsBuffer) * (*parameters));
   getUnits(*processVariable, unitsBuffer, *parameters, *PVchid, pendIOtime);
@@ -1722,7 +1731,7 @@ CHANNEL_ASSIGNMENT *makeAssignments(char *assignmentFile, long *assignments) {
       free(analyses);
     *assignments += rows;
   }
-  if (pageCode == 0)
+  if (laterPageReadFailed(&inTable, pageCode))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   free(controlColumn);
@@ -2089,7 +2098,7 @@ double *ReadValuesFileData(long *values, char *filename, char *column) {
     totalRows += rows;
     free(data);
   }
-  if (pageCode == 0)
+  if (laterPageReadFailed(&dataset, pageCode))
     goto failure;
   if (!totalRows) {
     SDDS_SetError("No data in file");
@@ -2269,10 +2278,21 @@ long getScalarMonitorDataModified(char ***DeviceName, char ***ReadMessage,
     return 0;
 
   {
-    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName", "ReadbackSymbol", "ReadbackUnits",
-                             "ScaleFactor", "DeadBand", "UnitsPV",
-                             "ReadMessage", "Message", "ReadMsg", NULL};
-    if (!checkNonEnumInputs(&inSet, columns, NULL))
+    /* Only reject enums in the optional fields this caller reads. */
+    const char *columns[] = {"ControlName", "Device", "DeviceName", NULL};
+    const char *readbackColumns[] = {"ReadbackName", NULL};
+    const char *symbolColumns[] = {"ReadbackSymbol", NULL};
+    const char *unitsColumns[] = {"ReadbackUnits", "UnitsPV", NULL};
+    const char *factorColumns[] = {"ScaleFactor", NULL};
+    const char *deadBandColumns[] = {"DeadBand", NULL};
+    const char *messageColumns[] = {"ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL) ||
+        (ReadbackName && !checkNonEnumInputs(&inSet, readbackColumns, NULL)) ||
+        (ReadbackSymbol && !checkNonEnumInputs(&inSet, symbolColumns, NULL)) ||
+        (ReadbackUnits && !checkNonEnumInputs(&inSet, unitsColumns, NULL)) ||
+        (scaleFactor && !checkNonEnumInputs(&inSet, factorColumns, NULL)) ||
+        (DeadBands && !checkNonEnumInputs(&inSet, deadBandColumns, NULL)) ||
+        (ReadMessage && !checkNonEnumInputs(&inSet, messageColumns, NULL)))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
 
@@ -2465,7 +2485,7 @@ long getScalarMonitorDataModified(char ***DeviceName, char ***ReadMessage,
 
   if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (pageCode == 0)
+  if (laterPageReadFailed(&inSet, pageCode))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);

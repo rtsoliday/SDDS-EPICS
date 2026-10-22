@@ -233,6 +233,47 @@ int main(int argc, char **argv) {
   }
   /* Finished reading command line options */
 
+  /* Check the enum final values of every file before ramping any of them, so
+   * a label that does not fit in a CA string cannot leave a partial ramp.
+   * Files whose final-value column is not an enum are not read here. */
+  for (a = 0; a < numFilenames; a++) {
+    SDDS_DATASET checkSet;
+    char *valueColumn = NULL, **labels;
+    int32_t valueIndex, pageCode;
+    int64_t k, labelRows;
+
+    if (!SDDS_InitializeInput(&checkSet, rampto[a].filename)) {
+      /* Reported with the usual message when this file is ramped. */
+      SDDS_ClearErrors();
+      continue;
+    }
+    if (dataColumn == NULL)
+      valueColumn = SDDS_FindColumn(&checkSet, FIND_ANY_TYPE, "ValueString", "Value", NULL);
+    else
+      valueColumn = SDDS_FindColumn(&checkSet, FIND_ANY_TYPE, dataColumn, NULL);
+    if (valueColumn && (valueIndex = SDDS_GetColumnIndex(&checkSet, valueColumn)) >= 0 &&
+        SDDS_GetColumnType(&checkSet, valueIndex) == SDDS_ENUM) {
+      while ((pageCode = SDDS_ReadPage(&checkSet)) > 0) {
+        if ((labelRows = SDDS_CountRowsOfInterest(&checkSet)) <= 0)
+          continue;
+        if (!(labels = SDDS_GetColumnInString(&checkSet, valueColumn)))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+        for (k = 0; k < labelRows; k++) {
+          if (strlen(labels[k]) >= MAX_STRING_SIZE)
+            SDDS_Bomb("Enum label exceeds the Channel Access string length limit.");
+          free(labels[k]);
+        }
+        free(labels);
+      }
+      if (pageCode == 0)
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
+    if (valueColumn)
+      free(valueColumn);
+    SDDS_ClearErrors();
+    SDDS_Terminate(&checkSet);
+  }
+
   /* Start ramping procedure for each file, one at a time */
   for (a = 0; a < numFilenames; a++) {
     column_names = 3;

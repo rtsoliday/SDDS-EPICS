@@ -1309,15 +1309,8 @@ long getVariablesData(CONTROL_NAME *control, char *inputFile, char *restartFile,
 
   {
     const char *columns[] = {"controlPV", "ControlName", "Device", "DeviceName",
-                             "ReadbackName", "ReadbackUnits", NULL};
+                             "ReadbackName", "RelativeLimit", NULL};
     if (!checkNonEnumInputs(&inSet, columns, NULL))
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-  }
-
-  {
-    const char *columns[] = {"RelativeLimit", "ReadbackName", "Tolerance", NULL};
-    const char *parameters[] = {"ControlTolerance", NULL};
-    if (!checkNonEnumInputs(&inSet, columns, parameters))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
 
@@ -1450,6 +1443,12 @@ long getVariablesData(CONTROL_NAME *control, char *inputFile, char *restartFile,
   if (readbackColExist && !control->controlTolProvided) {
     /*if ReadbackName column exist, and control tolerance not provided from commandline -varFile option */
     /*check if control tolerance par exist */
+    {
+      /* an enum must not be mistaken for an absent tolerance */
+      const char *parameters[] = {"ControlTolerance", NULL};
+      if (!checkNonEnumInputs(&inSet, NULL, parameters))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
     switch (SDDS_CheckParameter(&inSet, "ControlTolerance", NULL, SDDS_ANY_NUMERIC_TYPE, NULL)) {
     case SDDS_CHECK_OKAY:
       controlTolParExist = 1;
@@ -1457,6 +1456,11 @@ long getVariablesData(CONTROL_NAME *control, char *inputFile, char *restartFile,
     }
     if (!controlTolParExist) {
       /*check if Tolerance column exist */
+      {
+        const char *columns[] = {"Tolerance", NULL};
+        if (!checkNonEnumInputs(&inSet, columns, NULL))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
       switch (SDDS_CheckColumn(&inSet, "Tolerance", NULL, SDDS_ANY_NUMERIC_TYPE, NULL)) {
       case SDDS_CHECK_OKAY:
         controlTolColExist = 1;
@@ -2590,7 +2594,7 @@ long SetKnobArray(char **knobFile, long knobFiles, CONTROL_NAME *control) {
         }
       }
     }
-    if (pageCode == 0 || !SDDS_Terminate(&inSet))
+    if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   return 0;

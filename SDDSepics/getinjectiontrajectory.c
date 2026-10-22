@@ -1,5 +1,6 @@
 
 #include "SDDS.h"
+#include "sddsInput.h"
 #include <cadef.h>
 #include <time.h>
 #include <pthread.h>
@@ -292,7 +293,7 @@ void *ReadRAMdataP(void *threadid) {
     }
     free(par);
   }
-  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return NULL;
 }
@@ -719,6 +720,6 @@ void ReadRAMdata(char *filename, int32_t **ramData, int32_t *points) {
     }
     free(par);
   }
-  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 }

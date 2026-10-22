@@ -781,8 +781,6 @@ void exServer::ReadMasterPVFile(const char *const pvPrefix) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 0))
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", this->masterPVFile);
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -795,6 +793,9 @@ void exServer::ReadMasterPVFile(const char *const pvPrefix) {
   if (rows == 0) {
     return;
   }
+  /* Names are read only when rows exist; an empty page needs no rec_name. */
+  if (!checkPVRegistryInput(&SDDS_masterlist, 0))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!(rec_name = (char **)SDDS_GetColumn(&SDDS_masterlist, (char *)"rec_name"))) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", this->masterPVFile);
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);

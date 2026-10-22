@@ -34,7 +34,8 @@ variable.
 SDDS6 enum values are restored by their dictionary labels. They are always
 treated as categorical values, including labels that contain only digits;
 the dictionary codes are not interpreted as EPICS state indices. Labels must
-fit in the Channel Access string limit of 39 bytes.
+fit in the Channel Access string limit of 39 bytes; the labels of all
+\verb+-rampTo+ files are checked before any PV is ramped.
 
 When data is supplied in a string column, {\tt sddscaramp} needs a way
 to determine if the data value is actually a number rather than a

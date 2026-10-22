@@ -51,6 +51,7 @@
 #include "mdb.h"
 #include "scan.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include "pvaSDDS.h"
 
@@ -290,7 +291,7 @@ int ReadInput(PROG_DATA *prog_data) {
       }
     }
   }
-  if (pageCode == 0 || !SDDS_Terminate(&input)) {
+  if (laterPageReadFailed(&input, pageCode) || !SDDS_Terminate(&input)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
   }
@@ -651,7 +652,7 @@ int WriteOutput(PROG_DATA *prog_data) {
       return(1);
     }
   }
-  if (page == 0 || !SDDS_Terminate(&input)) {
+  if (laterPageReadFailed(&input, page) || !SDDS_Terminate(&input)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
   }

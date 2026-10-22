@@ -45,14 +45,21 @@ contains a string ControlName column and a string or SDDS6 enum ValueString
 column, where ValueString is the value of the PVs to be restored. Enum values
 are restored using their dictionary labels, preserving literal quotes in labels.
 Save requests require string ValueString storage when that column is supplied.
-Scalar restores use the first snapshot page and validate all remaining pages
-before writing PVs, so undefined enum keys on later pages abort the restore.
+Scalar restores use the first snapshot page. When the snapshot defines enum
+data, all remaining pages are validated before writing PVs, so undefined enum
+keys on later pages abort the restore; enum-free snapshots are read as before.
+Enum ValueString labels of scalar rows must fit in the Channel Access string
+limit of 39 bytes. A scalar row whose PV now has more than one element is
+reported as an error for that PV and the PV is not written.
 Waveform files may contain an SDDS6 enum {\tt Waveform} column in either
 the per-PV or one-file layout. Its dictionary labels are restored as Channel
 Access strings; dictionary codes are not interpreted as EPICS state indices.
-Labels must fit in the Channel Access string limit of 39 bytes.
+Labels must fit in the Channel Access string limit of 39 bytes. Plain string
+waveform elements longer than 39 bytes are truncated.
 Restores use the waveform file's type and element count, including one-element
-waveforms, even when the destination PV has a larger capacity.
+waveforms, even when the destination PV has a larger capacity. A waveform file
+with more elements than the PV is truncated to the PV's element count with a
+warning.
   \item \textbf{output file:} \par
 The output file only exists for saving snapshot. The output file contains everything in the input
 file, except that the ValueString column (if the input file has ValueString column) is update. And

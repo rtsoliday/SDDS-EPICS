@@ -1144,7 +1144,7 @@ CORRECTION_GROUP *readGroups(long *groups, char *inputFile, long verbose) {
     }
   }
   /*checkRCParam( &inTable, inputFile);*/
-  if (pageCode == 0)
+  if (laterPageReadFailed(&inTable, pageCode))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);

@@ -1385,7 +1385,8 @@ long SetupLogFile(SDDS_DATASET *logSet, char *output, char *input,
         SDDS_Bomb("unable to get data from existing file---try -append=recover (may truncate file)");
       }
     }
-    if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0)) {
+    if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0) ||
+        !copyExistingEnumParameters(logSet, output)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return 0;
     }

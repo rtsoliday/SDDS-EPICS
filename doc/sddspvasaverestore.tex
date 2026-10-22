@@ -37,14 +37,20 @@ usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]
     \verb|ExpectElements|. If any of those metadata columns is absent, the
     input is treated as numeric scalar CA data for compatibility with older
     save files. \verb|IndirectName| is optional.
-    Scalar restores use values from the first snapshot page; all remaining
-    pages are validated before writing PVs, including their enum keys.
+    Scalar restores use values from the first snapshot page; when the snapshot
+    defines enum data, all remaining pages are validated before writing PVs,
+    including their enum keys. Enum-free snapshots are read as before.
+    A scalar row whose PV now has more than one element is reported as an
+    error for that PV and the PV is not written.
     Waveform files may use SDDS6 enum columns; values are restored using their
     dictionary labels. Restores use the file's element count, including
     one-element waveforms, independently of the destination PV's capacity.
-    Enum labels sent through the CA provider must fit in 39 bytes. Longer
-    labels are rejected before any restored values are sent. PVA destinations
-    retain their existing string length support.
+    For CA destinations, a waveform file with more elements than the PV is
+    truncated to the PV's element count with a warning.
+    Enum labels sent through the CA provider must fit in 39 bytes; this
+    applies to scalar rows and enum waveforms. Longer labels are rejected
+    before any restored values are sent. PVA destinations retain their
+    existing string length support.
   \item \textbf{output file:} SDDS file receiving saved PV values when \texttt{-save} is used.
 \end{itemize}
 \item \textbf{switches:}

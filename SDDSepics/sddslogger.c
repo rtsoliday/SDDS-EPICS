@@ -2450,7 +2450,7 @@ long getScalarMonitorDataLocal(char ***DeviceName, char ***ReadMessage,
 
   if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (pageCode == 0)
+  if (laterPageReadFailed(&inSet, pageCode))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);

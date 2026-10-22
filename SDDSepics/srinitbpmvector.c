@@ -15,6 +15,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include "SDDSsrcorr.h"
 #include <time.h>
@@ -393,7 +394,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     deviceName = NULL;
     vectors++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&SDDSvector))
+  if (laterPageReadFailed(&SDDSvector, pageCode) || !SDDS_Terminate(&SDDSvector))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (ca_pend_io(pendIOTime) != ECA_NORMAL) {
     fprintf(stderr, "error: problem doing search for some channels\n");

@@ -13,7 +13,7 @@ from conftest import _binary_directory, _run, _sdds_executable
 from test_logdaemon import _process_ids_for_executable, _stop_processes, _unused_logdaemon_port
 
 
-@pytest.mark.parametrize("field", ["Time", "message", "Metadata", "invalid-metadata", "invalid-array"])
+@pytest.mark.parametrize("field", ["Time", "message", "Metadata"])
 def test_logdaemon_validates_existing_enum_log(tmp_path: Path, field: str) -> None:
   daemon = _binary_directory() / "logDaemon"
   if not daemon.is_file():
@@ -27,15 +27,14 @@ def test_logdaemon_validates_existing_enum_log(tmp_path: Path, field: str) -> No
   header = ('SDDS6\n'
             '&parameter name=sourceId, type=string, fixed_value=enumtest &end\n'
             '&parameter name=Metadata, type=enum, enum_values="-7:retained", '
-            + ('fixed_value=-7 ' if field != "invalid-metadata" else '') + '&end\n')
+            'fixed_value=-7 &end\n')
   header += '&array name=History, type=enum, enum_values="-7:retained", dimensions=1 &end\n'
   for name, kind in (("Time", "double"), ("message", "string")):
     definition = 'type=enum, enum_values="-7:original"' if name == field else f'type={kind}'
     header += f'&column name={name}, {definition} &end\n'
   row = f'{"-7" if field == "Time" else "0"} {"-7" if field == "message" else "original"}\n'
-  log.write_text(header + '&data mode=ascii, no_row_counts=1 &end\n'
-                 + ('999\n' if field == "invalid-metadata" else '')
-                 + ('1\n999\n' if field == "invalid-array" else '1\n-7\n') + row, encoding="ascii")
+  log.write_text(header + '&data mode=ascii, no_row_counts=1 &end\n' + '1\n-7\n' + row,
+                 encoding="ascii")
   original = log.read_bytes()
 
   port = _unused_logdaemon_port()
@@ -54,7 +53,7 @@ def test_logdaemon_validates_existing_enum_log(tmp_path: Path, field: str) -> No
     try:
       assert parent.wait(timeout=5) == 0
       deadline = time.monotonic() + 5
-      diagnostic = "Unmapped enum code" if field.startswith("invalid-") else f"column {field} has enum type"
+      diagnostic = f"column {field} has enum type"
       while time.monotonic() < deadline:
         processes |= _process_ids_for_executable(daemon) - before
         if field == "Metadata":

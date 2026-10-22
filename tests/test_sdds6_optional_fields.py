@@ -19,7 +19,7 @@ def _assert_rejected(program, arguments, field, kind="Column", environment=None)
 
 @pytest.mark.parametrize("encoding", ["ascii", "binary"])
 @pytest.mark.parametrize("field", ["ReadbackName", "ReadbackSymbol", "ReadbackUnits",
-                                  "ScaleFactor", "DeadBand", "UnitsPV"])
+                                  "ScaleFactor", "UnitsPV"])
 def test_scalar_monitor_rejects_enum_optional_fields(soft_ioc: SoftIOC, tmp_path: Path, encoding, field):
   source = tmp_path / "monitor.sdds"
   _write_columns(source, [("ControlName", "string", "unused"), (field, "enum", -7)], encoding)
@@ -67,6 +67,9 @@ def test_optimizer_rejects_enum_optional_limits(tmp_path: Path, encoding, field)
   columns = [("ControlName", "string", "unused"), ("LowerLimit", "double", -1),
              ("UpperLimit", "double", 1), ("InitialValue", "double", 0),
              ("InitialChange", "double", 0.1)]
+  if field in ("Tolerance", "ControlTolerance"):
+    # Tolerances are consulted only when a ReadbackName column is present.
+    columns.append(("ReadbackName", "string", "unused"))
   parameters = ""
   if field == "ControlTolerance":
     parameters = '&parameter name=ControlTolerance, type=enum, enum_values="-7:small", fixed_value=-7 &end\n'

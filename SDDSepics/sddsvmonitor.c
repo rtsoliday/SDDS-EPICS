@@ -649,7 +649,7 @@ int main(int argc, char **argv) {
         break;
       }
     }
-    if (pageCode == 0 || !SDDS_Terminate(&inTable))
+    if (laterPageReadFailed(&inTable, pageCode) || !SDDS_Terminate(&inTable))
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
 
@@ -1157,7 +1157,7 @@ long readSuffixFile(char *suffixFile, char ***suffix) {
   if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             suffixFile);
-  if (code == 0)
+  if (laterPageReadFailed(&inTable, code))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -1182,7 +1182,7 @@ long readRootnameFile(char *rootnameFile, char ***rootname) {
   if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             rootnameFile);
-  if (code == 0)
+  if (laterPageReadFailed(&inTable, code))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);

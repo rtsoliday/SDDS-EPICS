@@ -1041,7 +1041,7 @@ long UpdateDataInfo(CONTROL_NAME *control_name, long variables, char **ControlNa
           if (control_name->IndirectName[index])
             free(control_name->IndirectName[index]);
           SDDS_CopyString(&control_name->ValueString[index], ValueString[i]);
-          SDDS_CopyString(&control_name->IndirectName[index], IndirectName[i]);
+          SDDS_CopyString(&control_name->IndirectName[index], IndirectName && IndirectName[i] ? IndirectName[i] : "-");
         }
         existed[i] = 1;
       } else
@@ -1087,12 +1087,13 @@ long UpdateDataInfo(CONTROL_NAME *control_name, long variables, char **ControlNa
             fprintf(stderr, "No value provided for restoring pv values!");
             return 0;
           }
-          if (strlen(control_name->IndirectName[i]) && !is_blank(control_name->IndirectName[i]) && strcmp(control_name->IndirectName[i], "-") != 0) {
+          /* The new PV is stored at index count, not at its input row i. */
+          if (strlen(control_name->IndirectName[count]) && !is_blank(control_name->IndirectName[count]) && strcmp(control_name->IndirectName[count], "-") != 0) {
             hasWaveform = 1;
             if (!control_name->oneWaveformFile) {
               if (!GetWaveformValueFromFile(control_name->waveformDir, control_name->waveformRootname,
-                                            control_name->ControlName[i],
-                                            &control_name->channelInfo[i])) {
+                                            control_name->ControlName[count],
+                                            &control_name->channelInfo[count])) {
                 fprintf(stderr, "Error in reading waveform values from file.\n");
                 exit(1);
               }
@@ -1219,7 +1220,11 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, char *inputFile, 
       SDDS_Bomb("Unable to get the value of ValueString column in the input file.");
     for (i = 0; i < variables; i++) {
       if (valueStringEnum) {
-        if (strlen(ValueString[i]) >= MAX_STRING_SIZE)
+        /* Waveform rows restore from their waveform files, so only scalar
+         * rows send ValueString through Channel Access. */
+        short waveformRow = control_name->carestore && IndirectName && IndirectName[i] &&
+          strlen(IndirectName[i]) && !is_blank(IndirectName[i]) && strcmp(IndirectName[i], "-") != 0;
+        if (!waveformRow && strlen(ValueString[i]) >= MAX_STRING_SIZE)
           SDDS_Bomb("Enum label exceeds the Channel Access string length limit.");
         /* Quotes in categorical labels are literal, not BURT formatting. */
         continue;
@@ -1248,13 +1253,14 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, char *inputFile, 
     if (!SDDS_GetParameter(&inSet, "SnapshotFilename", &control_name->waveformRootname))
       SDDS_CopyString(&control_name->waveformRootname, inputFile);
   }
-  if (control_name->carestore) {
+  if (control_name->carestore && inputHasEnums(&inSet)) {
     int32_t pageCode;
     /* Restore the collected first page only, but reject invalid enum data
-     * anywhere in the snapshot before UpdateDataInfo can prepare PV writes. */
+     * anywhere in the snapshot before UpdateDataInfo can prepare PV writes.
+     * Enum-free snapshots are read as before: only the first page. */
     while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
     }
-    if (pageCode == 0)
+    if (laterPageReadFailed(&inSet, pageCode))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (!SDDS_Terminate(&inSet))
@@ -1562,12 +1568,27 @@ void FreeDataMemory(CONTROL_NAME *control_name) {
     free(control_name->inputFilePV);
 }
 
+/* Pack waveform strings into the fixed-size DBR_STRING buffer. Plain strings
+ * longer than the Channel Access limit are truncated, as sddscaramp does;
+ * enum labels are categorical, so truncating one would select a different
+ * state and the restore is rejected instead. */
+static void FillCAStringBuffer(char *bufferCopy, char **values, long length, short isEnum) {
+  long j;
+  for (j = 0; j < length; j++) {
+    if (isEnum && strlen(values[j]) >= MAX_STRING_SIZE)
+      SDDS_Bomb("Enum label exceeds the Channel Access string length limit.");
+    strncpy(bufferCopy + j * MAX_STRING_SIZE, values[j], MAX_STRING_SIZE - 1);
+    bufferCopy[j * MAX_STRING_SIZE + MAX_STRING_SIZE - 1] = '\0';
+  }
+}
+
 long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
   char vectorFile[1024];
   SDDS_TABLE inSet;
   int32_t pageCode;
   long index, i, j;
   long waveforms = 0, waveformDataType = 0;
+  short waveformEnum = 0;
   long *waveformLength = NULL;
   void **waveformData = NULL;
   char **waveformPV = NULL;
@@ -1607,15 +1628,17 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     waveforms++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!waveforms) {
     fprintf(stderr, "No data found in waveform file %s\n", vectorFile);
     exit(1);
   }
   /* Restore categorical labels, since SDDS codes need not match EPICS states. */
-  if (waveformDataType == SDDS_ENUM)
+  if (waveformDataType == SDDS_ENUM) {
     waveformDataType = SDDS_STRING;
+    waveformEnum = 1;
+  }
   for (i = 0; i < control_name->variables; i++) {
     if (strlen(control_name->IndirectName[i]) && !is_blank(control_name->IndirectName[i]) && strcmp(control_name->IndirectName[i], "-") != 0) {
 
@@ -1632,11 +1655,7 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
           SDDS_CopyString(&(channelInfo->stringValue[j]), ((char **)(waveformData[index]))[j]);
         }
         channelInfo->bufferCopy = (char *)calloc(channelInfo->length, MAX_STRING_SIZE);
-        for (j = 0; j < channelInfo->length; j++) {
-          if (strlen(channelInfo->stringValue[j]) >= MAX_STRING_SIZE)
-            SDDS_Bomb("Waveform string exceeds the Channel Access string length limit.");
-          strcpy(channelInfo->bufferCopy + j * MAX_STRING_SIZE, channelInfo->stringValue[j]);
-        }
+        FillCAStringBuffer(channelInfo->bufferCopy, channelInfo->stringValue, channelInfo->length, waveformEnum);
       } else {
         channelInfo->waveformData = malloc(SizeOfDataType(waveformDataType) * channelInfo->length);
         memcpy(channelInfo->waveformData, waveformData[index], SizeOfDataType(waveformDataType) * channelInfo->length);
@@ -1660,8 +1679,8 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
 long GetWaveformValueFromFile(char *directory, char *rootname, char *waveformPV, CHANNEL_INFO *channelInfo) {
   char vectorFile[1024];
   SDDS_TABLE inSet;
-  int32_t pageCode;
-  long index, exist = 0, i;
+  int32_t pageCode = -1;
+  long index, exist = 0;
   char *parameterName;
 
   channelInfo->stringValue = NULL;
@@ -1699,20 +1718,20 @@ long GetWaveformValueFromFile(char *directory, char *rootname, char *waveformPV,
     }
     channelInfo->dataType = SDDS_GetColumnType(&inSet, index);
     if (channelInfo->dataType == SDDS_STRING || channelInfo->dataType == SDDS_ENUM) {
+      short isEnum = channelInfo->dataType == SDDS_ENUM;
       channelInfo->dataType = SDDS_STRING;
       if (!(channelInfo->stringValue = SDDS_GetColumnInString(&inSet, "Waveform")))
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       channelInfo->bufferCopy = (char *)calloc(channelInfo->length, MAX_STRING_SIZE);
-      for (i = 0; i < channelInfo->length; i++) {
-        if (strlen(channelInfo->stringValue[i]) >= MAX_STRING_SIZE)
-          SDDS_Bomb("Waveform string exceeds the Channel Access string length limit.");
-        strcpy(channelInfo->bufferCopy + i * MAX_STRING_SIZE, channelInfo->stringValue[i]);
-      }
+      FillCAStringBuffer(channelInfo->bufferCopy, channelInfo->stringValue, channelInfo->length, isEnum);
     } else if (!(channelInfo->waveformData = SDDS_GetColumn(&inSet, "Waveform")))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     exist = 1;
+    /* Enum-free files are read as before: stop at the first matching page. */
+    if (!inputHasEnums(&inSet))
+      break;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!exist) {
     fprintf(stderr, "waveformPV does not exist in %s.\n", vectorFile);
@@ -1977,6 +1996,42 @@ long InputfileModified(char *inputFile, char *prevInput, struct stat *input_stat
   return 0;
 }
 
+/* Give a ValueString buffer room for a DBR_STRING read and for the formatted
+ * values written below. Restored values are copied with their exact length and
+ * error markers such as "_NoConnection_" are short, so the buffer must be
+ * enlarged before ca_get or sprintf writes into it. */
+static void ReserveValueString(char **value) {
+  size_t size = 250;
+  if (!*value) {
+    if (!(*value = (char *)calloc(size, 1)))
+      SDDS_Bomb("memory allocation failure");
+    return;
+  }
+  if (strlen(*value) + 3 > size)
+    size = strlen(*value) + 3;
+  if (!(*value = (char *)SDDS_Realloc(*value, size)))
+    SDDS_Bomb("memory allocation failure");
+}
+
+/* Number of elements to put for a restored waveform. A file longer than the
+ * PV is truncated as in earlier releases; a shorter file is never read past
+ * its end. */
+static long RestoredWaveformCount(CONTROL_NAME *control_name, long i, short warn) {
+  long count = control_name->channelInfo[i].length;
+  long elements = (long)ca_element_count(control_name->channelInfo[i].channelID);
+  if (elements > 0 && count > elements) {
+    if (warn) {
+      fprintf(stderr, "Warning: waveform file for %s has %ld elements, but the PV has %ld; only the first %ld are restored\n",
+              control_name->ControlName[i], count, elements, elements);
+      if (control_name->logFp)
+        fprintf(control_name->logFp, "Warning: waveform file for %s has %ld elements, but the PV has %ld; only the first %ld are restored\n",
+                control_name->ControlName[i], count, elements, elements);
+    }
+    count = elements;
+  }
+  return count;
+}
+
 long ReadPVValue(CONTROL_NAME *control_name, long add, char *outputFile) {
   long i, caErrors=0;
   CHANNEL_INFO *channelInfo;
@@ -1997,17 +2052,26 @@ long ReadPVValue(CONTROL_NAME *control_name, long add, char *outputFile) {
         control_name->CAError[i] = 'y';
         continue;
       }
+      if (control_name->carestore && channelInfo[i].length > 1 &&
+          !channelInfo[i].waveformData && !channelInfo[i].stringValue) {
+        /* A scalar snapshot row for an array PV has no buffer to read into;
+         * SetPVValue reports it and does not write the PV. */
+        continue;
+      }
       if (channelInfo[i].length > 1) {
+        /* Restored buffers hold the file's element count, which may exceed
+         * the PV's current element count. */
+        long count = control_name->carestore ? RestoredWaveformCount(control_name, i, 0) : channelInfo[i].length;
         control_name->hasWaveform = 1;
         if (channelInfo[i].dataType == SDDS_STRING) {
           if (!channelInfo[i].bufferCopy)
             channelInfo[i].bufferCopy = tmalloc(sizeof(char) * (40 * channelInfo[i].length));
-          if (ca_array_get(DBR_STRING, channelInfo[i].length, channelInfo[i].channelID,
+          if (ca_array_get(DBR_STRING, count, channelInfo[i].channelID,
                            channelInfo[i].bufferCopy) != ECA_NORMAL)
             caErrors = 1;
         } else {
           if (ca_array_get(DataTypeToCaType(channelInfo[i].dataType),
-                           channelInfo[i].length,
+                           count,
                            channelInfo[i].channelID,
                            channelInfo[i].waveformData) != ECA_NORMAL)
             caErrors = 1;
@@ -2023,12 +2087,15 @@ long ReadPVValue(CONTROL_NAME *control_name, long add, char *outputFile) {
         } else {
           control_name->CAError[i] = 'n';
           free(control_name->ValueString[i]);
-          if (!control_name->saveWaveformFile)
+          /* Without an output file or waveform rootname there is no waveform
+           * filename; keep a valid value instead of the freed pointer. */
+          if (!control_name->saveWaveformFile || (!outputFile && !control_name->waveformRootname))
             SDDS_CopyString(&control_name->ValueString[i], "WaveformPV");
-          else if (outputFile) 
+          else
 	    SDDS_CopyString(&control_name->ValueString[i], getWaveformFileName(control_name, outputFile, control_name->IndirectName[i]));
         }
       } else {
+        ReserveValueString(&control_name->ValueString[i]);
         if (channelInfo[i].dataType == SDDS_STRING) {
           if (ca_get(DBR_STRING, channelInfo[i].channelID, control_name->ValueString[i]) != ECA_NORMAL)
             caErrors = 1;
@@ -2066,6 +2133,7 @@ long ReadPVValue(CONTROL_NAME *control_name, long add, char *outputFile) {
       if (channelInfo[i].length == 1) {
 	if (add && channelInfo[i].dataType!=SDDS_STRING && control_name->ValueString[i]!=NULL)
 	  control_name->doubleValue[i] += atof(control_name->ValueString[i]);
+        ReserveValueString(&control_name->ValueString[i]);
         switch (channelInfo[i].dataType) {
         case SDDS_DOUBLE:
           if (channelInfo[i].isEnumPV)
@@ -2232,15 +2300,16 @@ long SetPVValue(CONTROL_NAME *control_name, long dryRun) {
 	  fprintf(stdout, "pretending writing waveform PV %s\n", control_name->ControlName[i]);
 	  control_name->CAError[i] = 'n';
 	} else {
+	  long count = RestoredWaveformCount(control_name, i, 1);
 	  if (control_name->channelInfo[i].dataType == SDDS_STRING) {
 	    if (ca_array_put(DataTypeToCaType(control_name->channelInfo[i].dataType),
-			     control_name->channelInfo[i].length,
+			     count,
 			     control_name->channelInfo[i].channelID,
 			     control_name->channelInfo[i].bufferCopy) != ECA_NORMAL)
 	      caErrors = 1;
 	  } else {
 	    if (ca_array_put(DataTypeToCaType(control_name->channelInfo[i].dataType),
-			     control_name->channelInfo[i].length,
+			     count,
 			     control_name->channelInfo[i].channelID,
 			     control_name->channelInfo[i].waveformData) != ECA_NORMAL)
 	      caErrors = 1;
@@ -2254,11 +2323,28 @@ long SetPVValue(CONTROL_NAME *control_name, long dryRun) {
 	    control_name->CAError[i] = 'n';
 	}
       } else {
+	long elements = (long)ca_element_count(channelInfo[i].channelID);
+	char caString[MAX_STRING_SIZE];
+	if (elements > 1) {
+	  /* Writing a scalar to an array PV would silently truncate it. */
+	  fprintf(stderr, "Error, snapshot has a scalar value for %s but the PV has %ld elements; not restored\n",
+		  control_name->ControlName[i], elements);
+	  if (control_name->logFp)
+	    fprintf(control_name->logFp, "Error, snapshot has a scalar value for %s but the PV has %ld elements; not restored\n",
+		    control_name->ControlName[i], elements);
+	  control_name->CAError[i] = 'y';
+	  continue;
+	}
 	if (dryRun) {
 	  fprintf(stdout, "pretending writing value %s to pv %s\n", control_name->ValueString[i], control_name->ControlName[i]);
 	  control_name->CAError[i] = 'n';
 	} else {
-	  if (ca_put(DBR_STRING, channelInfo[i].channelID, control_name->ValueString[i]) != ECA_NORMAL) {
+	  /* DBR_STRING puts read MAX_STRING_SIZE bytes, which may be more than
+	   * the restored value's allocation; send the same leading bytes from a
+	   * buffer of that size instead. */
+	  strncpy(caString, control_name->ValueString[i], MAX_STRING_SIZE - 1);
+	  caString[MAX_STRING_SIZE - 1] = '\0';
+	  if (ca_put(DBR_STRING, channelInfo[i].channelID, caString) != ECA_NORMAL) {
 	    fprintf(stderr, "Error, unable to set value of %s\n", control_name->ControlName[i]);
 	    if (control_name->logFp)
 	      fprintf(control_name->logFp, "Error, unable to set value of %s\n", control_name->ControlName[i]);
@@ -2333,6 +2419,9 @@ long SetPVValue(CONTROL_NAME *control_name, long dryRun) {
     for (i = 0; i < control_name->variables; i++) {
       if (control_name->valid[i] && control_name->CAError[i] == 'n') {
         if (channelInfo[i].length == 1 && !channelInfo[i].waveformData && !channelInfo[i].stringValue) {
+          /* The restored value is copied with its exact length; make room
+           * for the reformatted value written below. */
+          ReserveValueString(&control_name->ValueString[i]);
           switch (channelInfo[i].dataType) {
           case SDDS_DOUBLE:
             if (channelInfo[i].isEnumPV) {

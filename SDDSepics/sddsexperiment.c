@@ -44,6 +44,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #define TYPE_CHID 7
 #include "sddsexperiment.h"
@@ -2734,7 +2735,7 @@ long readMeasurementFile(char *MeasurementFile, char ***ControlName, char ***Col
             MeasurementFile);
     fflush(FPINFO);
   }
-  if (code == 0)
+  if (laterPageReadFailed(&inTable, code))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -2821,7 +2822,7 @@ void read_knob_file(VARIABLE_DATA *variable, VARIABLESPEC *NewVariable, double p
     found=1;
     break;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&knobTable))
+  if (laterPageReadFailed(&knobTable, pageCode) || !SDDS_Terminate(&knobTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!found) {
     fprintf(stderr,"Error knob %s not found in knob file %s.\n", NewVariable->control_name, NewVariable->knob_file_name);

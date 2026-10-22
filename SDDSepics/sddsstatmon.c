@@ -716,12 +716,11 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }
-    {
-      const char *parameters[] = {"PageTimeStamp", "Samples", NULL};
-      if (!checkNonEnumOutputColumns(&originalfile_page) ||
-          !checkNonEnumInputs(&originalfile_page, NULL, parameters))
-        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-    }
+    /* Every output column receives primitive samples. In append mode, the only
+     * parameter written is PageTimeStamp, and only when it is a string, so
+     * other parameters (including enum metadata) are copied unchanged. */
+    if (!checkNonEnumOutputColumns(&originalfile_page))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     ColumnNames = (char **)SDDS_GetColumnNames(&originalfile_page, &NColumnNames);
     ReadbackIndex = (long **)malloc(sizeof(*ReadbackIndex) * NSTATS);
     for (istat = 0; istat < NSTATS; istat++) {

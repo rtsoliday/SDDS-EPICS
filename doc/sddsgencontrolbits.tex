@@ -5,11 +5,14 @@ SDDS6 enum columns in the preset and bunch-pattern tables are resolved to
 dictionary labels for categorical fields, including labels and mode names.
 Textual parameters in input RAM files also accept enum dictionaries, including
 the per-receiver mode and bunch-pattern parameters. Timing and count parameters
-in RAM files retain their required long type.
+in RAM files are read when they have long type; as before, optional RAM
+parameters of other primitive types are ignored, but an enum where a count is
+expected is an error. Mode labels read from a RAM file must be valid modes.
 Timing and count columns must contain numeric data; the input RAM
-\verb+Waveform+ column must have unsigned-long type. Enum codes are not
-interpreted as counts or bit masks. Use \verb+sddscast+ for an explicit
-conversion when numeric codes are intended.
+\verb+Waveform+ column must have unsigned-long or long type (the 32 bits are
+used unchanged, so a long waveform saved with \verb+sddswget+ is accepted).
+Enum codes are not interpreted as counts or bit masks. Use \verb+sddscast+ for
+an explicit conversion when numeric codes are intended.
 
 \verb+sddsgencontrolbits+ creates a file of BPM acquisition control
 bits from unsigned-long RAM data or from command line

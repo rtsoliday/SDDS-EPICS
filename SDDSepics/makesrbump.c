@@ -611,7 +611,7 @@ long readwaveformfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveform
     }
     pages++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
+  if (laterPageReadFailed(&SDDSin, pageCode) || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   *waveformData = data;
   *waveforms = pages;

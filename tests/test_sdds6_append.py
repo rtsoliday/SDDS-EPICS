@@ -92,8 +92,7 @@ def test_append_rejects_enum_sample_columns_without_changing_file(
 
 @pytest.mark.parametrize("encoding", ["ascii", "binary"])
 @pytest.mark.parametrize("program,field", [
-  ("sddsmonitor", "PageTimeStamp"), ("sddslogger", "PageTimeStamp"),
-  ("sddsstatmon", "PageTimeStamp"), ("sddsstatmon", "Samples"),
+  ("sddslogger", "PageTimeStamp"),
   ("sddsvmonitor", "Step"), ("sddsvmonitor", "PageTimeStamp"),
   ("sddswmonitor", "scalar"), ("sddswmonitor", "signal:RMS"),
 ])
@@ -167,11 +166,19 @@ def test_logonchange_logger_format_appends_with_enum_parameter_metadata(
                             ("StartMonth", "short", 10), ("TimeStamp", "string", "original"),
                             ("PageTimeStamp", "string", "original")]:
     parameters += f'&parameter name={name}, type={kind}, fixed_value="{value}" &end\n'
+  # The PV column precedes Time and TimeWS, unlike in a file the logger creates.
   _write_columns(output, [("signal", "double", 0), ("Time", "double", 0), ("TimeWS", "double", 0)],
                  "binary", parameters=parameters)
+  soft_ioc.put("double", "3.25")
 
   soft_ioc.run("sddslogonchange", str(controls), str(output), "-append", "-sddslogger",
                "-timeDuration=0.05", "-pendEventTime=0.01", "-connectTimeout=2", "-logInitialValues")
 
   labels = soft_ioc.run_sdds("sdds2stream", str(output), "-parameters=Metadata", "-noquotes")
   assert labels.stdout.split() == ["retained", "retained"]
+  rows = soft_ioc.run_sdds("sdds2stream", str(output), "-columns=signal,Time,TimeWS", "-page=2")
+  values = [[float(value) for value in line.split()] for line in rows.stdout.splitlines() if line.strip()]
+  assert values, rows.stdout
+  for signal, ioc_time, workstation_time in values:
+    assert signal == 3.25, values
+    assert ioc_time > 1e8 and workstation_time > 1e8, values

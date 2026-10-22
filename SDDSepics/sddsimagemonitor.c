@@ -19,6 +19,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include "fftpackC.h"
 
@@ -539,10 +540,14 @@ int main(int argc, char **argv) {
       SDDS_Bomb("Zero rows in input file");
     if (!(readbackPV = (char **)SDDS_GetColumn(&inSet, "WaveformPV")))
       SDDS_Bomb("Unable read Waveform PV in input file");
-    pageCode = SDDS_ReadPage(&inSet);
-    if (pageCode > 0)
-      fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputfile);
-    if (pageCode == 0 || !SDDS_Terminate(&inSet))
+    /* Only the first page is used; extra pages are ignored silently, but in a
+     * file defining enums a failed extra-page read is reported. */
+    if (inputHasEnums(&inSet)) {
+      pageCode = SDDS_ReadPage(&inSet);
+      if (laterPageReadFailed(&inSet, pageCode))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
+    if (!SDDS_Terminate(&inSet))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   } else {
     readbacks = optPVnames;

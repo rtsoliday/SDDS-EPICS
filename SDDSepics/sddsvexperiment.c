@@ -140,6 +140,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #define TYPE_CHID 7
 #include "sddsvexperiment.h"
@@ -1528,7 +1529,7 @@ long readSuffixFile(char *suffixFile, char ***Suffix, char ***ColumnNameSuffix,
   if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             suffixFile);
-  if (code == 0)
+  if (laterPageReadFailed(&inTable, code))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -1551,7 +1552,7 @@ long readRootnameFile(char *rootnameFile, char ***rootname) {
   if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             rootnameFile);
-  if (code == 0)
+  if (laterPageReadFailed(&inTable, code))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);

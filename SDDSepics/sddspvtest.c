@@ -48,6 +48,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include <stdlib.h>
 #include <time.h>
 #include <cadef.h>
@@ -1166,20 +1167,18 @@ long getInputInfo(char ***ControlName, double **MaximumValue, double **MinimumVa
       return (0);
     }
   }
-  /* Only the first page supplies limits, but an invalid extra page must not
-   * hide an SDDS6 enum validation error. */
-  pageCode = SDDS_ReadPage(&inSet);
-  if (pageCode > 0)
-    fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
-  if (pageCode == 0) {
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-    SDDS_Terminate(&inSet);
-    return (0);
+  /* Only the first page supplies limits (extra pages are ignored silently),
+   * but in a file defining enums an invalid extra page must not hide an SDDS6
+   * enum validation error. */
+  if (inputHasEnums(&inSet)) {
+    pageCode = SDDS_ReadPage(&inSet);
+    if (laterPageReadFailed(&inSet, pageCode)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&inSet);
+      return (0);
+    }
   }
-  if (!SDDS_Terminate(&inSet)) {
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-    return (0);
-  }
+  SDDS_Terminate(&inSet);
   return (1);
 }
 

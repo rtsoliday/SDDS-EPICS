@@ -523,7 +523,7 @@ void makeSnapshot(unsigned long mode, double pendIOtime) {
     if (!(mode & MAKESNAP_CONNECT) && !SDDS_WritePage(&outSet))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
-  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!(mode & MAKESNAP_CONNECT)) {
     if (!SDDS_Terminate(&outSet))

@@ -109,8 +109,11 @@ MAGNET_COLUMNS = {
 
 
 @pytest.mark.parametrize("encoding", ["ascii", "binary"])
+# The standardize specification selects dwell mode, which never reads Minutes
+# or Seconds; unread optional columns keep their legacy "ignored" behavior.
 @pytest.mark.parametrize("mode,field", [(mode, name) for mode, columns in MAGNET_COLUMNS.items()
-                                        for name, _, _ in columns])
+                                        for name, _, _ in columns
+                                        if not (mode == "standardize" and name in ("Minutes", "Seconds"))])
 def test_magnet_specifications_reject_enum_buffers(tmp_path: Path, encoding: str, mode: str, field: str):
   source = tmp_path / "magnet.sdds"
   columns = [(name, "enum", -7) if name == field else (name, kind, value)

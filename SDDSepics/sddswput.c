@@ -19,6 +19,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 #ifdef _WIN32
@@ -159,15 +160,17 @@ int main(int argc, char **argv) {
     if (!waveformData[waveforms] ||
         !SDDS_GetParameter(&SDDSin, "WaveformPV", waveformPV + waveforms))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-    if (waveformDataType[waveforms] == SDDS_STRING) {
+    if (SDDS_GetColumnType(&SDDSin, index) == SDDS_ENUM) {
       long j;
+      /* Enum labels are categorical; truncating one would select a different
+       * state. Plain strings are truncated to the CA limit when sent. */
       for (j = 0; j < waveformLength[waveforms]; j++)
         if (strlen(((char **)waveformData[waveforms])[j]) >= MAX_STRING_SIZE)
-          SDDS_Bomb("Waveform string exceeds the Channel Access string length limit.");
+          SDDS_Bomb("Enum label exceeds the Channel Access string length limit.");
     }
     waveforms++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
+  if (laterPageReadFailed(&SDDSin, pageCode) || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   ca_task_initialize();
   for (i = 0; i < waveforms; i++) {
@@ -192,7 +195,8 @@ int main(int argc, char **argv) {
       int n;
       stringwaveform = (char *)calloc(waveformLength[i], MAX_STRING_SIZE);
       for (n = 0; n < waveformLength[i]; n++) {
-        strcpy(stringwaveform + n * MAX_STRING_SIZE, ((char **)(waveformData[i]))[n]);
+        strncpy(stringwaveform + n * MAX_STRING_SIZE, ((char **)(waveformData[i]))[n], MAX_STRING_SIZE - 1);
+        stringwaveform[n * MAX_STRING_SIZE + MAX_STRING_SIZE - 1] = '\0';
       }
       if (ca_array_put(DataTypeToCaType(waveformDataType[i]), waveformLength[i],
                        waveformCHID[i], stringwaveform) != ECA_NORMAL) {

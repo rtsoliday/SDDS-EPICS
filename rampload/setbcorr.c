@@ -8,6 +8,7 @@
 \*************************************************************************/
 #include "SDDS.h"
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -709,10 +710,14 @@ int writerampdata(FILE *file, double val, char *corname, double rampbias,
  * setters. Enum dictionary keys must never be substituted for those values.
  * Fixed parameters consume no page data, so unrelated fixed enum metadata is
  * safe to retain. Other layout differences would also misalign the raw pages.
+ * A missing or empty file is not checked: as before, the pages are written to
+ * it without a header. Compressed files cannot take raw text and are refused.
  * @param filename Existing ramp file to check without modifying it.
+ * @param needsNewline Set to one if the file does not end with a newline, so
+ *        the caller must terminate its last line before appending.
  * @return Zero for a compatible file, one on an invalid layout or page.
  */
-static int validateRampAppendFile(char *filename) {
+static int validateRampAppendFile(char *filename, int *needsNewline) {
   static const char *parameterNames[] = {
     "TimeStamp", "BPMTime", "BPMDuration", "ControlName", "ControlType",
     "RampBias", "CorrName", "CorrCurrentAO"
@@ -725,10 +730,28 @@ static int validateRampAppendFile(char *filename) {
   int32_t i, kind, count, type, pageCode, parameter = 0;
   const char *name;
   char message[512];
+  FILE *fp;
+  long size = -1;
 
+  *needsNewline = 0;
+  if ((fp = fopen(filename, "rb"))) {
+    if (fseek(fp, 0, SEEK_END) == 0 && (size = ftell(fp)) > 0 &&
+        fseek(fp, -1, SEEK_END) == 0 && fgetc(fp) != '\n')
+      *needsNewline = 1;
+    fclose(fp);
+  }
+  if ((!fp && errno == ENOENT) || size == 0) {
+    /* Legacy behavior: fopen(..., "a") below creates or extends the file. */
+    *needsNewline = 0;
+    return 0;
+  }
   if (!SDDS_InitializeInput(&input, filename)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return 1;
+  }
+  if (input.layout.gzipFile || input.layout.lzmaFile || input.layout.popenUsed) {
+    SDDS_SetError("setbcorr: cannot append raw ASCII ramp pages to a compressed file");
+    goto invalid;
   }
   for (kind = 0; kind < 3; kind++) {
     count = kind == 0 ? input.layout.n_columns : kind == 1 ? input.layout.n_parameters : input.layout.n_arrays;
@@ -796,8 +819,9 @@ int setbcorr(char *corname,double val, double rampbias, int usebpmtime,
   int i;
   short setswapval=1;
   char string[BUFSIZ];
+  int needsNewline=0;
 
-  if (append && validateRampAppendFile(filename))
+  if (append && validateRampAppendFile(filename, &needsNewline))
     return 1;
 
   /* Make temporary file */
@@ -849,6 +873,8 @@ int setbcorr(char *corname,double val, double rampbias, int usebpmtime,
   /* Write the data */
   if (!append) 
     writerampheader(file);
+  else if (needsNewline)
+    fputc('\n', file);    /* keep the TimeStamp line off the last row */
   if (writerampdata(file, val, corname, rampbias,
                     bpmtime, bpmduration, usebpmtime, timestring)) {
     fclose(file);

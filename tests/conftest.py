@@ -25,8 +25,51 @@ def _binary_directory() -> Path:
   return REPOSITORY_ROOT / "bin" / f"{operating_system}-{platform.machine()}"
 
 
+# Legacy programs compiled only for the tests. ``make test-binaries`` leaves them
+# in their component build directories instead of installing them in bin/.
+TEST_ONLY_PROGRAMS = {
+  "SDDSepics": {
+    "getinjectiontrajectory", "makeboosterbump", "sddsSubtractDispersionOrbit",
+    "sddstransferFFtoWaveform", "sddstransferscalartowaveform", "sddswgetdata",
+    "srinitbpmvector", "srinitcorrvector", "srinitvector",
+  },
+  "rampload": {"ramploadnew"},
+}
+# MSVC cannot compile these sources (<pthread.h> or <sys/time.h>).
+WINDOWS_UNBUILT_TEST_PROGRAMS = {"getinjectiontrajectory", "makeboosterbump", "ramploadnew"}
+
+
+def _is_windows() -> bool:
+  return platform.system() == "Windows" or platform.system().startswith("CYGWIN")
+
+
+def _test_binary_directories(component: str) -> list[Path]:
+  """Return candidate build directories for test-only programs."""
+  configured = os.environ.get("SDDS_EPICS_TEST_BIN_DIRS")
+  if configured:
+    return [Path(directory) for directory in configured.split(os.pathsep) if directory]
+  # Without ``make test``, use the component's normal and DEV_BUILD directories.
+  object_directory = f"O.{_binary_directory().name}"
+  return [REPOSITORY_ROOT / component / object_directory,
+          REPOSITORY_ROOT / component / f"{object_directory}-dev"]
+
+
+def _test_only_executable(name: str, component: str, suffix: str) -> Path:
+  candidates = [directory / f"{name}{suffix}" for directory in _test_binary_directories(component)]
+  existing = [candidate for candidate in candidates if candidate.is_file()]
+  if existing:
+    # Prefer the most recent build when both normal and -dev outputs exist.
+    return max(existing, key=lambda candidate: candidate.stat().st_mtime)
+  if _is_windows() and name in WINDOWS_UNBUILT_TEST_PROGRAMS:
+    pytest.skip(f"{name} is not built with MSVC")
+  pytest.fail("required test executable was not built: " + ", ".join(str(path) for path in candidates))
+
+
 def _executable(name: str) -> Path:
   suffix = ".exe" if platform.system() == "Windows" else ""
+  for component, programs in TEST_ONLY_PROGRAMS.items():
+    if name in programs:
+      return _test_only_executable(name, component, suffix)
   executable = _binary_directory() / f"{name}{suffix}"
   if not executable.is_file():
     pytest.fail(f"required test executable was not built: {executable}")

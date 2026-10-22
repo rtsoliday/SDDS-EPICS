@@ -137,10 +137,14 @@ endif
 CUSTOM_LINK_PRODUCTS += sddssynchlog sddsmonitor sddsstatmon sddsvmonitor sddswmonitor BPS16monitor squishPVs sddsalarmlog toggle sddslogger sddsfeedforward sdds2dfeedforward sddspcas sddsglitchlogger sddsoptimize sddspvtest sddslogonchange sddswput sddsbcontrol sddscasr sddsimagemonitor makesrbump sddsexperiment sddsvexperiment sddspvalogger sddswget sddspvasaverestore sddspvaglitchlogger sddscainfo sddspermissive sddspvacontrollaw sddsSoftIOC
 
 # Compile legacy input readers for compatibility tests without changing the
-# production program list.
+# production program list. These programs stay in OBJ_DIR and are not
+# installed. MSVC lacks <pthread.h> (getinjectiontrajectory) and <sys/time.h>
+# (makeboosterbump), so those two are not built on Windows.
 LEGACY_TEST_PROD = sddswgetdata sddstransferFFtoWaveform sddstransferscalartowaveform \
-                  getinjectiontrajectory makeboosterbump sddsSubtractDispersionOrbit \
-                  srinitbpmvector srinitcorrvector srinitvector
+                  sddsSubtractDispersionOrbit srinitbpmvector srinitcorrvector srinitvector
+ifneq ($(OS), Windows)
+  LEGACY_TEST_PROD += getinjectiontrajectory makeboosterbump
+endif
 LEGACY_TEST_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(LEGACY_TEST_PROD)))
 BUILD_OBJECTS += $(addprefix $(OBJ_DIR)/,$(addsuffix .$(OBJEXT),$(LEGACY_TEST_PROD)))
 LEGACY_CORR_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),srinitcorrvector srinitvector))
@@ -219,6 +223,9 @@ $(OBJ_DIR)/makesrbump$(EXEEXT): $(makesrbump_OBJS) $(PROD_DEPS)
 $(OBJ_DIR)/sddsexperiment$(EXEEXT): $(OBJ_DIR)/sddsexperiment.h $(sddsexperiment_OBJS) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $(sddsexperiment_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
 
+$(OBJ_DIR)/sddsexperiment.$(OBJEXT): $(OBJ_DIR)/sddsexperiment.h
+$(OBJ_DIR)/sddsvexperiment.$(OBJEXT): $(OBJ_DIR)/sddsvexperiment.h
+
 $(OBJ_DIR)/sddsexperiment.h: sddsexperiment.nl
 	$(SDDS_REPO)/bin/$(OS)-$(ARCH)/nlpp sddsexperiment.nl $(OBJ_DIR)/sddsexperiment.h
 
@@ -257,8 +264,7 @@ $(OBJ_DIR)/sddsSoftIOC$(EXEEXT): $(sddsSoftIOC_OBJS) $(PROD_DEPS)
 sddsSoftIOC: $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/sddsSoftIOC$(EXEEXT)
 	$(MAKE) install-programs INSTALL_PROGRAMS="$(OBJ_DIR)/sddsSoftIOC$(EXEEXT)"
 
-TEST_PROD = $(PROD) $(LEGACY_TEST_PROD)
-TEST_PROD_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(TEST_PROD)))
+TEST_PROD_TARGETS = $(FULLPROD) $(LEGACY_TEST_TARGETS)
 
 $(LEGACY_TEST_TARGETS): %$(EXEEXT): %.$(OBJEXT) $(OBJ_DIR)/SDDSepics.$(OBJEXT) $(PROD_DEPS)
 	$(LINKEXE) $(OUTPUTEXE) $< $(OBJ_DIR)/SDDSepics.$(OBJEXT) $(LEGACY_EXTRA_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
@@ -268,4 +274,4 @@ $(LEGACY_CORR_TARGETS): $(OBJ_DIR)/SDDSsrcorr.$(OBJEXT)
 
 .PHONY: test-programs
 test-programs: $(OBJ_DIR) $(BIN_DIR) $(TEST_PROD_TARGETS) install-programs
-	$(MAKE) install-programs INSTALL_PROGRAMS="$(LEGACY_TEST_TARGETS)"
+	@true

@@ -1079,7 +1079,11 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
       SDDS_Bomb((char *)"Unable to get the value of ValueString column in the input file.");
     for (i = 0; i < variables; i++) {
       if (valueStringEnum) {
-        if (strcmp(Provider[i], "ca") == 0 && strlen(ValueString[i]) >= MAX_STRING_SIZE)
+        /* Only scalar CA rows send ValueString through Channel Access;
+         * waveform rows restore from their waveform files. */
+        bool waveformRow = control_name->pvarestore && IndirectName && IndirectName[i] &&
+          strlen(IndirectName[i]) && !is_blank(IndirectName[i]) && strcmp(IndirectName[i], "-") != 0;
+        if (!waveformRow && strcmp(Provider[i], "ca") == 0 && strlen(ValueString[i]) >= MAX_STRING_SIZE)
           SDDS_Bomb((char *)"Enum label exceeds the Channel Access string length limit.");
         /* Quotes in categorical labels are literal, not BURT formatting. */
         continue;
@@ -1109,13 +1113,14 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
     if (!SDDS_GetParameter(&inSet, (char *)"SnapshotFilename", &control_name->waveformRootname))
       SDDS_CopyString(&control_name->waveformRootname, inputFile);
   }
-  if (control_name->pvarestore) {
+  if (control_name->pvarestore && inputHasEnums(&inSet)) {
     int32_t pageCode;
     /* Restore the collected first page only, but reject invalid enum data
-     * anywhere in the snapshot before UpdateDataInfo can prepare PV writes. */
+     * anywhere in the snapshot before UpdateDataInfo can prepare PV writes.
+     * Enum-free snapshots are read as before: only the first page. */
     while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
     }
-    if (pageCode == 0)
+    if (laterPageReadFailed(&inSet, pageCode))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (!SDDS_Terminate(&inSet))
@@ -1545,7 +1550,7 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     waveforms++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!waveforms) {
     fprintf(stderr, "No data found in waveform file %s\n", vectorFile);
@@ -1637,8 +1642,11 @@ long GetWaveformValueFromFile(char *directory, char *rootname, char *waveformPV,
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
     exist = 1;
+    /* Enum-free files are read as before: stop at the first matching page. */
+    if (!inputHasEnums(&inSet))
+      break;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+  if (laterPageReadFailed(&inSet, pageCode) || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!exist) {
     fprintf(stderr, "waveformPV does not exist in %s.\n", vectorFile);
@@ -1994,6 +2002,14 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
             free(tempName);
         }
       } else {
+        /* Error markers such as "_NoConnection_" from an earlier daemon cycle
+         * are short, and PVA strings may exceed 250 bytes; size the buffer for
+         * the value and for the quotes or numbers formatted into it below. */
+        size_t size = 250;
+        if (channelInfo[i].dataType == SDDS_STRING && strlen(pva->pvaData[i].getData[0].stringValues[0]) + 3 > size)
+          size = strlen(pva->pvaData[i].getData[0].stringValues[0]) + 3;
+        if (!(control_name->ValueString[i] = (char *)SDDS_Realloc(control_name->ValueString[i], size)))
+          SDDS_Bomb((char *)"memory allocation failure");
         if (channelInfo[i].dataType == SDDS_STRING) {
           strcpy(control_name->ValueString[i], pva->pvaData[i].getData[0].stringValues[0]);
         } else {
@@ -2101,6 +2117,9 @@ long ReadDataAndSave(CONTROL_NAME *control_name, PVA_OVERALL *pva, PVA_OVERALL *
 
 long SetPVValue(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
   long i, j;
+  short *scalarArrayError = (short *)calloc(pva->numPVs > 0 ? pva->numPVs : 1, sizeof(short));
+  if (!scalarArrayError)
+    SDDS_Bomb((char *)"memory allocation failure");
   for (i = 0; i < pva->numPVs; i++) {
     if (control_name->valid[i]) {
       if (control_name->channelInfo[i].stringValue) {
@@ -2113,7 +2132,21 @@ long SetPVValue(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
               SDDS_Bomb((char *)"Enum label exceeds the Channel Access string length limit.");
           }
         }
-        if (PrepPut(pva, i, control_name->channelInfo[i].stringValue, control_name->channelInfo[i].length) == 1) {
+        long count = control_name->channelInfo[i].length;
+        long elements = pva->pvaData[i].numGetElements;
+        /* CA destinations cannot accept more elements than they hold; keep the
+         * earlier truncation for files longer than the PV. The buffer always
+         * holds the file's element count, so a shorter file is never overread. */
+        if (pva->isConnected[i] && strcmp(control_name->Provider[i], "ca") == 0 &&
+            elements > 0 && count > elements) {
+          fprintf(stderr, "Warning: waveform file for %s has %ld elements, but the PV has %ld; only the first %ld are restored\n",
+                  control_name->ControlName[i], count, elements, elements);
+          if (control_name->logFp)
+            fprintf(control_name->logFp, "Warning: waveform file for %s has %ld elements, but the PV has %ld; only the first %ld are restored\n",
+                    control_name->ControlName[i], count, elements, elements);
+          count = elements;
+        }
+        if (PrepPut(pva, i, control_name->channelInfo[i].stringValue, count) == 1) {
           fprintf(stderr, "ERROR: problem setting PV values\n");
           exit(1);
         }
@@ -2123,6 +2156,16 @@ long SetPVValue(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
         free(control_name->channelInfo[i].stringValue);
         control_name->channelInfo[i].stringValue = NULL;
       } else {
+        if (pva->isConnected[i] && pva->pvaData[i].numGetElements > 1) {
+          /* Writing a scalar to an array PV would silently truncate it. */
+          fprintf(stderr, "Error, snapshot has a scalar value for %s but the PV has %ld elements; not restored\n",
+                  control_name->ControlName[i], (long)pva->pvaData[i].numGetElements);
+          if (control_name->logFp)
+            fprintf(control_name->logFp, "Error, snapshot has a scalar value for %s but the PV has %ld elements; not restored\n",
+                    control_name->ControlName[i], (long)pva->pvaData[i].numGetElements);
+          scalarArrayError[i] = 1;
+          continue;
+        }
         if (PrepPut(pva, i, control_name->ValueString[i]) == 1) {
           fprintf(stderr, "ERROR: problem setting PV values\n");
           exit(1);
@@ -2141,11 +2184,14 @@ long SetPVValue(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
         if (control_name->logFp)
           fprintf(control_name->logFp, "Error, no connection for %s\n", control_name->ControlName[i]);
         control_name->CAError[i] = 'y';
+      } else if (scalarArrayError[i]) {
+        control_name->CAError[i] = 'y';
       } else {
         control_name->CAError[i] = 'n';
       }
     }
   }
+  free(scalarArrayError);
 
   /*new FPGA sectors 19,20,21,22 are installed behond a gateway, to make sure that gateway execute the setting command before exiting
     ca_pend_event() is required, H. Shang, 5/24/2013*/

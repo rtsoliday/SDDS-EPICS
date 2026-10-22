@@ -55,6 +55,7 @@
 #include "scan.h"
 #include "SDDS.h"
 #include "sddsPVInput.h"
+#include "sddsInput.h"
 
 #define SET_DEBUGLEVEL 0
 #define SET_EXECUTIONTIME 1
@@ -1283,6 +1284,25 @@ static void restartSoftIoc(const std::string &epicsBase, const std::string &dbPa
   startSoftIoc(epicsBase, dbPath);
 }
 
+/*
+ * Conflict policy for dynamic additions. As for a registry that cannot be
+ * opened, a registry that cannot be read is skipped with a warning and the
+ * additions proceed unchecked; this keeps the historical behavior for
+ * enum-free registries (e.g. a page read error or a missing rec_name column).
+ * The additions are refused only when the names cannot be read safely: a name
+ * column of non-string type (enum codes are not char pointers), or a page read
+ * failure in a registry that defines enums, which may be an undefined key.
+ */
+static bool registryNamesUnsafe(SDDS_DATASET *registry, int includeHost) {
+  const char *names[] = {"rec_name", "host_name"};
+  for (int i = 0; i < (includeHost ? 2 : 1); i++) {
+    int32_t index = SDDS_GetColumnIndex(registry, (char *)names[i]);
+    if (index >= 0 && SDDS_GetColumnType(registry, index) != SDDS_STRING)
+      return true;
+  }
+  return false;
+}
+
 static void filterOutMasterPvConflicts(const std::string &masterPvFile, const std::string &pvPrefix, std::vector<PVDef> &candidates) {
   if (masterPvFile.empty() || candidates.empty()) {
     return;
@@ -1297,20 +1317,22 @@ static void filterOutMasterPvConflicts(const std::string &masterPvFile, const st
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return;
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 0)) {
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-    SDDS_Terminate(&SDDS_masterlist);
-    candidates.clear();
-    return;
-  }
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "warning: Unable to read SDDS file %s\n", masterPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    if (inputHasEnums(&SDDS_masterlist))
+      candidates.clear();
     SDDS_Terminate(&SDDS_masterlist);
-    candidates.clear();
     return;
   }
   if ((rows = SDDS_RowCount(&SDDS_masterlist)) <= 0) {
+    SDDS_Terminate(&SDDS_masterlist);
+    return;
+  }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 0)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    if (registryNamesUnsafe(&SDDS_masterlist, 0))
+      candidates.clear();
     SDDS_Terminate(&SDDS_masterlist);
     return;
   }
@@ -1363,22 +1385,24 @@ static void filterOutMasterSddspcasPvConflicts(const std::string &pcasPvFile, co
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return;
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-    SDDS_Terminate(&SDDS_masterlist);
-    candidates.clear();
-    return;
-  }
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "warning: Unable to read SDDS file %s\n", pcasPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    if (inputHasEnums(&SDDS_masterlist))
+      candidates.clear();
     SDDS_Terminate(&SDDS_masterlist);
-    candidates.clear();
     return;
   }
 
   rows = SDDS_RowCount(&SDDS_masterlist);
   if (rows <= 0) {
+    SDDS_Terminate(&SDDS_masterlist);
+    return;
+  }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    if (registryNamesUnsafe(&SDDS_masterlist, 1))
+      candidates.clear();
     SDDS_Terminate(&SDDS_masterlist);
     return;
   }
@@ -1626,8 +1650,6 @@ static void readMasterPvFile(const std::string &masterPvFile, const std::string 
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
-  if (!checkPVRegistryInput(&SDDS_masterlist, 0))
-    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", masterPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1641,6 +1663,9 @@ static void readMasterPvFile(const std::string &masterPvFile, const std::string 
     SDDS_Terminate(&SDDS_masterlist);
     return;
   }
+  /* Names are read only when rows exist; an empty page needs no rec_name. */
+  if (!checkPVRegistryInput(&SDDS_masterlist, 0))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!(rec_name = (char **)SDDS_GetColumn(&SDDS_masterlist, (char *)"rec_name"))) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", masterPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);

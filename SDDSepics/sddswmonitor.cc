@@ -75,6 +75,7 @@
 #include <complex>
 #include <iostream>
 #include <ctime>
+#include <cctype>
 
 #if defined(_WIN32)
 #  include <winsock.h>
@@ -458,6 +459,9 @@ int main(int argc, char **argv) {
         if (s_arg[i_arg].n_items < 2 ||
             !(datatype_string = s_arg[i_arg].list[1]))
           bomb((char *)"no value given for option -dataType", NULL);
+        /* SDDS type names are lowercase; accept any case (e.g., DOUBLE). */
+        for (char *c = datatype_string; *c; c++)
+          *c = (char)tolower((unsigned char)*c);
         if ((DataType = SDDS_IdentifyType(datatype_string)) <= 0)
           bomb((char *)"invalid -dataType value", NULL);
         if (DataType == SDDS_ENUM)

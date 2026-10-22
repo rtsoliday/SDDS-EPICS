@@ -663,6 +663,7 @@
 #include "match_string.h"
 #include "matlib.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include <time.h>
 #if !defined(vxWorks)
 #  include <sys/timeb.h>
@@ -7699,7 +7700,7 @@ void setupWaveforms(WAVE_FORMS *wave_forms, CONTROL_NAME *CONTROL, long verbose,
       free(index);
       wave_forms->waveforms++;
     }
-    if (pageCode == 0 || !SDDS_Terminate(&dataset)) {
+    if (laterPageReadFailed(&dataset, pageCode) || !SDDS_Terminate(&dataset)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -7990,6 +7991,14 @@ void setupWaveformTests(WAVEFORM_TESTS *waveform_tests, CONTROL_NAME *readback, 
       FreeEverything();
       exit(1);
     }
+    switch (SDDS_CheckParameter(&dataset, "WaveformPV", NULL, SDDS_STRING, NULL)) {
+    case SDDS_CHECK_OKAY:
+      break;
+    default:
+      fprintf(stderr, "Something wrong with parameter \"WaveformPV\" in file %s\n", waveform_tests->testFile[i]);
+      FreeEverything();
+      exit(1);
+    }
     switch (SDDS_CheckColumn(&dataset, "Despike", NULL, SDDS_LONG, NULL)) {
     case SDDS_CHECK_OKAY:
       despikeColumnPresent = 1;
@@ -8186,7 +8195,7 @@ void setupWaveformTests(WAVEFORM_TESTS *waveform_tests, CONTROL_NAME *readback, 
       if (holdOffTimeColumnPresent || holdOffIntervalColumnPresent)
         waveform_tests->holdOff[k] = holdOff;
     }
-    if (pageCode == 0) {
+    if (laterPageReadFailed(&dataset, pageCode)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);

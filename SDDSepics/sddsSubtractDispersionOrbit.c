@@ -19,6 +19,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <time.h>
 #if !defined(vxWorks)
@@ -755,7 +756,7 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
     }
     pages++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
+  if (laterPageReadFailed(&SDDSin, pageCode) || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   if (SCRFile) {

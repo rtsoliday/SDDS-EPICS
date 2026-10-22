@@ -47,6 +47,18 @@
 #define CA_TIMEOUT 10.0
 
 /**
+ * @brief Exit when an existing column's storage differs from the destination buffer.
+ * @param table Input specification.
+ * @param name Column name. A missing column is accepted.
+ * @param type Required SDDS type.
+ */
+static void checkColumnType(SDDS_TABLE *table, char *name, int32_t type) {
+  if (SDDS_GetColumnIndex(table, name) >= 0 &&
+      SDDS_CheckColumn(table, name, NULL, type, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("Invalid column type in degaussing specification");
+}
+
+/**
  * @brief Read a column only when its storage matches the destination buffer.
  * @param table Input specification.
  * @param name Column name.
@@ -54,10 +66,24 @@
  * @return Allocated column data, or NULL for a missing column.
  */
 static void *getTypedColumn(SDDS_TABLE *table, char *name, int32_t type) {
-  if (SDDS_GetColumnIndex(table, name) >= 0 &&
-      SDDS_CheckColumn(table, name, NULL, type, stderr) != SDDS_CHECK_OKAY)
-    SDDS_Bomb("Invalid column type in degaussing specification");
+  checkColumnType(table, name, type);
   return SDDS_GetColumn(table, name);
+}
+
+/**
+ * @brief Exit when an optional column that is otherwise ignored has enum type.
+ *
+ * As before SDDS6, a non-string SuffixName column is ignored and the default
+ * record suffix is used. An enum is reported instead, since its labels may
+ * name the intended records.
+ * @param table Input specification.
+ * @param name Column name.
+ */
+static void rejectEnumColumn(SDDS_TABLE *table, char *name) {
+  int32_t index;
+  if ((index = SDDS_GetColumnIndex(table, name)) >= 0 &&
+      SDDS_GetColumnType(table, index) == SDDS_ENUM)
+    checkColumnType(table, name, SDDS_STRING);
 }
 
 /* Function Prototypes */
@@ -209,12 +235,13 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "%s: SDDS error: unable to read controltype column\n", argv[0]);
     exit(1);
   }
-  if (SDDS_GetColumnIndex(&table, "SuffixName") >= 0) {
-    if ((suffix = (char **)getTypedColumn(&table, "SuffixName", SDDS_STRING)) == NULL) {
+  if (SDDS_CheckColumn(&table, "SuffixName", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
+    if ((suffix = (char **)SDDS_GetColumn(&table, "SuffixName")) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read SuffixName column\n", argv[0]);
       exit(1);
     }
-  }
+  } else
+    rejectEnumColumn(&table, "SuffixName");
   if (apsuTriMode) {
     if ((imax = getTypedColumn(&table, "FirstPeakCurrent", SDDS_DOUBLE)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read FirstPeakCurrent column\n", argv[0]);

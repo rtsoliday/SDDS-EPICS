@@ -181,7 +181,7 @@ volatile int sigint = 0;
 #define FPINFO stdout
 
 void InitializeLoopParam(LOOP_PARAM *loopParam);
-long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformData, char *prefix, char *suffix, LOOP_PARAM *loopParam);
+long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformData, char *prefix, char *suffix, LOOP_PARAM *loopParam, long reload);
 void free_waveform_memory(long waveforms, WAVEFORM_DATA *waveformData);
 
 int main(int argc, char **argv) {
@@ -191,8 +191,8 @@ int main(int argc, char **argv) {
   SCANNED_ARG *scArg;
   long i_arg, i, j;
   LOOP_PARAM loopParam;
-  long infinite = 0, waveforms = 0, watchInput = 0;
-  WAVEFORM_DATA *waveformData = NULL;
+  long infinite = 0, waveforms = 0, watchInput = 0, newWaveforms = 0;
+  WAVEFORM_DATA *waveformData = NULL, *newWaveformData = NULL;
   char *prefix = NULL, *suffix = NULL, *inputlink = NULL;
   double lastRCPingTime = 0.0, timeLeft, targetTime, startTime;
   struct stat input_filestat;
@@ -356,7 +356,7 @@ int main(int argc, char **argv) {
     fprintf(FPINFO, "reading input file and setup CA connection %s.\n", loopParam.inputfile);
     fflush(FPINFO);
   }
-  if (readinputfile(loopParam.inputfile, &waveforms, &waveformData, prefix, suffix, &loopParam)) {
+  if (readinputfile(loopParam.inputfile, &waveforms, &waveformData, prefix, suffix, &loopParam, 0)) {
     fprintf(stderr, "Error in reading file/setup CA connections\n");
     free_waveform_memory(waveforms, waveformData);
     exit(1);
@@ -398,8 +398,16 @@ int main(int argc, char **argv) {
           fprintf(stdout, "step %ld at %f seconds; input file modified, reload input file\n", loopParam.step, getTimeInSecs());
           fflush(stdout);
         }
-        free_waveform_memory(waveforms, waveformData);
-        readinputfile(loopParam.inputfile, &waveforms, &waveformData, prefix, suffix, &loopParam);
+        /* Read into new buffers. A reload rejected while reading the file (status 2)
+           happens before any CA change, so the current configuration stays in use.
+           Other results replace the configuration as before. */
+        newWaveformData = NULL;
+        newWaveforms = 0;
+        if (readinputfile(loopParam.inputfile, &newWaveforms, &newWaveformData, prefix, suffix, &loopParam, 1) != 2) {
+          free_waveform_memory(waveforms, waveformData);
+          waveforms = newWaveforms;
+          waveformData = newWaveformData;
+        }
       }
     }
     if (loopParam.verbose) {
@@ -653,7 +661,10 @@ void free_waveform_memory(long waveforms, WAVEFORM_DATA *waveformData) {
   waveformData = NULL;
 }
 
-long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformData, char *prefix, char *suffix, LOOP_PARAM *loopParam) {
+/* reload is nonzero for -watchInput reloads. An enum input that cannot be read
+   then returns 2 before any CA search, instead of exiting, so the caller can
+   keep its previous configuration. */
+long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformData, char *prefix, char *suffix, LOOP_PARAM *loopParam, long reload) {
   long i, j, prefixParPresent = 0, suffixParPresent = 0, suffix1ParPresent = 0, isSumParPresent = 0, pages;
   double lastRCPingTime = 0.0, isSum = 0;
   char pvName[256];
@@ -669,8 +680,14 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
 
   {
     const char *parameters[] = {"Prefix", "Suffix", "Suffix1", "IsSum", NULL};
-    if (!checkNonEnumInputs(&SDDSin, NULL, parameters))
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    if (!checkNonEnumInputs(&SDDSin, NULL, parameters)) {
+      if (!reload)
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      fprintf(stderr, "Error: unable to reload %s; continuing with the previous configuration\n", inputfile);
+      SDDS_Terminate(&SDDSin);
+      return (2);
+    }
   }
 
   if ((SDDS_CHECK_OKAY != SDDS_CheckParameter(&SDDSin, "WaveformPV", NULL, SDDS_STRING, stderr))) {
@@ -755,7 +772,18 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
     }
     pages++;
   }
-  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
+  if (laterPageReadFailed(&SDDSin, pageCode)) {
+    /* Only enum files reach this point. Startup remains fatal; a running
+       -watchInput process keeps its previous configuration. */
+    if (!reload)
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    fprintf(stderr, "Error: unable to reload %s; continuing with the previous configuration\n", inputfile);
+    SDDS_Terminate(&SDDSin);
+    free_waveform_memory(pages, data);
+    return (2);
+  }
+  if (!SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   for (i = 0; i < pages; i++) {
