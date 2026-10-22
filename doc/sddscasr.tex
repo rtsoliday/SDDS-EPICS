@@ -41,8 +41,18 @@ usage: sddscasr <inputFile> <outputRoot> [-verbose]
   \item \textbf{input file:} \par
 The input file is an SDDS file with a string column. For saving snapshot, the input file
 contains at least one string column - ControlName. For restoring snapshot, the input file
-contains at least two string columns - ControlName and ValueString, where ValueString is the
-value of the PVs to be restored.
+contains a string ControlName column and a string or SDDS6 enum ValueString
+column, where ValueString is the value of the PVs to be restored. Enum values
+are restored using their dictionary labels, preserving literal quotes in labels.
+Save requests require string ValueString storage when that column is supplied.
+Scalar restores use the first snapshot page and validate all remaining pages
+before writing PVs, so undefined enum keys on later pages abort the restore.
+Waveform files may contain an SDDS6 enum {\tt Waveform} column in either
+the per-PV or one-file layout. Its dictionary labels are restored as Channel
+Access strings; dictionary codes are not interpreted as EPICS state indices.
+Labels must fit in the Channel Access string limit of 39 bytes.
+Restores use the waveform file's type and element count, including one-element
+waveforms, even when the destination PV has a larger capacity.
   \item \textbf{output file:} \par
 The output file only exists for saving snapshot. The output file contains everything in the input
 file, except that the ValueString column (if the input file has ValueString column) is update. And

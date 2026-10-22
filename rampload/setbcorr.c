@@ -6,6 +6,7 @@
  * This file is distributed subject to a Software License Agreement found
  * in the file LICENSE that is included with this distribution. 
 \*************************************************************************/
+#include "SDDS.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -701,6 +702,85 @@ int writerampdata(FILE *file, double val, char *corname, double rampbias,
   return(0);
 }
 
+/**
+ * @brief Validate an existing ramp file before appending raw ASCII pages.
+ *
+ * The writer below emits a fixed sequence of primitive values without SDDS
+ * setters. Enum dictionary keys must never be substituted for those values.
+ * Fixed parameters consume no page data, so unrelated fixed enum metadata is
+ * safe to retain. Other layout differences would also misalign the raw pages.
+ * @param filename Existing ramp file to check without modifying it.
+ * @return Zero for a compatible file, one on an invalid layout or page.
+ */
+static int validateRampAppendFile(char *filename) {
+  static const char *parameterNames[] = {
+    "TimeStamp", "BPMTime", "BPMDuration", "ControlName", "ControlType",
+    "RampBias", "CorrName", "CorrCurrentAO"
+  };
+  static const int32_t parameterTypes[] = {
+    SDDS_STRING, SDDS_DOUBLE, SDDS_DOUBLE, SDDS_STRING, SDDS_STRING,
+    SDDS_DOUBLE, SDDS_STRING, SDDS_STRING
+  };
+  SDDS_DATASET input;
+  int32_t i, kind, count, type, pageCode, parameter = 0;
+  const char *name;
+  char message[512];
+
+  if (!SDDS_InitializeInput(&input, filename)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    return 1;
+  }
+  for (kind = 0; kind < 3; kind++) {
+    count = kind == 0 ? input.layout.n_columns : kind == 1 ? input.layout.n_parameters : input.layout.n_arrays;
+    for (i = 0; i < count; i++) {
+      type = kind == 0 ? input.layout.column_definition[i].type :
+        kind == 1 ? input.layout.parameter_definition[i].type : input.layout.array_definition[i].type;
+      if (type != SDDS_ENUM || (kind == 1 && input.layout.parameter_definition[i].fixed_value))
+        continue;
+      name = kind == 0 ? input.layout.column_definition[i].name :
+        kind == 1 ? input.layout.parameter_definition[i].name : input.layout.array_definition[i].name;
+      snprintf(message, sizeof(message), "setbcorr: cannot append primitive ramp pages to enum %s %s",
+               kind == 0 ? "column" : kind == 1 ? "parameter" : "array", name);
+      SDDS_SetError(message);
+      goto invalid;
+    }
+  }
+  if (input.layout.data_mode.mode != SDDS_ASCII || input.layout.data_mode.no_row_counts ||
+      input.layout.n_arrays != 0 || input.layout.n_columns != 2 ||
+      strcmp(input.layout.column_definition[0].name, "RampTime") ||
+      input.layout.column_definition[0].type != SDDS_DOUBLE ||
+      strcmp(input.layout.column_definition[1].name, "RampSetpoint") ||
+      input.layout.column_definition[1].type != SDDS_DOUBLE)
+    goto incompatible;
+  for (i = 0; i < input.layout.n_parameters; i++) {
+    PARAMETER_DEFINITION *definition = &input.layout.parameter_definition[i];
+    if (definition->fixed_value)
+      continue;
+    if (parameter >= (int32_t)(sizeof(parameterNames) / sizeof(parameterNames[0])) ||
+        strcmp(definition->name, parameterNames[parameter]) || definition->type != parameterTypes[parameter])
+      goto incompatible;
+    parameter++;
+  }
+  if (parameter != (int32_t)(sizeof(parameterNames) / sizeof(parameterNames[0])))
+    goto incompatible;
+  while ((pageCode = SDDS_ReadPage(&input)) > 0) {
+  }
+  if (pageCode == 0)
+    goto invalid;
+  if (!SDDS_Terminate(&input)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    return 1;
+  }
+  return 0;
+
+incompatible:
+  SDDS_SetError("setbcorr: append requires the primitive ASCII ramp layout produced by setbcorr");
+invalid:
+  SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+  SDDS_Terminate(&input);
+  return 1;
+}
+
 int setbcorr(char *corname,double val, double rampbias, int usebpmtime,
              int save, int append, int rampload, int setfg, char *filename) {
   FILE *file;
@@ -717,6 +797,8 @@ int setbcorr(char *corname,double val, double rampbias, int usebpmtime,
   short setswapval=1;
   char string[BUFSIZ];
 
+  if (append && validateRampAppendFile(filename))
+    return 1;
 
   /* Make temporary file */
   if (!save) {

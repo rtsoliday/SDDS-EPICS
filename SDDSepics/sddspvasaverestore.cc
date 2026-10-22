@@ -40,6 +40,7 @@
 #include "match_string.h"
 #include "matlib.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 
@@ -1003,6 +1004,19 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     return 0;
   }
+  {
+    const char *columns[] = {"IndirectName", "Provider", "ExpectNumeric",
+                             "ExpectFieldType", "ExpectElements", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+  /* Saves write primitive strings into ValueString; restores can resolve its
+   * dictionary without changing the input layout. */
+  if (!control_name->pvarestore) {
+    const char *columns[] = {"ValueString", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
   if (SDDS_CheckColumn(&inSet, (char *)"ControlName", NULL, SDDS_STRING, NULL) != SDDS_CHECK_OK) {
     fprintf(stderr, "Column \"ControlName\" does not exist or something wrong with it in input file %s\n", inputFile);
     return 0;
@@ -1021,7 +1035,9 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
   }
   if (SDDS_CheckColumn(&inSet, (char *)"IndirectName", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK)
     IndirectNameExist = 1;
-  if (SDDS_CheckColumn(&inSet, (char *)"ValueString", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK)
+  int32_t valueIndex = SDDS_GetColumnIndex(&inSet, (char *)"ValueString");
+  bool valueStringEnum = valueIndex >= 0 && SDDS_GetColumnType(&inSet, valueIndex) == SDDS_ENUM;
+  if (valueStringEnum || SDDS_CheckColumn(&inSet, (char *)"ValueString", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK)
     valuestringExist = 1;
 
   if (0 >= SDDS_ReadPage(&inSet)) {
@@ -1059,9 +1075,15 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
     if (!(IndirectName = (char **)SDDS_GetColumn(&inSet, (char *)"IndirectName")))
       SDDS_Bomb((char *)"Unable to get the value of IndirectName column in the input file");
   if (valuestringExist) {
-    if (!(ValueString = (char **)SDDS_GetColumn(&inSet, (char *)"ValueString")))
+    if (!(ValueString = SDDS_GetColumnInString(&inSet, (char *)"ValueString")))
       SDDS_Bomb((char *)"Unable to get the value of ValueString column in the input file.");
     for (i = 0; i < variables; i++) {
+      if (valueStringEnum) {
+        if (strcmp(Provider[i], "ca") == 0 && strlen(ValueString[i]) >= MAX_STRING_SIZE)
+          SDDS_Bomb((char *)"Enum label exceeds the Channel Access string length limit.");
+        /* Quotes in categorical labels are literal, not BURT formatting. */
+        continue;
+      }
       if (ValueString[i][0] == '\"' && ValueString[i][strlen(ValueString[i]) - 1] == '\"') {
         strslide(ValueString[i], -1);
         ValueString[i][strlen(ValueString[i]) - 1] = '\0';
@@ -1079,10 +1101,22 @@ long ReadInputAndMakeCAConnections(CONTROL_NAME *control_name, PVA_OVERALL *pva,
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (!control_name->waveformRootGiven && control_name->pvarestore) {
+    if (SDDS_GetParameterIndex(&inSet, (char *)"SnapshotFilename") >= 0 &&
+        SDDS_CheckParameter(&inSet, (char *)"SnapshotFilename", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+      SDDS_Bomb((char *)"SnapshotFilename must have string type");
     if (control_name->waveformRootname)
       free(control_name->waveformRootname);
     if (!SDDS_GetParameter(&inSet, (char *)"SnapshotFilename", &control_name->waveformRootname))
       SDDS_CopyString(&control_name->waveformRootname, inputFile);
+  }
+  if (control_name->pvarestore) {
+    int32_t pageCode;
+    /* Restore the collected first page only, but reject invalid enum data
+     * anywhere in the snapshot before UpdateDataInfo can prepare PV writes. */
+    while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
+    }
+    if (pageCode == 0)
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (!SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -1306,15 +1340,20 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
     }
     if (!validate_pva_reading(control_name, pva, i, -1, true))
       exit(1);
-    control_name->channelInfo[i].length = pva->pvaData[i].numGetElements;
-    if (control_name->channelInfo[i].length != control_name->ExpectElements[i]) {
+    /* Check the destination separately from the restored buffer: its capacity
+     * must not become the number of strings read from the waveform file. */
+    long elements = pva->pvaData[i].numGetElements;
+    bool restoredWaveform = control_name->pvarestore && channelInfo[i].stringValue;
+    if (!restoredWaveform)
+      channelInfo[i].length = elements;
+    if (elements != control_name->ExpectElements[i]) {
       if ((strcmp(control_name->Provider[i], (char *)"ca") == 0) && (control_name->ExpectElements[i] == 1)) {
-        control_name->ExpectElements[i] = control_name->channelInfo[i].length;
+        control_name->ExpectElements[i] = elements;
         free(control_name->ExpectFieldType[i]);
         control_name->ExpectFieldType[i] = (char *)malloc(sizeof(char) * 12);
         snprintf(control_name->ExpectFieldType[i], 12, "scalarArray");
       } else {
-        fprintf(stderr, (char *)"Error: %s has %ld elements. Expected %d\n", control_name->ControlName[i], control_name->channelInfo[i].length, control_name->ExpectElements[i]);
+        fprintf(stderr, (char *)"Error: %s has %ld elements. Expected %d\n", control_name->ControlName[i], elements, control_name->ExpectElements[i]);
         exit(1);
       }
     }
@@ -1324,7 +1363,7 @@ long SetupPVAConnection(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
       control_name->channelInfo[i].isEnumPV = 0;
     }
     if (control_name->newFlag[i]) {
-      if ((control_name->channelInfo[i].length == 1) || control_name->pvasave) {
+      if (!restoredWaveform && ((control_name->channelInfo[i].length == 1) || control_name->pvasave)) {
         switch (pva->pvaData[i].scalarType) {
         case epics::pvData::pvDouble: {
           control_name->channelInfo[i].dataType = SDDS_DOUBLE;
@@ -1411,12 +1450,10 @@ void FreeDataMemory(CONTROL_NAME *control_name) {
       free(control_name->IndirectName[i]);
     if (control_name->ValueString[i])
       free(control_name->ValueString[i]);
-    if (control_name->channelInfo[i].length > 1) {
-      if (control_name->channelInfo[i].stringValue) {
-        for (j = 0; j < control_name->channelInfo[i].length; j++)
-          free(control_name->channelInfo[i].stringValue[j]);
-        free(control_name->channelInfo[i].stringValue);
-      }
+    if (control_name->channelInfo[i].stringValue) {
+      for (j = 0; j < control_name->channelInfo[i].length; j++)
+        free(control_name->channelInfo[i].stringValue[j]);
+      free(control_name->channelInfo[i].stringValue);
     }
   }
   if (control_name->doubleValue)
@@ -1456,6 +1493,7 @@ void FreeDataMemory(CONTROL_NAME *control_name) {
 long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
   char vectorFile[1024];
   SDDS_TABLE inSet;
+  int32_t pageCode;
   long index, i, j;
   long waveforms = 0, waveformDataType = 0;
   long *waveformLength = NULL;
@@ -1477,8 +1515,10 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
     fprintf(stderr, "column Waveform does not exist in waveform file %s\n", vectorFile);
     exit(1);
   }
+  if (SDDS_CheckParameter(&inSet, (char *)"WaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb((char *)"WaveformPV must have string type");
   waveformDataType = SDDS_GetColumnType(&inSet, index);
-  while (SDDS_ReadPage(&inSet) > 0) {
+  while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
     if (waveforms == 0) {
       if (!(waveformStringData = (char ***)SDDS_Malloc(sizeof(char **))))
         SDDS_Bomb((char *)"memory allocation failure");
@@ -1505,7 +1545,7 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     waveforms++;
   }
-  if (!SDDS_Terminate(&inSet))
+  if (pageCode == 0 || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!waveforms) {
     fprintf(stderr, "No data found in waveform file %s\n", vectorFile);
@@ -1552,6 +1592,7 @@ long GetWaveformValuesFromOneFile(CONTROL_NAME *control_name) {
 long GetWaveformValueFromFile(char *directory, char *rootname, char *waveformPV, CHANNEL_INFO *channelInfo) {
   char vectorFile[1024];
   SDDS_TABLE inSet;
+  int32_t pageCode;
   long index, exist = 0;
   char *parameterName;
 
@@ -1570,7 +1611,12 @@ long GetWaveformValueFromFile(char *directory, char *rootname, char *waveformPV,
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     exit(1);
   }
-  while (SDDS_ReadPage(&inSet) > 0) {
+  if (SDDS_CheckParameter(&inSet, (char *)"WaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb((char *)"WaveformPV must have string type");
+  while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
+    /* Validate every page before restoring the first matching waveform. */
+    if (exist)
+      continue;
     if (!SDDS_GetParameter(&inSet, (char *)"WaveformPV", &parameterName))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (strcmp(parameterName, waveformPV) != 0) {
@@ -1591,9 +1637,8 @@ long GetWaveformValueFromFile(char *directory, char *rootname, char *waveformPV,
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
     exist = 1;
-    break;
   }
-  if (!SDDS_Terminate(&inSet))
+  if (pageCode == 0 || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!exist) {
     fprintf(stderr, "waveformPV does not exist in %s.\n", vectorFile);
@@ -2058,7 +2103,16 @@ long SetPVValue(CONTROL_NAME *control_name, PVA_OVERALL *pva) {
   long i, j;
   for (i = 0; i < pva->numPVs; i++) {
     if (control_name->valid[i]) {
-      if (control_name->channelInfo[i].length > 1) {
+      if (control_name->channelInfo[i].stringValue) {
+        /* Validate labels before PutPVAValues issues any of the pending puts.
+         * A CA transport failure would otherwise leave a partial restore. */
+        if (control_name->channelInfo[i].dataType == SDDS_ENUM &&
+            strcmp(control_name->Provider[i], "ca") == 0) {
+          for (j = 0; j < control_name->channelInfo[i].length; j++) {
+            if (strlen(control_name->channelInfo[i].stringValue[j]) >= MAX_STRING_SIZE)
+              SDDS_Bomb((char *)"Enum label exceeds the Channel Access string length limit.");
+          }
+        }
         if (PrepPut(pva, i, control_name->channelInfo[i].stringValue, control_name->channelInfo[i].length) == 1) {
           fprintf(stderr, "ERROR: problem setting PV values\n");
           exit(1);

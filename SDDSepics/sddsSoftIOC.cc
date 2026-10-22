@@ -54,6 +54,7 @@
 #include "mdb.h"
 #include "scan.h"
 #include "SDDS.h"
+#include "sddsPVInput.h"
 
 #define SET_DEBUGLEVEL 0
 #define SET_EXECUTIONTIME 1
@@ -600,6 +601,9 @@ static std::vector<SoftIocPvAddDef> readAddDefsFromInputFiles(const std::vector<
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       exit(1);
     }
+    if (!checkPVInputEnums(&SDDS_input)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
     if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "ControlName") == -1) {
       fprintf(stderr, "error: string column ControlName does not exist in %s\n", inputFiles[i].c_str());
       exit(1);
@@ -964,6 +968,9 @@ static void readPvInputFiles(const std::vector<std::string> &inputFiles, const s
       exit(1);
     }
 
+    if (!checkPVInputEnums(&SDDS_input)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
     if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "ControlName") == -1) {
       fprintf(stderr, "error: string column ControlName does not exist\n");
       exit(1);
@@ -1290,10 +1297,17 @@ static void filterOutMasterPvConflicts(const std::string &masterPvFile, const st
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return;
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 0)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&SDDS_masterlist);
+    candidates.clear();
+    return;
+  }
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "warning: Unable to read SDDS file %s\n", masterPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&SDDS_masterlist);
+    candidates.clear();
     return;
   }
   if ((rows = SDDS_RowCount(&SDDS_masterlist)) <= 0) {
@@ -1349,10 +1363,17 @@ static void filterOutMasterSddspcasPvConflicts(const std::string &pcasPvFile, co
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return;
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&SDDS_masterlist);
+    candidates.clear();
+    return;
+  }
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "warning: Unable to read SDDS file %s\n", pcasPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&SDDS_masterlist);
+    candidates.clear();
     return;
   }
 
@@ -1605,6 +1626,8 @@ static void readMasterPvFile(const std::string &masterPvFile, const std::string 
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 0))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", masterPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1657,6 +1680,8 @@ static void readMasterSddspcasPvFile(const std::string &pcasPvFile, const std::s
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", pcasPvFile.c_str());
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -1720,6 +1745,8 @@ static void appendMasterSddspcasPvFile(const std::string &pcasPvFile, const std:
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_LengthenTable(&SDDS_masterlist, (int64_t)pvs.size())) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
@@ -1757,6 +1784,11 @@ extern "C" void CleanMasterSDDSpcasPVFile() {
 
   if (!SDDS_InitializeInput(&SDDS_masterlist, (char *)gPcasPvFile.c_str())) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    return;
+  }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&SDDS_masterlist);
     return;
   }
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {

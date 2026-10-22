@@ -110,7 +110,7 @@ void init_corr_vector(CORR_VECTOR *corrVector, char *plane, char *sourceModeInpu
 
 int main(int argc, char **argv) {
   SCANNED_ARG *scArg;
-  long i_arg, verbose = 0, dryRun = 0, corrTypeIndex = -1, setSourceMode = 0, unified = 0, i, j;
+  long i_arg, verbose = 0, dryRun = 0, corrTypeIndex = -1, setSourceMode = 0, unified = 0, i;
   double pendIOTime = 30, startTime;
   char *plane = NULL, *corrTypeInput = NULL;
   double AOAItolerance = 2.0, dacAOtolerance = 0.1;
@@ -251,7 +251,7 @@ void read_corr_waveform(char *plane, CORR_VECTOR *vector, double pendIOTime, lon
   int32_t rows = 0, configRows = 0;
   char configFile[256], vectorFile[256];
   char **deviceName = NULL, **configPVName = NULL;
-  char pvName[256], *FFPV = NULL, *setpointPV = NULL, Plane[256];
+  char pvName[256], *FFPV = NULL, *setpointPV = NULL, Plane[2];
   short *nonExist = NULL;
   long i, matchj;
 
@@ -281,16 +281,24 @@ void read_corr_waveform(char *plane, CORR_VECTOR *vector, double pendIOTime, lon
     fprintf(stderr, "No data found vector file %s\n", vectorFile);
     exit(1);
   }
-  if (!(configPVName = (char **)SDDS_GetColumn(&SDDSconfig, "DeviceName")) ||
+  if (SDDS_CheckColumn(&SDDSconfig, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(configPVName = (char **)SDDS_GetColumn(&SDDSconfig, "DeviceName")) ||
       !(nonExist = (short *)SDDS_GetColumnInShort(&SDDSconfig, "Nonexistent")) ||
-      !SDDS_Terminate(&SDDSconfig))
+      !SDDS_Terminate(&SDDSconfig)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    exit(1);
+  }
 
-  if (!(SDDS_GetParameter(&SDDSvector, "FeedforwardWaveformPV", &FFPV)) ||
+  if (SDDS_CheckParameter(&SDDSvector, "FeedforwardWaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckParameter(&SDDSvector, "SetpointWaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&SDDSvector, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(SDDS_GetParameter(&SDDSvector, "FeedforwardWaveformPV", &FFPV)) ||
       !(SDDS_GetParameter(&SDDSvector, "SetpointWaveformPV", &setpointPV)) ||
       !(deviceName = (char **)SDDS_GetColumn(&SDDSvector, "DeviceName")) ||
-      !SDDS_Terminate(&SDDSvector))
+      !SDDS_Terminate(&SDDSvector)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    exit(1);
+  }
   vector->waveformRows = rows;
   vector->exist = NULL;
   vector->currentAO = vector->currentAI = vector->dacAI = vector->FFcurrentAO = vector->FFvalue = vector->setpointValue = NULL;

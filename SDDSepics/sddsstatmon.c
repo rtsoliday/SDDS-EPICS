@@ -12,6 +12,7 @@
 #include "match_string.h"
 #include "matlib.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -715,6 +716,12 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }
+    {
+      const char *parameters[] = {"PageTimeStamp", "Samples", NULL};
+      if (!checkNonEnumOutputColumns(&originalfile_page) ||
+          !checkNonEnumInputs(&originalfile_page, NULL, parameters))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
     ColumnNames = (char **)SDDS_GetColumnNames(&originalfile_page, &NColumnNames);
     ReadbackIndex = (long **)malloc(sizeof(*ReadbackIndex) * NSTATS);
     for (istat = 0; istat < NSTATS; istat++) {
@@ -757,9 +764,9 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       SDDS_Bomb("unable to get data from existing file---try -append=recover");
     }
-    if (!SDDS_GetParameter(&originalfile_page, "StartHour", &StartHour) ||
+    if (!SDDS_GetParameterAsDouble(&originalfile_page, "StartHour", &StartHour) ||
         !SDDS_GetParameterAsDouble(&originalfile_page, "StartDayOfMonth", &StartDay) ||
-        !SDDS_GetParameter(&originalfile_page, "StartTime", &StartTime)) {
+        !SDDS_GetParameterAsDouble(&originalfile_page, "StartTime", &StartTime)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }

@@ -106,7 +106,8 @@ logDaemon: runcontrol
 SDDSepics: logDaemon
 	$(MAKE) -C $@
 
-test-binaries: rampload logDaemon
+test-binaries: all
+	$(MAKE) -C rampload PROD=ramploadnew
 	$(MAKE) -C $(SDDS_REPO)/SDDSaps O.$(OS)-$(ARCH) install-programs INSTALL_PROGRAMS="$(SDDS_TEST_TOOL_TARGETS)"
 	$(MAKE) -C SDDSepics test-programs
 

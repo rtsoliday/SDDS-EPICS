@@ -259,6 +259,7 @@ void *setOutTable(void *threadid) {
 
 void *ReadRAMdataP(void *threadid) {
   long i, tid;
+  int32_t pageCode;
   SDDS_DATASET inSet;
   char *par = NULL, *filename;
 
@@ -270,22 +271,29 @@ void *ReadRAMdataP(void *threadid) {
 
   if (!SDDS_InitializeInput(&inSet, filename))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  if (SDDS_CheckParameter(&inSet, "WaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&inSet, "Waveform", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("Invalid RAM waveform type");
   i = 0;
-  while (SDDS_ReadPage(&inSet) >= 0) {
+  while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
     if (!SDDS_GetParameter(&inSet, "WaveformPV", &par))
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (wild_match(par, "*SetWF")) {
       if (tid == 0) {
         xRamLength = SDDS_CountRowsOfInterest(&inSet);
-        xRam[i] = (int32_t *)SDDS_GetColumn(&inSet, "Waveform");
+        if (!(xRam[i] = SDDS_GetColumnInLong(&inSet, "Waveform")))
+          SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       } else if (tid == 1) {
         yRamLength = SDDS_CountRowsOfInterest(&inSet);
-        yRam[i] = (int32_t *)SDDS_GetColumn(&inSet, "Waveform");
+        if (!(yRam[i] = SDDS_GetColumnInLong(&inSet, "Waveform")))
+          SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       }
       i++;
     }
+    free(par);
   }
-  SDDS_Terminate(&inSet);
+  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+    SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return NULL;
 }
 
@@ -690,21 +698,27 @@ int main(int argc, char **argv) {
 
 void ReadRAMdata(char *filename, int32_t **ramData, int32_t *points) {
   long i;
+  int32_t pageCode;
   SDDS_DATASET inSet;
   char *par = NULL;
 
   if (!SDDS_InitializeInput(&inSet, filename))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  if (SDDS_CheckParameter(&inSet, "WaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&inSet, "Waveform", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("Invalid RAM waveform type");
   i = 0;
-  while (SDDS_ReadPage(&inSet) >= 0) {
+  while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
     if (!SDDS_GetParameter(&inSet, "WaveformPV", &par))
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (wild_match(par, "*SetWF")) {
       *points = SDDS_CountRowsOfInterest(&inSet);
-      ramData[i] = (int32_t *)SDDS_GetColumn(&inSet, "Waveform");
+      if (!(ramData[i] = SDDS_GetColumnInLong(&inSet, "Waveform")))
+        SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       i++;
     }
     free(par);
   }
-  SDDS_Terminate(&inSet);
+  if (pageCode == 0 || !SDDS_Terminate(&inSet))
+    SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 }

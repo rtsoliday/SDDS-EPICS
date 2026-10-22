@@ -256,17 +256,21 @@ void readPVvaluesFromFile(char *filename, char ***pvName, char ***valueString, i
   }
   *pvs = rows;
   *pvName = *valueString = NULL;
-  if (!(*pvName = (char **)SDDS_GetColumn(&SDDSin, "ControlName")) ||
+  if (SDDS_CheckColumn(&SDDSin, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&SDDSin, "ValueString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(*pvName = (char **)SDDS_GetColumn(&SDDSin, "ControlName")) ||
       !(*valueString = (char **)SDDS_GetColumn(&SDDSin, "ValueString")) ||
-      !SDDS_Terminate(&SDDSin))
+      !SDDS_Terminate(&SDDSin)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    exit(1);
+  }
 }
 
 void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long *bpmVectors, char *setpointFile, char *offsetFile, char *gainFile, double pendIOTime) {
   SDDS_DATASET SDDSvector;
-  int32_t vectorRows, setpointRows, offsetRows, gainRows;
+  int32_t vectorRows, setpointRows, offsetRows, gainRows, pageCode;
   char **deviceName, **setpointPVName, **offsetPVName, **gainPVName, **setpointValue, **offsetValue, **gainValue;
-  char pvName[256], coord[256];
+  char pvName[256], coord[2];
   long i, matchj, vectors = 0;
   BPM_VECTOR *vector = NULL;
 
@@ -285,7 +289,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   vectors = 0;
   vector = malloc(sizeof(*vector) * 10);
-  while (SDDS_ReadPage(&SDDSvector) > 0) {
+  while ((pageCode = SDDS_ReadPage(&SDDSvector)) > 0) {
     if ((vectorRows = SDDS_RowCount(&SDDSvector)) <= 0)
       continue;
     if (vectors > 9) {
@@ -297,9 +301,13 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     vector[vectors].isValid = NULL;
     vector[vectors].vectorType = -1;
     vector[vectors].waveformRows = vectorRows;
-    if (!(SDDS_GetParameter(&SDDSvector, "WaveformPV", &vector[vectors].waveformPV)) ||
-        !(deviceName = (char **)SDDS_GetColumn(&SDDSvector, "DeviceName")))
+    if (SDDS_CheckParameter(&SDDSvector, "WaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckColumn(&SDDSvector, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+        !(SDDS_GetParameter(&SDDSvector, "WaveformPV", &vector[vectors].waveformPV)) ||
+        !(deviceName = (char **)SDDS_GetColumn(&SDDSvector, "DeviceName"))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      exit(1);
+    }
     vector[vectors].waveformValue = malloc(sizeof(double) * vectorRows);
     vector[vectors].isValid = malloc(sizeof(short) * vectorRows);
     if (ca_search(vector[vectors].waveformPV, &vector[vectors].vectorID) != ECA_NORMAL) {
@@ -385,7 +393,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     deviceName = NULL;
     vectors++;
   }
-  if (!SDDS_Terminate(&SDDSvector))
+  if (pageCode == 0 || !SDDS_Terminate(&SDDSvector))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (ca_pend_io(pendIOTime) != ECA_NORMAL) {
     fprintf(stderr, "error: problem doing search for some channels\n");

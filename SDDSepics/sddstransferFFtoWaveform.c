@@ -19,6 +19,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <time.h>
 #if !defined(vxWorks)
@@ -155,6 +156,7 @@ int main(int argc, char **argv) {
 #endif
   SCANNED_ARG *scArg;
   SDDS_TABLE SDDSin;
+  int32_t pageCode;
   long i_arg, i, j;
   LOOP_PARAM loopParam;
   long infinite = 0, waveforms = 0, prefixParPresent = 0, suffixParPresent = 0;
@@ -316,6 +318,12 @@ int main(int argc, char **argv) {
   if (!SDDS_InitializeInput(&SDDSin, loopParam.inputfile))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
+  {
+    const char *parameters[] = {"Prefix", "Suffix", NULL};
+    if (!checkNonEnumInputs(&SDDSin, NULL, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+
   if ((SDDS_CHECK_OKAY != SDDS_CheckParameter(&SDDSin, "WaveformPV", NULL, SDDS_STRING, stderr))) {
     SDDS_SetError("Missing parameter Waveform in input file");
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
@@ -330,7 +338,7 @@ int main(int argc, char **argv) {
     suffixParPresent = 1;
 
   waveforms = 0;
-  while (SDDS_ReadPage(&SDDSin) > 0) {
+  while ((pageCode = SDDS_ReadPage(&SDDSin)) > 0) {
 #ifdef USE_RUNCONTROL
     if (rcParam.PV) {
       if (getTimeInSecs() >= lastRCPingTime + 2) {
@@ -374,7 +382,7 @@ int main(int argc, char **argv) {
     waveformData[waveforms].scalarCID = malloc(sizeof(chid) * waveformData[waveforms].waveformRows);
     waveforms++;
   }
-  if (!SDDS_Terminate(&SDDSin))
+  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   ca_task_initialize();

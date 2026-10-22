@@ -32,6 +32,7 @@ int process_cmdline_args(int argc, char *argv[], char *spec);
 void usage(char *name);
 static int makePvName(char *destination, size_t destinationSize,
                       const char *base, const char *suffix);
+static char *getTextParameter(SDDS_TABLE *table, char *parameterName);
 
 /* PV name fields of interest in the ramptable record */
 struct ramp_rec_pvs {
@@ -57,8 +58,8 @@ struct ramp_rec_pvs {
   
 int main(int argc, char *argv[]) {
   SDDS_TABLE table;
-  char **name;                         /* device name or process variable */
-  char **type;                         /* dev or pv */
+  char *name;                         /* device name or process variable */
+  char *type;                         /* dev or pv */
   double *ramptime;               /* ramp time values supplied in spec file */
   double padramptime[MAX_RAMP_POINTS]; /* padded to make MAX_RAMP_POINTS */
   double *rampsetpoint;           /* setpoints supplied in spec file */
@@ -108,17 +109,17 @@ int main(int argc, char *argv[]) {
       return(1);
     }
         
-    if ((name = SDDS_GetParameter(&table, "ControlName", NULL)) == NULL) {
+    if ((name = getTextParameter(&table, "ControlName")) == NULL) {
       fprintf(stderr,"%s: SDDS error: unable to read ControlName parameter\n",argv[0]);
       return(1);
     }
     
-    if ((type = SDDS_GetParameter(&table, "ControlType", NULL)) == NULL) {
+    if ((type = getTextParameter(&table, "ControlType")) == NULL) {
       fprintf(stderr,"%s: SDDS error: unable to read ControlType parameter\n",argv[0]);
       return(1);
     }
 
-    if ((rampbias = SDDS_GetParameter(&table, "RampBias", NULL)) == NULL) {
+    if ((rampbias = SDDS_GetParameterAsDouble(&table, "RampBias", NULL)) == NULL) {
       fprintf(stderr,"%s: SDDS error: unable to read RampBias parameter\n",argv[0]);
       return(1);
     }
@@ -129,15 +130,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (nrows < 2 || nrows > MAX_RAMP_POINTS) {
-      fprintf(stderr,"%s: device %s: you must specify at least 2 ramp points and at most %d\n",argv[0],*name,MAX_RAMP_POINTS);
+      fprintf(stderr,"%s: device %s: you must specify at least 2 ramp points and at most %d\n",argv[0],name,MAX_RAMP_POINTS);
       return(1);
     }
 
-    if ((ramptime = SDDS_GetColumn(&table, "RampTime"))==NULL) {
+    if ((ramptime = SDDS_GetColumnInDoubles(&table, "RampTime"))==NULL) {
       fprintf(stderr,"%s: SDDS error: unable to read RampTime column\n",argv[0]);
       return(1);
     }
-    if ((rampsetpoint = SDDS_GetColumn(&table, "RampSetpoint"))==NULL) {
+    if ((rampsetpoint = SDDS_GetColumnInDoubles(&table, "RampSetpoint"))==NULL) {
       fprintf(stderr,"%s: SDDS error: unable to read RampSetpoint column\n",argv[0]);
       return(1);
     }
@@ -169,12 +170,12 @@ int main(int argc, char *argv[]) {
     }
 
     /* Take ControlName (with ControlType) and extract out needed PV names */
-    if (!strcmp(*type,"dev")) {        /* device name specified in input */
+    if (!strcmp(type,"dev")) {        /* device name specified in input */
       fprintf(stderr,"%s: dev ControlType no longer supported\n", argv[0]);
       exitstatus = 1;
     } else {                           /* pv name specified in input */
-      if (!makePvName(pvname, sizeof(pvname), *name, "")) {
-        fprintf(stderr, "%s: process variable name %s is too long\n", argv[0], *name);
+      if (!makePvName(pvname, sizeof(pvname), name, "")) {
+        fprintf(stderr, "%s: process variable name %s is too long\n", argv[0], name);
         return(1);
       }
     }
@@ -215,7 +216,7 @@ int main(int argc, char *argv[]) {
       return(1);
     }
     if (ca_pend_io(15)!=ECA_NORMAL) {
-      fprintf(stderr, "%s: problem doing ca_search for %s\n",argv[0], *name);
+      fprintf(stderr, "%s: problem doing ca_search for %s\n",argv[0], name);
       return(1);
     }
     if (ca_state(ramp.chid_nelm)!=cs_conn) {
@@ -244,7 +245,7 @@ int main(int argc, char *argv[]) {
       return(1);
     }
     if (nrows > (int)rampnelm) {
-      fprintf(stderr,"%s: too many ramp points specified for %s\n", argv[0], *name);
+      fprintf(stderr,"%s: too many ramp points specified for %s\n", argv[0], name);
       fprintf(stderr,"%s: ramp table record limited to %d\n", argv[0], (int)rampnelm);
       return(1);
     }
@@ -257,7 +258,7 @@ int main(int argc, char *argv[]) {
       return(1);
     }
     if (ca_pend_io(15)!=ECA_NORMAL) {
-      fprintf(stderr, "%s: problem doing ca_get/put for %s\n",argv[0], *name);
+      fprintf(stderr, "%s: problem doing ca_get/put for %s\n",argv[0], name);
       return(1);
     }
     /*check setpoint within valid range*/
@@ -270,21 +271,24 @@ int main(int argc, char *argv[]) {
     if ((ca_state(ramp.chid_time)!=cs_conn) ||
         (ca_state(ramp.chid_set)!=cs_conn) ||
         (ca_state(ramp.chid_bias)!=cs_conn)) {
-      fprintf(stderr, "%s: unable to connect to %s\n",argv[0], *name);
+      fprintf(stderr, "%s: unable to connect to %s\n",argv[0], name);
       return(1);
     }
     if ((ca_array_put(DBR_DOUBLE, nrows, ramp.chid_time, padramptime)!=ECA_NORMAL) ||
         (ca_array_put(DBR_DOUBLE, nrows, ramp.chid_set, padrampsetpoint)!=ECA_NORMAL) ||
         (ca_put(DBR_DOUBLE, ramp.chid_bias, rampbias)!=ECA_NORMAL)) {
-      fprintf(stderr,"%s: problem doing ca_array_put for %s\n",argv[0], *name);
+      fprintf(stderr,"%s: problem doing ca_array_put for %s\n",argv[0], name);
       return(1);
     }
     if (ca_pend_io(15)!=ECA_NORMAL) {
-      fprintf(stderr, "%s: problem doing ca_array_put for %s\n",argv[0], *name);
+      fprintf(stderr, "%s: problem doing ca_array_put for %s\n",argv[0], name);
       return(1);
     }
     free(ramptime);
     free(rampsetpoint);
+    free(rampbias);
+    free(name);
+    free(type);
     /*ca_pend_event(1);*/
   }
   ca_task_exit();
@@ -294,6 +298,26 @@ int main(int argc, char *argv[]) {
   }
   return(0);
 
+}
+
+/**
+ * Extracts a string parameter or the dictionary label of an enum parameter.
+ *
+ * @param table Input SDDS table.
+ * @param parameterName Name of the textual parameter to extract.
+ * @return Allocated text, or NULL if the parameter is missing or nontextual.
+ */
+static char *getTextParameter(SDDS_TABLE *table, char *parameterName) {
+  int32_t index, type;
+
+  if ((index = SDDS_GetParameterIndex(table, parameterName)) < 0)
+    return NULL;
+  type = SDDS_GetParameterType(table, index);
+  if (type != SDDS_STRING && type != SDDS_ENUM) {
+    SDDS_SetError("Ramp control parameters must have string or enum type");
+    return NULL;
+  }
+  return SDDS_GetParameterAsString(table, parameterName, NULL);
 }
 
 /**

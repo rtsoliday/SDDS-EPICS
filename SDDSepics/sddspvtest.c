@@ -1061,6 +1061,7 @@ long getInputInfo(char ***ControlName, double **MaximumValue, double **MinimumVa
                   char **Monitor, double **ChangeLimit, long *pvNumber, char *inputFile) {
   SDDS_DATASET inSet;
   int monitorColumnFound = 0, changeLimitFound = 0;
+  int32_t pageCode;
 
   *ControlName = NULL;
   *MaximumValue = *MinimumValue = *ChangeLimit = NULL;
@@ -1138,6 +1139,7 @@ long getInputInfo(char ***ControlName, double **MaximumValue, double **MinimumVa
   }
 
   if (0 >= SDDS_ReadPage(&inSet)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&inSet);
     return (0);
   }
@@ -1163,8 +1165,21 @@ long getInputInfo(char ***ControlName, double **MaximumValue, double **MinimumVa
       SDDS_Terminate(&inSet);
       return (0);
     }
-  }    
-  SDDS_Terminate(&inSet);
+  }
+  /* Only the first page supplies limits, but an invalid extra page must not
+   * hide an SDDS6 enum validation error. */
+  pageCode = SDDS_ReadPage(&inSet);
+  if (pageCode > 0)
+    fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
+  if (pageCode == 0) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&inSet);
+    return (0);
+  }
+  if (!SDDS_Terminate(&inSet)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    return (0);
+  }
   return (1);
 }
 

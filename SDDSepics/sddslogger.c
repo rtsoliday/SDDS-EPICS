@@ -254,6 +254,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 /* EPICS typically defines MAX_ENUM_STATES in db_access.h (pulled in by cadef.h).
@@ -1301,6 +1302,12 @@ int main(int argc, char **argv) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
         return (1);
       }
+      {
+        const char *parameters[] = {"PageTimeStamp", NULL};
+        if (!checkNonEnumOutputColumns(&original_page) ||
+            !checkNonEnumInputs(&original_page, NULL, parameters))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
       ColumnNames = (char **)SDDS_GetColumnNames(&original_page, &NColumnNames);
       for (j = 0; j < input[i].n_variables; j++) {
         if (-1 == match_string(input[i].ReadbackNames[j], ColumnNames, NColumnNames, EXACT_MATCH)) {
@@ -1323,9 +1330,9 @@ int main(int argc, char **argv) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
         SDDS_Bomb("unable to get data from existing file---try -append=recover");
       }
-      if (!SDDS_GetParameter(&original_page, "StartHour", &StartHour) ||
+      if (!SDDS_GetParameterAsDouble(&original_page, "StartHour", &StartHour) ||
           !SDDS_GetParameterAsDouble(&original_page, "StartDayOfMonth", &StartDay) ||
-          !SDDS_GetParameter(&original_page, "StartTime", &StartTime))
+          !SDDS_GetParameterAsDouble(&original_page, "StartTime", &StartTime))
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       StartDay += StartHour / 24.0;
       if (appendToPage) {
@@ -2270,6 +2277,7 @@ long getScalarMonitorDataLocal(char ***DeviceName, char ***ReadMessage,
   SDDS_DATASET inSet;
   char *ControlNameColumnName = NULL, *MessageColumnName = NULL, *ReadbackUnitsColumnName = NULL;
   short UnitsDefined, MessageDefined, ScaleFactorDefined, DeadBandDefined, AverageDefined, PrecisionDefined;
+  int32_t pageCode;
   long i, noReadbackName;
 
   *DeviceName = *ReadMessage = *ReadbackName = *ReadbackUnits = NULL;
@@ -2282,6 +2290,13 @@ long getScalarMonitorDataLocal(char ***DeviceName, char ***ReadMessage,
 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
+
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName", "ReadMessage", "Message", "ReadMsg",
+                             "ReadbackUnits", "ReadbackUnit", "Units", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
@@ -2433,8 +2448,10 @@ long getScalarMonitorDataLocal(char ***DeviceName, char ***ReadMessage,
       !(*DeadBands = SDDS_GetColumnInDoubles(&inSet, "DeadBand")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
-  if (SDDS_ReadPage(&inSet) > 0)
+  if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
+  if (pageCode == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);
   if (ControlNameColumnName)

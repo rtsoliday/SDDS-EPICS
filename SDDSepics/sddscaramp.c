@@ -87,6 +87,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 #define CA_RAMPTO 0
@@ -141,6 +142,7 @@ that contains the process variable name; alternatively, you may name the column\
 using the -controlNameColumn option.  There must also be a column named \n\
 \"ValueString\", \"Value\", or a -dataColumn specified.  This\n\
 column contains the final value for the corresponding process variable.\n\
+Enum final values are sent as dictionary labels without numeric ramping.\n\
 The \"IsNumerical\" column is optional; if present, this character column\n\
 should contain \"y\" or \"n\".  If this column does not exist, it is assumed\n\
 that the values are numerical.\n\
@@ -245,7 +247,16 @@ int main(int argc, char **argv) {
       exit(1);
     }
 
+    {
+      const char *columns[] = {"IsNumerical", NULL};
+      if (!checkNonEnumInputs(&SDDS_dataset, columns, NULL))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
+
     if (!controlNameColumn) {
+      const char *columns[] = {"ControlName", "Device", "DeviceName", NULL};
+      if (!checkNonEnumInputs(&SDDS_dataset, columns, NULL))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       if (!(column_name[0] = SDDS_FindColumn(&SDDS_dataset, FIND_SPECIFIED_TYPE, SDDS_STRING,
                                              "ControlName", "Device", "DeviceName", NULL))) {
         fprintf(stderr, "Error: ControlName and Device columns are both missing or not string type\n");
@@ -310,6 +321,18 @@ int main(int argc, char **argv) {
           pvdata[j].final_string = NULL;
           cp_str(&pvdata[j].name, ((char **)data[0])[j - rows + r]);
           switch (type[1]) {
+          case SDDS_ENUM: {
+            const char *label = SDDS_EnumCodeToLabel(
+              SDDS_dataset.layout.column_definition[SDDS_GetColumnIndex(&SDDS_dataset, column_name[1])].enum_definition,
+              ((int32_t *)data[1])[j - rows + r]);
+            if (!label || !SDDS_CopyString(&pvdata[j].final_string, label))
+              SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+            if (strlen(label) >= MAX_STRING_SIZE)
+              SDDS_Bomb("Enum label exceeds the Channel Access string length limit.");
+            /* Labels remain categorical even when they contain only digits. */
+            pvdata[j].isNumber = 0;
+            break;
+          }
           case SDDS_STRING:
             if (column_names == 3) {
               strncpy(numerical_string, ((char *)data[2]) + j - rows + r, 1);
@@ -376,7 +399,7 @@ int main(int argc, char **argv) {
             pvdata[j].isNumber = 1;
             break;
           default:
-            bomb("Unsupported type, final value must be string, long, short, float, or double.", NULL);
+            bomb("Unsupported type, final value must be enum, string, long, short, float, or double.", NULL);
             break;
           }
         }
@@ -506,7 +529,8 @@ int main(int argc, char **argv) {
       /*set the string pvs */
       for (j = 0; j < rows; j++) {
         if (!pvdata[j].isNumber) {
-          strncpy(char_string, pvdata[j].final_string, 40);
+          strncpy(char_string, pvdata[j].final_string, MAX_STRING_SIZE - 1);
+          char_string[MAX_STRING_SIZE - 1] = '\0';
           if (ca_state(pvdata[j].PVchid) == cs_conn) {
             if (ca_put(DBR_STRING, pvdata[j].PVchid, char_string) != ECA_NORMAL) {
               fprintf(stderr, "error: problem setting %s\n", pvdata[j].name);

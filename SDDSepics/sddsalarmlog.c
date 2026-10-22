@@ -17,6 +17,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <cadef.h>
 #include <alarm.h>
@@ -1442,6 +1443,11 @@ long GetControlNames(char *file, char ***name0, char ***relatedName0, char ***de
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return -1;
   }
+  {
+    const char *columns[] = {"Description", "RelatedControlName", "BitDecoderArray", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 #if DEBUGSDDS
   fprintf(stderr, "Reading file %s\n", file);
 #endif
@@ -1561,6 +1567,15 @@ long CheckForRequiredElements(char *filename, unsigned long mode) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return 0;
   }
+  if (!checkNonEnumLogLayout(&inSet)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&inSet);
+    return 0;
+  }
+  if (!(mode & NOINDICES) &&
+      ((mode & DESCRIPTIONS && SDDS_CheckArray(&inSet, "DescriptionString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK) ||
+       (mode & RELATEDVALUES && SDDS_CheckArray(&inSet, "RelatedControlNameString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK)))
+    return 0;
   if (mode & EXPLICIT) {
     if (SDDS_CheckColumn(&inSet, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK ||
         SDDS_CheckColumn(&inSet, "AlarmSeverity", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK ||

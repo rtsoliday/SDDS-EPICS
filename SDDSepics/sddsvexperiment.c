@@ -1461,11 +1461,12 @@ long readSuffixFile(char *suffixFile, char ***Suffix, char ***ColumnNameSuffix,
   SDDS_TABLE inTable;
   long code = 0, suffixes = 0;
 
-  if (!SDDS_InitializeInput(&inTable, suffixFile) || (code = SDDS_ReadTable(&inTable)) < 0)
+  if (!SDDS_InitializeInput(&inTable, suffixFile) || (code = SDDS_ReadTable(&inTable)) <= 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (code == 0 || (suffixes = SDDS_CountRowsOfInterest(&inTable)) < 1)
     SDDS_Bomb("no data in measurement suffix file");
-  if (!((*Suffix) = SDDS_GetColumn(&inTable, "Suffix"))) {
+  if (SDDS_CheckColumn(&inTable, "Suffix", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !((*Suffix) = SDDS_GetColumn(&inTable, "Suffix"))) {
     fprintf(stderr, "error: required column \"Suffix\" not found in file %s\n", suffixFile);
     exit(1);
   }
@@ -1524,9 +1525,11 @@ long readSuffixFile(char *suffixFile, char ***Suffix, char ***ColumnNameSuffix,
   if ((LowerLimit && !UpperLimit) || (!LowerLimit && UpperLimit))
     SDDS_Bomb("file contains one of LowerLimit and UpperLimit columns--must have both or neither");
 
-  if (SDDS_ReadTable(&inTable) > 1)
+  if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             suffixFile);
+  if (code == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return suffixes;
@@ -1536,17 +1539,20 @@ long readRootnameFile(char *rootnameFile, char ***rootname) {
   SDDS_TABLE inTable;
   long rootnames = 0, code = 0;
 
-  if (!SDDS_InitializeInput(&inTable, rootnameFile) || (code = SDDS_ReadTable(&inTable)) < 0)
+  if (!SDDS_InitializeInput(&inTable, rootnameFile) || (code = SDDS_ReadTable(&inTable)) <= 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (code == 0 || (rootnames = SDDS_CountRowsOfInterest(&inTable)) < 1)
     SDDS_Bomb("no data in measurement rootname file");
-  if (!((*rootname) = SDDS_GetColumn(&inTable, "Rootname"))) {
+  if (SDDS_CheckColumn(&inTable, "Rootname", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !((*rootname) = SDDS_GetColumn(&inTable, "Rootname"))) {
     fprintf(stderr, "error: required column \"Rootname\" not found in file %s\n", rootnameFile);
     exit(1);
   }
-  if (SDDS_ReadTable(&inTable) > 1)
+  if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             rootnameFile);
+  if (code == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return rootnames;

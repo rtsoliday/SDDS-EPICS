@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   char *corrname=NULL, *filename=NULL;
   double *ramptime;               /* ramp time values supplied in spec file */
   double *rampsetpoint;           /* setpoints supplied in spec file */
-  double  maxsetpoint, minsetpoint, zerovalue=0.0, onevalue=1.0, fixedValue=55;
+  double  maxsetpoint, minsetpoint, onevalue=1.0, fixedValue=55;
   chid ramp_procID, ramp_setID, ramp_timeID, eventProcID;
   char ramp_set[256], ramp_time[256], ramp_proc[256];
   
@@ -90,11 +90,11 @@ int main(int argc, char *argv[]) {
       return(1);
     }
 
-    if ((ramptime = SDDS_GetColumn(&table, "RampTime"))==NULL) {
+    if ((ramptime = SDDS_GetColumnInDoubles(&table, "RampTime"))==NULL) {
       fprintf(stderr,"%s: SDDS error: unable to read RampTime column\n",argv[0]);
       return(1);
     }
-    if ((rampsetpoint = SDDS_GetColumn(&table, "RampSetpoint"))==NULL) {
+    if ((rampsetpoint = SDDS_GetColumnInDoubles(&table, "RampSetpoint"))==NULL) {
       fprintf(stderr,"%s: SDDS error: unable to read RampSetpoint column\n",argv[0]);
       return(1);
     }
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
     /*check monotonic increasing  of ramp time and find the max setpoint */
     maxsetpoint = minsetpoint = rampsetpoint[0];
     for (i=1; i<nrows; i++) {
-      if (rampTime[i]<0) {
+      if (ramptime[i]<0) {
         fprintf(stderr, "%s, negative ramp time found at %ld point.\n", argv[0], i);
         exitstatus = 1;
       }

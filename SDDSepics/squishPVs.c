@@ -132,6 +132,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <time.h>
 #include <signal.h>
@@ -1029,9 +1030,16 @@ CORRECTION_GROUP *readGroups(long *groups, char *inputFile, long verbose) {
   SDDS_TABLE inTable;
   CORRECTION_GROUP *group;
   long i, offsetPVPresent, weightPresent, limitsPresent, offsetPresent;
+  int32_t pageCode;
 
   if (!SDDS_InitializeInput(&inTable, inputFile))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  {
+    const char *columns[] = {"OffsetPV", "Weight", "OffsetValue", NULL};
+    const char *parameters[] = {"UpperLimit", "LowerLimit", NULL};
+    if (!checkNonEnumInputs(&inTable, columns, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
   *groups = 0;
   group = NULL;
 #ifdef USE_RUNCONTROL
@@ -1078,7 +1086,7 @@ CORRECTION_GROUP *readGroups(long *groups, char *inputFile, long verbose) {
     weightPresent = 0;
   }
 
-  while (SDDS_ReadTable(&inTable) >= 1) {
+  while ((pageCode = SDDS_ReadTable(&inTable)) > 0) {
     group = SDDS_Realloc(group, sizeof(*group) * (*groups += 1));
     if ((group[*groups - 1].BPMs = SDDS_CountRowsOfInterest(&inTable)) <= 0)
       continue;
@@ -1136,6 +1144,8 @@ CORRECTION_GROUP *readGroups(long *groups, char *inputFile, long verbose) {
     }
   }
   /*checkRCParam( &inTable, inputFile);*/
+  if (pageCode == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
@@ -1399,7 +1409,7 @@ void setupTestsFile(TESTS *test, long verbose) {
     exit(1);
   }
 
-  if (SDDS_ReadTable(&testValuesPage) < 0)
+  if (SDDS_ReadTable(&testValuesPage) <= 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   test->n = SDDS_CountRowsOfInterest(&testValuesPage);
   test->value = (double *)malloc(sizeof(double) * (test->n));

@@ -978,11 +978,11 @@ void ObtainInformationFromPresetTable(char *presetFile, char *presetLabel, long 
     return;
   if (!SDDS_InitializeInput(&presetData, presetFile))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-  if (SDDS_ReadPage(&presetData) < 0)
+  if (SDDS_ReadPage(&presetData) <= 0)
     SDDS_Bomb("Unable to read preset data.");
   if (!(rows = SDDS_CountRowsOfInterest(&presetData)))
     SDDS_Bomb("No data in preset file.");
-  if (!(label = (char **)SDDS_GetColumn(&presetData, "Label")))
+  if (!(label = SDDS_GetColumnInString(&presetData, "Label")))
     SDDS_Bomb("Can not obtain Label from preset data.");
   if ((rowIndex = match_string(presetLabel, label, rows, EXACT_MATCH)) < 0) {
     fprintf(stderr, "preset %s is not found in preset file %s.\n", presetLabel, presetFile);
@@ -996,7 +996,7 @@ void ObtainInformationFromPresetTable(char *presetFile, char *presetLabel, long 
   if (!SDDS_AssertRowFlags(&presetData, SDDS_FLAG_ARRAY, flag, (int64_t)rows))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   free(flag);
-  if (!(data = (char **)SDDS_GetColumn(&presetData, "PlaneMode")))
+  if (!(data = SDDS_GetColumnInString(&presetData, "PlaneMode")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if ((planeMode[0] = planeMode[1] = planeMode[2] = planeMode[3] = match_string(str_tolower(((char **)data)[0]), planeModeList, planeModes, EXACT_MATCH)) < 0) {
     fprintf(stderr, "Invalid plane mode provided for %s preset in file %s.\n", presetLabel, presetFile);
@@ -1005,7 +1005,7 @@ void ObtainInformationFromPresetTable(char *presetFile, char *presetLabel, long 
   free(((char **)data)[0]);
   free(data);
 
-  if (!(data = SDDS_GetColumn(&presetData, "CommutationMode")))
+  if (!(data = SDDS_GetColumnInString(&presetData, "CommutationMode")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if ((*commutationMode = match_string(str_tolower(((char **)data)[0]), commutationModeList, commutationModes, EXACT_MATCH)) < 0) {
     fprintf(stderr, "Invalid commutation mode provided for %s preset in file %s.\n", presetLabel, presetFile);
@@ -1014,7 +1014,7 @@ void ObtainInformationFromPresetTable(char *presetFile, char *presetLabel, long 
   free(((char **)data)[0]);
   free((char **)data);
 
-  if (!(data = SDDS_GetColumn(&presetData, "SampleMode")))
+  if (!(data = SDDS_GetColumnInString(&presetData, "SampleMode")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if ((sampleMode[0] = sampleMode[1] = sampleMode[2] = sampleMode[3] = match_string(str_tolower(((char **)data)[0]), sampleModeList, sampleModes, 0)) < 0) {
     fprintf(stderr, "Invalid sample mode provided for %s preset in file %s.\n", presetLabel, presetFile);
@@ -1023,29 +1023,29 @@ void ObtainInformationFromPresetTable(char *presetFile, char *presetLabel, long 
   free(((char **)data)[0]);
   free((char **)data);
 
-  if (!(data = SDDS_GetColumn(&presetData, "BunchPattern")))
+  if (!(data = SDDS_GetColumnInString(&presetData, "BunchPattern")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   SDDS_CopyString(&bunchPattern[0], ((char **)data)[0]);
   bunchPattern[1] = bunchPattern[2] = bunchPattern[3] = bunchPattern[0];
   free(((char **)data)[0]);
   free((char **)data);
 
-  if (!(data = SDDS_GetColumn(&presetData, "SamplesPerBunch")))
+  if (!(data = SDDS_GetColumnInLong(&presetData, "SamplesPerBunch")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   samplesPerBunch[0] = samplesPerBunch[1] = samplesPerBunch[2] = samplesPerBunch[3] = ((int32_t *)data)[0];
   free((int32_t *)data);
 
-  if (!(data = SDDS_GetColumn(&presetData, "TurnMarkerOffset")))
+  if (!(data = SDDS_GetColumnInLong(&presetData, "TurnMarkerOffset")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   *turnMarkerOffset = ((int32_t *)data)[0];
   free((int32_t *)data);
 
-  if (!(data = SDDS_GetColumn(&presetData, "TransitionDeadTime")))
+  if (!(data = SDDS_GetColumnInLong(&presetData, "TransitionDeadTime")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   *transitionDeadTime = ((int32_t *)data)[0];
   free((int32_t *)data);
-  if (SDDS_CheckColumn(&presetData, "AccumulatorMode", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OKAY) {
-    if (!(data = (char **)SDDS_GetColumn(&presetData, "AccumulatorMode")))
+  if (SDDS_GetColumnIndex(&presetData, "AccumulatorMode") >= 0) {
+    if (!(data = SDDS_GetColumnInString(&presetData, "AccumulatorMode")))
       SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     if ((accumulatorMode[0] = accumulatorMode[1] = accumulatorMode[2] = accumulatorMode[3] = match_string(str_tolower(((char **)data)[0]), planeModeList, planeModes, EXACT_MATCH)) < 0) {
       fprintf(stderr, "Invalid plane mode provided for %s preset in file %s.\n", presetLabel, presetFile);
@@ -1874,11 +1874,11 @@ void ObtainInformationFromBunchPatternTable(char *bunchFile, char *bunchPattern0
     return;
   if (!SDDS_InitializeInput(&bunchData, bunchFile))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-  if (SDDS_ReadPage(&bunchData) < 0)
+  if (SDDS_ReadPage(&bunchData) <= 0)
     SDDS_Bomb("Unable to read bunch pattern data.");
   if (!(rows = SDDS_CountRowsOfInterest(&bunchData)))
     SDDS_Bomb("No data in preset file.");
-  if (!(label = (char **)SDDS_GetColumn(&bunchData, "Label")))
+  if (!(label = SDDS_GetColumnInString(&bunchData, "Label")))
     SDDS_Bomb("Can not obtain Label from preset data.");
   if ((rowIndex = match_string(bunchPattern0, label, rows, EXACT_MATCH)) < 0) {
     fprintf(stderr, "preset %s is not found in preset file %s.\n", bunchPattern0, bunchFile);
@@ -1892,32 +1892,32 @@ void ObtainInformationFromBunchPatternTable(char *bunchFile, char *bunchPattern0
   if (!SDDS_AssertRowFlags(&bunchData, SDDS_FLAG_ARRAY, flag, (int64_t)rows))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   free(flag);
-  if (!(data = SDDS_GetColumn(&bunchData, "Multiplicity")))
+  if (!(data = SDDS_GetColumnInLong(&bunchData, "Multiplicity")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   *multiplicity = ((int32_t *)data)[0];
   free((int32_t *)data);
 
-  if (!(data = SDDS_GetColumn(&bunchData, "Multiplets")))
+  if (!(data = SDDS_GetColumnInLong(&bunchData, "Multiplets")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   *multiplets = ((int32_t *)data)[0];
   free((int32_t *)data);
 
-  if (!(data = SDDS_GetColumn(&bunchData, "MultipletStart")))
+  if (!(data = SDDS_GetColumnInLong(&bunchData, "MultipletStart")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   *multipletStart = ((int32_t *)data)[0];
   free((int32_t *)data);
 
-  if (!(data = SDDS_GetColumn(&bunchData, "MultipletSpacing")))
+  if (!(data = SDDS_GetColumnInLong(&bunchData, "MultipletSpacing")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   *multipletSpacing = ((int32_t *)data)[0];
   free((int32_t *)data);
 
-  if (!(data = SDDS_GetColumn(&bunchData, "BpmGroupBuckets")))
+  if (!(data = SDDS_GetColumnInLong(&bunchData, "BpmGroupBuckets")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   *bpmGroupBuckets = ((int32_t *)data)[0];
   free((int32_t *)data);
 
-  if (!(stringData = SDDS_GetColumn(&bunchData, "BpmGroupMode")))
+  if (!(stringData = SDDS_GetColumnInString(&bunchData, "BpmGroupMode")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if (!strcmp(stringData[0], "None"))
     *hybridMode = 0;
@@ -1929,6 +1929,62 @@ void ObtainInformationFromBunchPatternTable(char *bunchFile, char *bunchPattern0
   if (!SDDS_Terminate(&bunchData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   return;
+}
+
+/**
+ * @brief Read a textual RAM parameter, resolving enum codes to dictionary labels.
+ * @param data Input RAM data.
+ * @param name Required string or enum parameter.
+ * @return Allocated parameter label.
+ */
+static char *getRAMTextParameter(SDDS_DATASET *data, char *name) {
+  int32_t index, type;
+  char *value;
+
+  index = SDDS_GetParameterIndex(data, name);
+  type = index < 0 ? 0 : SDDS_GetParameterType(data, index);
+  if ((type != SDDS_STRING && type != SDDS_ENUM) ||
+      !(value = SDDS_GetParameterAsString(data, name, NULL))) {
+    fprintf(stderr, "RAM parameter %s must have string or enum type\n", name);
+    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
+  return value;
+}
+
+/**
+ * @brief Validate a categorical RAM mode label before indexing a mode table.
+ * @param value String or enum label read from the file.
+ * @param modeList Supported labels.
+ * @param modes Number of supported labels.
+ * @param name Parameter name for diagnostics.
+ * @return Matching mode index.
+ */
+static long getRAMMode(char *value, char **modeList, long modes, char *name) {
+  long mode = match_string(str_tolower(value), modeList, modes, EXACT_MATCH);
+  if (mode < 0) {
+    fprintf(stderr, "Invalid value for RAM parameter %s: %s\n", name, value);
+    exit(1);
+  }
+  return mode;
+}
+
+/**
+ * @brief Read a long RAM parameter without confusing categorical codes with counts.
+ * @param data Input RAM data.
+ * @param name Required SDDS long parameter.
+ * @return Parameter value widened to native long.
+ */
+static long getRAMLongParameter(SDDS_DATASET *data, char *name) {
+  int32_t value;
+
+  if (SDDS_CheckParameter(data, name, NULL, SDDS_LONG, stderr) != SDDS_CHECK_OKAY ||
+      !SDDS_GetParameterAsLong(data, name, &value)) {
+    fprintf(stderr, "RAM parameter %s must have long type\n", name);
+    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+    exit(1);
+  }
+  return value;
 }
 
 void ReadInputRAM(char *inputRAMFile, long *waveformLength, uint32_t **waveform,
@@ -1945,102 +2001,91 @@ void ReadInputRAM(char *inputRAMFile, long *waveformLength, uint32_t **waveform,
   *waveform = NULL;
   if (!SDDS_InitializeInput(&ramData, inputRAMFile))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-  if (SDDS_ReadPage(&ramData) < 0)
+  if (SDDS_ReadPage(&ramData) <= 0)
     SDDS_Bomb("Unable to read RAM input data.");
   if (!(rows = SDDS_CountRowsOfInterest(&ramData)))
     SDDS_Bomb("No data in input RAM file.");
   *waveformLength = rows;
+  if (SDDS_CheckColumn(&ramData, "Waveform", NULL, SDDS_ULONG, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("RAM Waveform must contain unsigned long bit masks");
   if (!(*waveform = (uint32_t *)SDDS_GetColumn(&ramData, "Waveform")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 
-  /* These parameters, if present, are read in sfrom the input RAM file
+  /* These parameters, if present, are read from the input RAM file
      so that they could be transferred to the output files.
   */
-  if (SDDS_CheckParameter(&ramData, "Comment", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK &&
-      !SDDS_GetParameter(&ramData, "Comment", comment))
-    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-  if (SDDS_CheckParameter(&ramData, "PlaneMode", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
-    if (!SDDS_GetParameter(&ramData, "PlaneMode", &plane))
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-    planeMode[0] = planeMode[1] = planeMode[2] = planeMode[3] = match_string(str_tolower(plane), planeModeList, planeModes, EXACT_MATCH);
+  if (SDDS_GetParameterIndex(&ramData, "Comment") >= 0)
+    *comment = getRAMTextParameter(&ramData, "Comment");
+  if (SDDS_GetParameterIndex(&ramData, "PlaneMode") >= 0) {
+    plane = getRAMTextParameter(&ramData, "PlaneMode");
+    planeMode[0] = planeMode[1] = planeMode[2] = planeMode[3] = getRAMMode(plane, planeModeList, planeModes, "PlaneMode");
     free(plane);
-  } else if (SDDS_CheckParameter(&ramData, "PlaneMode0", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
+  } else if (SDDS_GetParameterIndex(&ramData, "PlaneMode0") >= 0) {
     for (i = 0; i < 4; i++) {
       sprintf(tmpBuffer, "PlaneMode%ld", i);
-      if (!SDDS_GetParameter(&ramData, tmpBuffer, &plane))
-        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-      planeMode[i] = match_string(str_tolower(plane), planeModeList, planeModes, EXACT_MATCH);
+      plane = getRAMTextParameter(&ramData, tmpBuffer);
+      planeMode[i] = getRAMMode(plane, planeModeList, planeModes, tmpBuffer);
       free(plane);
     }
   }
-  if (SDDS_CheckParameter(&ramData, "TurnMarkerInterval", NULL, SDDS_LONG, NULL) == SDDS_CHECK_OK) {
-    if (!SDDS_GetParameter(&ramData, "TurnMarkerInterval", turnMarkerInterval))
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+  if (SDDS_GetParameterIndex(&ramData, "TurnMarkerInterval") >= 0) {
+    *turnMarkerInterval = getRAMLongParameter(&ramData, "TurnMarkerInterval");
   }
-  if (SDDS_CheckParameter(&ramData, "AccumulatorMode", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
-    if (!SDDS_GetParameter(&ramData, "AccumulatorMode", &plane))
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-    accumulatorMode[0] = accumulatorMode[1] = accumulatorMode[2] = accumulatorMode[3] = match_string(str_tolower(plane), planeModeList, planeModes, EXACT_MATCH);
+  if (SDDS_GetParameterIndex(&ramData, "AccumulatorMode") >= 0) {
+    plane = getRAMTextParameter(&ramData, "AccumulatorMode");
+    accumulatorMode[0] = accumulatorMode[1] = accumulatorMode[2] = accumulatorMode[3] = getRAMMode(plane, planeModeList, planeModes, "AccumulatorMode");
     free(plane);
-  } else if (SDDS_CheckParameter(&ramData, "AccumulatorMode0", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
+  } else if (SDDS_GetParameterIndex(&ramData, "AccumulatorMode0") >= 0) {
     for (i = 0; i < 4; i++) {
       sprintf(tmpBuffer, "AccumulatorMode%ld", i);
-      if (!SDDS_GetParameter(&ramData, tmpBuffer, &plane))
-        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-      accumulatorMode[i] = match_string(str_tolower(plane), planeModeList, planeModes, EXACT_MATCH);
+      plane = getRAMTextParameter(&ramData, tmpBuffer);
+      accumulatorMode[i] = getRAMMode(plane, planeModeList, planeModes, tmpBuffer);
       free(plane);
     }
   }
 
-  if (SDDS_CheckParameter(&ramData, "CommutationMode", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
-    if (!SDDS_GetParameter(&ramData, "CommutationMode", &commutation))
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-    *commutationMode = match_string(str_tolower(commutation), commutationModeList, commutationModes, EXACT_MATCH);
+  if (SDDS_GetParameterIndex(&ramData, "CommutationMode") >= 0) {
+    commutation = getRAMTextParameter(&ramData, "CommutationMode");
+    *commutationMode = getRAMMode(commutation, commutationModeList, commutationModes, "CommutationMode");
     free(commutation);
   }
-  if (SDDS_CheckParameter(&ramData, "SampleMode", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
-    if (!SDDS_GetParameter(&ramData, "SampleMode", &sample))
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-    *sampleMode = match_string(str_tolower(sample), sampleModeList, sampleModes, EXACT_MATCH);
+  if (SDDS_GetParameterIndex(&ramData, "SampleMode") >= 0) {
+    sample = getRAMTextParameter(&ramData, "SampleMode");
+    sampleMode[0] = sampleMode[1] = sampleMode[2] = sampleMode[3] = getRAMMode(sample, sampleModeList, sampleModes, "SampleMode");
     free(sample);
-  } else if (SDDS_CheckParameter(&ramData, "SampleMode0", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
+  } else if (SDDS_GetParameterIndex(&ramData, "SampleMode0") >= 0) {
     for (i = 0; i < 4; i++) {
       sprintf(tmpBuffer, "SampleMode%ld", i);
-      if (!SDDS_GetParameter(&ramData, tmpBuffer, &sample))
-        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-      sampleMode[i] = match_string(str_tolower(sample), sampleModeList, sampleModes, EXACT_MATCH);
+      sample = getRAMTextParameter(&ramData, tmpBuffer);
+      sampleMode[i] = getRAMMode(sample, sampleModeList, sampleModes, tmpBuffer);
       free(sample);
       sample = NULL;
     }
   }
-  if (SDDS_CheckParameter(&ramData, "BunchPattern", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
-    if (!SDDS_GetParameter(&ramData, "BunchPattern", &bunchPattern[0]))
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+  if (SDDS_GetParameterIndex(&ramData, "BunchPattern") >= 0) {
+    bunchPattern[0] = getRAMTextParameter(&ramData, "BunchPattern");
     bunchPattern[1] = bunchPattern[2] = bunchPattern[3] = bunchPattern[0];
-  } else if (SDDS_CheckParameter(&ramData, "BunchPattern0", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
+  } else if (SDDS_GetParameterIndex(&ramData, "BunchPattern0") >= 0) {
     for (i = 0; i < 4; i++) {
       sprintf(tmpBuffer, "BunchPattern%ld", i);
-      if (!SDDS_GetParameter(&ramData, tmpBuffer, &bunchPattern[i]))
-        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+      bunchPattern[i] = getRAMTextParameter(&ramData, tmpBuffer);
     }
   }
-  if (SDDS_CheckParameter(&ramData, "SamplesPerBunch", NULL, SDDS_LONG, NULL) == SDDS_CHECK_OK) {
-    if (!SDDS_GetParameter(&ramData, "SamplesPerBunch", &samplesPerBunch[0]))
-      SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+  if (SDDS_GetParameterIndex(&ramData, "SamplesPerBunch") >= 0) {
+    samplesPerBunch[0] = getRAMLongParameter(&ramData, "SamplesPerBunch");
     samplesPerBunch[1] = samplesPerBunch[2] = samplesPerBunch[3] = samplesPerBunch[0];
-  } else if (SDDS_CheckParameter(&ramData, "SamplesPerBunch0", NULL, SDDS_LONG, NULL) == SDDS_CHECK_OK) {
+  } else if (SDDS_GetParameterIndex(&ramData, "SamplesPerBunch0") >= 0) {
     for (i = 0; i < 4; i++) {
       sprintf(tmpBuffer, "SamplesPerBunch%ld", i);
-      if (!SDDS_GetParameter(&ramData, tmpBuffer, &samplesPerBunch[i]))
-        SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+      samplesPerBunch[i] = getRAMLongParameter(&ramData, tmpBuffer);
     }
   }
-  if (SDDS_CheckParameter(&ramData, "TurnMarkerOffset", NULL, SDDS_LONG, NULL) == SDDS_CHECK_OK &&
-      !SDDS_GetParameter(&ramData, "TurnMarkerOffset", turnMarkerOffset))
-    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-  if (SDDS_CheckParameter(&ramData, "TransistionDeadTime", NULL, SDDS_LONG, NULL) == SDDS_CHECK_OK &&
-      !SDDS_GetParameter(&ramData, "TransistionDeadTime", transitionDeadTime))
-    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+  if (SDDS_GetParameterIndex(&ramData, "TurnMarkerOffset") >= 0)
+    *turnMarkerOffset = getRAMLongParameter(&ramData, "TurnMarkerOffset");
+  if (SDDS_GetParameterIndex(&ramData, "TransitionDeadTime") >= 0)
+    *transitionDeadTime = getRAMLongParameter(&ramData, "TransitionDeadTime");
+  else if (SDDS_GetParameterIndex(&ramData, "TransistionDeadTime") >= 0)
+    *transitionDeadTime = getRAMLongParameter(&ramData, "TransistionDeadTime");
   if (!SDDS_Terminate(&ramData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 }

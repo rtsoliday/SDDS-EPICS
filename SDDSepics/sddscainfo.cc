@@ -262,7 +262,7 @@ int ReadInput(PROG_DATA *prog_data) {
   SDDS_DATASET input;
   prog_data->inputPages = 0;
   prog_data->total_pvCount = 0;
-  int32_t page=0;
+  int32_t page=0, pageCode;
 
   if (!SDDS_InitializeInput(&input, prog_data->inputFile)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -272,7 +272,7 @@ int ReadInput(PROG_DATA *prog_data) {
     fprintf(stderr, "Column \"ControlName\" does not exist or something wrong with it in input file %s\n", prog_data->inputFile);
     return (1);
   }
-  while (SDDS_ReadPage(&input) > 0) {
+  while ((pageCode = SDDS_ReadPage(&input)) > 0) {
     page++;
     if (page == 1) {
       prog_data->inputPage = (SDDS_INPUT_DATA_PAGE *)malloc(sizeof(SDDS_INPUT_DATA_PAGE));
@@ -290,7 +290,7 @@ int ReadInput(PROG_DATA *prog_data) {
       }
     }
   }
-  if (!SDDS_Terminate(&input)) {
+  if (pageCode == 0 || !SDDS_Terminate(&input)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
   }
@@ -651,7 +651,7 @@ int WriteOutput(PROG_DATA *prog_data) {
       return(1);
     }
   }
-  if (!SDDS_Terminate(&input)) {
+  if (page == 0 || !SDDS_Terminate(&input)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
   }

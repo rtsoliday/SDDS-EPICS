@@ -47,6 +47,7 @@
 #include "mdb.h"
 #include "scan.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include "pvaSDDS.h"
 #include "libruncontrol.h"
@@ -285,11 +286,17 @@ int ReadInput(MONITOR_DATA *monitor) {
   monitor->total_pvCount = 0;
   bool caOnly = false;
   int64_t i;
-  int32_t page=0, useMask=0;
+  int32_t page=0, useMask=0, pageCode;
 
   if (!SDDS_InitializeInput(&input, monitor->inputFile)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
+  }
+  {
+    const char *columns[] = {"Provider", NULL};
+    const char *parameters[] = {"MaskControlName", "MaskProvider", NULL};
+    if (!checkNonEnumInputs(&input, columns, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (SDDS_CheckParameter(&input, (char *)"MaskControlName", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
     if (SDDS_CheckParameter(&input, (char *)"MaskMinimumValue", NULL, SDDS_ANY_NUMERIC_TYPE, NULL) != SDDS_CHECK_OK) {
@@ -321,7 +328,7 @@ int ReadInput(MONITOR_DATA *monitor) {
   if (SDDS_CheckColumn(&input, (char *)"Provider", NULL, SDDS_STRING, NULL) != SDDS_CHECK_OK) {
     caOnly = true;
   }
-  while (SDDS_ReadPage(&input) > 0) {
+  while ((pageCode = SDDS_ReadPage(&input)) > 0) {
     page++;
     if (page == 1) {
       monitor->page = (MONITOR_DATA_PAGE *)malloc(sizeof(MONITOR_DATA_PAGE));
@@ -378,6 +385,11 @@ int ReadInput(MONITOR_DATA *monitor) {
         return (1);
       }
     }
+  }
+  if (pageCode == 0) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&input);
+    return (1);
   }
   if (!SDDS_Terminate(&input)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);

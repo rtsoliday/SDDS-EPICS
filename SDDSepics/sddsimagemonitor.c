@@ -216,6 +216,7 @@ int main(int argc, char **argv) {
   SDDS_DATASET outTable, inSet;
   char *inputfile, *outputfile, answer[ANSWER_LENGTH];
   long CAerrors, waveformLength, optPVnames;
+  int32_t pageCode;
   long enforceTimeLimit, noWarnings = 0;
   char **optPVname;
   char **readbackPV;
@@ -356,10 +357,10 @@ int main(int argc, char **argv) {
         if (s_arg[i_arg].n_items < 2 ||
             !(datatype_string = s_arg[i_arg].list[1]))
           bomb("no value given for option -dataType", NULL);
-        if ((DataType = SDDS_IdentifyType(datatype_string)) < 0)
+        if ((DataType = SDDS_IdentifyType(datatype_string)) <= 0)
           bomb("invalid -dataType value", NULL);
-	if (DataType==SDDS_CHARACTER || DataType==SDDS_STRING)
-	  bomb("invalid -dataType: non-numeric type", NULL);
+        if (!SDDS_NUMERIC_TYPE(DataType))
+          bomb("invalid -dataType: non-numeric type", NULL);
         break;
       case CLO_TIME:
         if (s_arg[i_arg].n_items < 2 ||
@@ -532,10 +533,17 @@ int main(int argc, char **argv) {
 
     if (SDDS_CheckColumn(&inSet, "WaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
       SDDS_Bomb("Missing WaveformPV column in input file!");
+    if (SDDS_ReadPage(&inSet) <= 0)
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (!(readbacks = SDDS_CountRowsOfInterest(&inSet)))
       SDDS_Bomb("Zero rows in input file");
     if (!(readbackPV = (char **)SDDS_GetColumn(&inSet, "WaveformPV")))
       SDDS_Bomb("Unable read Waveform PV in input file");
+    pageCode = SDDS_ReadPage(&inSet);
+    if (pageCode > 0)
+      fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputfile);
+    if (pageCode == 0 || !SDDS_Terminate(&inSet))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   } else {
     readbacks = optPVnames;
     readbackPV = optPVname;

@@ -38,6 +38,12 @@ In addition, \verb+sddsSoftIOC+ supports enumerated PVs by setting \verb+Type=en
 \verb+EnumStrings+. The \verb+EnumStrings+ value is a comma-separated list of state strings (up to 16).
 Whitespace around each comma-separated token is trimmed. Quotes are not allowed in the list.
 
+SDDS6 files may contain additional enum metadata. The configuration columns
+retain their documented primitive types: SDDS enum values in these columns,
+including limits and element counts, are rejected. Use \verb+sddscast+ for
+explicit conversion. EPICS enum PVs still use string \verb+Type+ and
+\verb+EnumStrings+ columns.
+
 \item \textbf{synopsis:}
 \begin{verbatim}
 usage: sddsSoftIOC <inputfiles>

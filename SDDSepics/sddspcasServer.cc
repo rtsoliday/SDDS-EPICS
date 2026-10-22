@@ -23,6 +23,7 @@
 #include "sddspcasServer.h"
 #include "mdb.h"
 #include "SDDS.h"
+#include "sddsPVInput.h"
 
 static std::string trimWhitespace(const std::string &in) {
   size_t first = 0;
@@ -611,6 +612,9 @@ void exServer::ReadPVInputFile() {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       exit(1);
     }
+    if (!checkPVInputEnums(&SDDS_input)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    }
     if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE,
                                 SDDS_STRING, "ControlName") == -1) {
       fprintf(stderr, "error: string column ControlName does not exist\n");
@@ -777,6 +781,8 @@ void exServer::ReadMasterPVFile(const char *const pvPrefix) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 0))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", this->masterPVFile);
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -829,6 +835,8 @@ void exServer::ReadMasterSDDSpcasPVFile(const char *const pvPrefix) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
     fprintf(stderr, "error: Unable to read SDDS file %s\n", this->pcasPVFile);
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -895,6 +903,8 @@ void exServer::AppendMasterSDDSpcasPVFile(const char *const pvPrefix) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     exit(1);
   }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   if (!SDDS_LengthenTable(&SDDS_masterlist, pvListNElem)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -939,7 +949,17 @@ bool exServer::pvConflictsMasterFiles(const char *pvAliasMaster20) const {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return true;
     }
-    if (SDDS_ReadPage(&SDDS_masterlist) == 1) {
+    if (!checkPVRegistryInput(&SDDS_masterlist, 0)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&SDDS_masterlist);
+      return true;
+    }
+    if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&SDDS_masterlist);
+      return true;
+    }
+    {
       rows = SDDS_RowCount(&SDDS_masterlist);
       if (rows > 0 && (rec_name = (char **)SDDS_GetColumn(&SDDS_masterlist, (char *)"rec_name"))) {
         for (int m = 0; m < rows; m++) {
@@ -972,7 +992,17 @@ bool exServer::pvConflictsMasterFiles(const char *pvAliasMaster20) const {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       return true;
     }
-    if (SDDS_ReadPage(&SDDS_masterlist) == 1) {
+    if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&SDDS_masterlist);
+      return true;
+    }
+    if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&SDDS_masterlist);
+      return true;
+    }
+    {
       rows = SDDS_RowCount(&SDDS_masterlist);
       if (rows > 0 && (rec_name = (char **)SDDS_GetColumn(&SDDS_masterlist, (char *)"rec_name"))) {
         for (int m = 0; m < rows; m++) {
@@ -1012,6 +1042,11 @@ void exServer::appendMasterSddspcasPvFileForAliases(const std::vector<std::strin
 
   if (!SDDS_InitializeAppendToPage(&SDDS_masterlist, this->pcasPVFile, 100, &rowsPresent)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    return;
+  }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&SDDS_masterlist);
     return;
   }
   if (!SDDS_LengthenTable(&SDDS_masterlist, (long)pvAliasesMaster20.size())) {

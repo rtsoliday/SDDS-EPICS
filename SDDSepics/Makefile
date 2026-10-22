@@ -136,6 +136,16 @@ ifeq ($(OS), Windows)
 endif
 CUSTOM_LINK_PRODUCTS += sddssynchlog sddsmonitor sddsstatmon sddsvmonitor sddswmonitor BPS16monitor squishPVs sddsalarmlog toggle sddslogger sddsfeedforward sdds2dfeedforward sddspcas sddsglitchlogger sddsoptimize sddspvtest sddslogonchange sddswput sddsbcontrol sddscasr sddsimagemonitor makesrbump sddsexperiment sddsvexperiment sddspvalogger sddswget sddspvasaverestore sddspvaglitchlogger sddscainfo sddspermissive sddspvacontrollaw sddsSoftIOC
 
+# Compile legacy input readers for compatibility tests without changing the
+# production program list.
+LEGACY_TEST_PROD = sddswgetdata sddstransferFFtoWaveform sddstransferscalartowaveform \
+                  getinjectiontrajectory makeboosterbump sddsSubtractDispersionOrbit \
+                  srinitbpmvector srinitcorrvector srinitvector
+LEGACY_TEST_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(LEGACY_TEST_PROD)))
+BUILD_OBJECTS += $(addprefix $(OBJ_DIR)/,$(addsuffix .$(OBJEXT),$(LEGACY_TEST_PROD)))
+LEGACY_CORR_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),srinitcorrvector srinitvector))
+BUILD_OBJECTS += $(OBJ_DIR)/SDDSsrcorr.$(OBJEXT)
+
 include ../Makefile.build
 
 $(OBJ_DIR)/sddssynchlog$(EXEEXT): $(sddssynchlog_OBJS) $(PROD_DEPS)
@@ -247,9 +257,15 @@ $(OBJ_DIR)/sddsSoftIOC$(EXEEXT): $(sddsSoftIOC_OBJS) $(PROD_DEPS)
 sddsSoftIOC: $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/sddsSoftIOC$(EXEEXT)
 	$(MAKE) install-programs INSTALL_PROGRAMS="$(OBJ_DIR)/sddsSoftIOC$(EXEEXT)"
 
-TEST_PROD = $(PROD)
+TEST_PROD = $(PROD) $(LEGACY_TEST_PROD)
 TEST_PROD_TARGETS = $(addprefix $(OBJ_DIR)/,$(addsuffix $(EXEEXT),$(TEST_PROD)))
+
+$(LEGACY_TEST_TARGETS): %$(EXEEXT): %.$(OBJEXT) $(OBJ_DIR)/SDDSepics.$(OBJEXT) $(PROD_DEPS)
+	$(LINKEXE) $(OUTPUTEXE) $< $(OBJ_DIR)/SDDSepics.$(OBJEXT) $(LEGACY_EXTRA_OBJS) $(LDFLAGS) $(LIB_LINK_DIRS) $(PROD_LIBS) $(PROD_LIBS_SDDS) $(PROD_SYS_LIBS)
+
+$(LEGACY_CORR_TARGETS): LEGACY_EXTRA_OBJS = $(OBJ_DIR)/SDDSsrcorr.$(OBJEXT)
+$(LEGACY_CORR_TARGETS): $(OBJ_DIR)/SDDSsrcorr.$(OBJEXT)
 
 .PHONY: test-programs
 test-programs: $(OBJ_DIR) $(BIN_DIR) $(TEST_PROD_TARGETS) install-programs
-	@true
+	$(MAKE) install-programs INSTALL_PROGRAMS="$(LEGACY_TEST_TARGETS)"

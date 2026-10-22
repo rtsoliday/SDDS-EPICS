@@ -160,8 +160,13 @@ int main(int argc, char **argv) {
   if (!SDDS_InitializeOutput(&SDDS_table, SDDS_BINARY, 0,
                              "screen image from MV20 file", "screen image",
                              output) ||
-      SDDS_ProcessColumnString(&SDDS_table, definition, 0) < 0 ||
-      SDDS_DefineParameter(&SDDS_table, "NumberOfRows", NULL, NULL, "number of rows",
+      !SDDS_ProcessColumnString(&SDDS_table, definition, 0))
+    SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+  /* The pixel buffer contains bytes. Text in an enum label or description
+   * can satisfy the earlier substring check without defining byte storage. */
+  if (SDDS_GetColumnType(&SDDS_table, SDDS_GetColumnIndex(&SDDS_table, data_name)) != SDDS_CHARACTER)
+    bomb("data type must be character for now", NULL);
+  if (SDDS_DefineParameter(&SDDS_table, "NumberOfRows", NULL, NULL, "number of rows",
                            NULL, SDDS_LONG, ts1) < 0 ||
       SDDS_DefineParameter(&SDDS_table, "NumberOfColumns", NULL, NULL,
                            "number of columns", NULL, SDDS_LONG, ts2) < 0 ||

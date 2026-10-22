@@ -13,6 +13,7 @@
 
 #include "mdb.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "scan.h"
 #include "SDDSepics.h"
 #ifdef USE_RUNCONTROL
@@ -2772,6 +2773,13 @@ long ReadInputFiles(LOGGER_DATA *logger) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
   }
+  {
+    const char *columns[] = {"ExpectNumeric", "StorageType", "ReadbackName", "ScaleFactor",
+                             "ScalarArrayStartIndex", "ScalarArrayEndIndex", "Average",
+                             "ReadbackUnits", "ReadbackUnit", "Units", NULL};
+    if (!checkNonEnumInputs(&SDDS_table, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
   if (SDDS_CHECK_OKAY != SDDS_CheckColumn(&SDDS_table, (char *)"ControlName", NULL, SDDS_STRING, stderr)) {
     fprintf(stderr, "Missing ControlName in input file\n");
     return (1);
@@ -3026,6 +3034,11 @@ long ReadConditionsFile(LOGGER_DATA *logger) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
   }
+  {
+    const char *columns[] = {"ScaleFactor", "HoldoffTime", NULL};
+    if (!checkNonEnumInputs(&SDDS_table, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
   if (SDDS_CHECK_OKAY != SDDS_CheckColumn(&SDDS_table, (char *)"ControlName", NULL, SDDS_STRING, stderr)) {
     fprintf(stderr, "Missing ControlName in conditions file\n");
     return (1);
@@ -3106,6 +3119,13 @@ long ReadGlitchTriggerFile(LOGGER_DATA *logger) {
   if (!SDDS_InitializeInput(&SDDS_table, logger->triggerFile)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (1);
+  }
+  {
+    const char *columns[] = {"MajorAlarm", "MinorAlarm", "NoAlarm", "GlitchThreshold",
+                             "GlitchBaselineSamples", "GlitchBaselineAutoReset", "GlitchScript",
+                             "TransitionThreshold", "TransitionDirection", NULL};
+    if (!checkNonEnumInputs(&SDDS_table, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   if (SDDS_CHECK_OKAY != SDDS_CheckColumn(&SDDS_table, (char *)"TriggerControlName", NULL, SDDS_STRING, stderr)) {
     fprintf(stderr, "Missing TriggerControlName in trigger file\n");

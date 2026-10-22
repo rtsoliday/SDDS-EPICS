@@ -330,6 +330,8 @@ int main(int argc, char **argv) {
 }
 
 long ProcessWmonitorInputData(char ***readbackPV, long *readbacks, SDDS_DATASET *SDDSin) {
+  int32_t pageCode;
+
   *readbacks = 0;
   *readbackPV = NULL;
 
@@ -350,6 +352,11 @@ long ProcessWmonitorInputData(char ***readbackPV, long *readbacks, SDDS_DATASET 
     SDDS_SetError("Unable to find WaveformPV or WaveformName columns");
     return 0;
   }
+  pageCode = SDDS_ReadPage(SDDSin);
+  if (pageCode > 0)
+    fprintf(stderr, "Warning: extra pages in waveform input---they are ignored\n");
+  if (pageCode == 0)
+    return 0;
   if (!SDDS_Terminate(SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return 1;
@@ -357,6 +364,7 @@ long ProcessWmonitorInputData(char ***readbackPV, long *readbacks, SDDS_DATASET 
 
 long ProcessWgetInputData(char ***readbackPV, long *readbacks, SDDS_DATASET *SDDSin) {
   long pages;
+  int32_t pageCode;
 
   *readbacks = 0;
   *readbackPV = NULL;
@@ -367,7 +375,7 @@ long ProcessWgetInputData(char ***readbackPV, long *readbacks, SDDS_DATASET *SDD
   }
   pages = 0;
   *readbackPV = NULL;
-  while (SDDS_ReadPage(SDDSin) > 0) {
+  while ((pageCode = SDDS_ReadPage(SDDSin)) > 0) {
     if (!(*readbackPV = SDDS_Realloc(*readbackPV, sizeof(**readbackPV) * (pages + 1))))
       SDDS_Bomb("memory allocation failure");
     if (!SDDS_GetParameter(SDDSin, "WaveformPV", *readbackPV + pages))
@@ -375,7 +383,7 @@ long ProcessWgetInputData(char ***readbackPV, long *readbacks, SDDS_DATASET *SDD
     pages++;
   }
   *readbacks = pages;
-  if (!SDDS_Terminate(SDDSin))
+  if (pageCode == 0 || !SDDS_Terminate(SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return 1;
 }
@@ -414,30 +422,38 @@ long GetWaveformsDataType(long *biggestDataType, long **dataType, char **wavefor
       (*dataType)[i] = SDDS_FLOAT;
       numericType = 1;
       break;
+#ifdef DBF_INT64
     case DBF_INT64:
       (*dataType)[i] = SDDS_LONG64;
       numericType = 1;
       break;
+#endif
+#ifdef DBF_UINT64
     case DBF_UINT64:
       (*dataType)[i] = SDDS_ULONG64;
       numericType = 1;
       break;
+#endif
     case DBF_LONG:
       (*dataType)[i] = SDDS_LONG;
       numericType = 1;
       break;
+#ifdef DBF_ULONG
     case DBF_ULONG:
       (*dataType)[i] = SDDS_ULONG;
       numericType = 1;
       break;
+#endif
     case DBF_SHORT:
       (*dataType)[i] = SDDS_SHORT;
       numericType = 1;
       break;
+#ifdef DBF_USHORT
     case DBF_USHORT:
       (*dataType)[i] = SDDS_USHORT;
       numericType = 1;
       break;
+#endif
     case DBF_CHAR:
       (*dataType)[i] = SDDS_CHARACTER;
       /*numericType=1;*/

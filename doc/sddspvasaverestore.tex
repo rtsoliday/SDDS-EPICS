@@ -29,11 +29,22 @@ usage: sddspvasaverestore <inputfile> <outputRoot> [-pipe=[input|output]]
 \begin{itemize}
   \item \textbf{input file:} SDDS file listing PVs to save or restore. The
     string column \verb|ControlName| is required, and \verb|ValueString| is
-    used for restoring scalar values. For mixed-provider or PVA input, provide
+    used for restoring scalar values. For restores, \verb|ValueString| may have
+    string or SDDS6 enum type; enums resolve to dictionary labels with literal
+    quotes preserved. Save requests require string \verb|ValueString| storage
+    when that column is supplied. For mixed-provider or PVA input, provide
     \verb|Provider|, \verb|ExpectNumeric|, \verb|ExpectFieldType|, and
     \verb|ExpectElements|. If any of those metadata columns is absent, the
     input is treated as numeric scalar CA data for compatibility with older
     save files. \verb|IndirectName| is optional.
+    Scalar restores use values from the first snapshot page; all remaining
+    pages are validated before writing PVs, including their enum keys.
+    Waveform files may use SDDS6 enum columns; values are restored using their
+    dictionary labels. Restores use the file's element count, including
+    one-element waveforms, independently of the destination PV's capacity.
+    Enum labels sent through the CA provider must fit in 39 bytes. Longer
+    labels are rejected before any restored values are sent. PVA destinations
+    retain their existing string length support.
   \item \textbf{output file:} SDDS file receiving saved PV values when \texttt{-save} is used.
 \end{itemize}
 \item \textbf{switches:}

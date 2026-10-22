@@ -23,6 +23,9 @@ usage: sddswput <inputfile>
 \item \textbf{files:}
 \begin{itemize}
   \item \textbf{input file:} SDDS file with parameter \verb|WaveformPV| and column \verb|Waveform|.
+    An SDDS6 enum \verb|Waveform| column is restored using its dictionary
+    labels, rather than its codes. Labels must fit in the Channel Access
+    string limit of 39 bytes.
 \end{itemize}
 
 \item \textbf{switches:}

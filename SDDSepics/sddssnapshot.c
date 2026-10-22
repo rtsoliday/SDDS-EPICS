@@ -91,6 +91,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <stdlib.h>
 #ifndef _WIN32
@@ -306,7 +307,7 @@ void makeSnapshot(unsigned long mode, double pendIOtime) {
   char *caError;
   long pend = 0;
   char **orig_column_name, **orig_parameter_name, **orig_array_name;
-  int32_t orig_column_names, orig_parameter_names, orig_array_names;
+  int32_t orig_column_names, orig_parameter_names, orig_array_names, pageCode;
 
   value = sum = sum2 = NULL;
   caError = NULL;
@@ -319,6 +320,12 @@ void makeSnapshot(unsigned long mode, double pendIOtime) {
 
   if (!SDDS_InitializeInput(&inSet, inputfile))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+
+  {
+    const char *columns[] = {"ControlName", "Device", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(nameColumn = SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
                                      "ControlName", "Device", NULL)))
@@ -407,10 +414,30 @@ void makeSnapshot(unsigned long mode, double pendIOtime) {
     if (!SDDS_WriteLayout(&outSet))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
-  while (SDDS_ReadPage(&inSet) > 0) {
+  while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
     rows = SDDS_CountRowsOfInterest(&inSet);
-    if (!(mode & MAKESNAP_CONNECT) && !SDDS_CopyPage(&outSet, &inSet))
-      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    if (!(mode & MAKESNAP_CONNECT)) {
+      /* Copy retained fields only. The measured columns and TimeStamp replace
+       * their input definitions, which may have incompatible types or enum
+       * dictionaries and are not used in the new snapshot. */
+      if (!SDDS_StartPage(&outSet, inSet.n_rows) || !SDDS_CopyArrays(&outSet, &inSet))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      for (i = 0; i < inSet.layout.n_parameters; i++) {
+        char *name = inSet.layout.parameter_definition[i].name;
+        if (strcmp(name, "TimeStamp") != 0 &&
+            !SDDS_SetParameters(&outSet, SDDS_BY_NAME | SDDS_PASS_BY_REFERENCE,
+                                name, inSet.parameter[i], NULL))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+      for (i = 0; i < inSet.layout.n_columns; i++) {
+        char *name = inSet.layout.column_definition[i].name;
+        if (strcmp(name, outputName) == 0 || strcmp(name, "CAError") == 0)
+          continue;
+        if (!SDDS_SetColumn(&outSet, SDDS_BY_NAME, SDDS_GetInternalColumn(&inSet, name),
+                             inSet.n_rows, strcmp(name, nameColumn) == 0 ? "ControlName" : name))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+    }
     if (rows) {
       if (!(controlName = SDDS_GetColumn(&inSet, nameColumn)))
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -496,7 +523,7 @@ void makeSnapshot(unsigned long mode, double pendIOtime) {
     if (!(mode & MAKESNAP_CONNECT) && !SDDS_WritePage(&outSet))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
-  if (!SDDS_Terminate(&inSet))
+  if (pageCode == 0 || !SDDS_Terminate(&inSet))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!(mode & MAKESNAP_CONNECT)) {
     if (!SDDS_Terminate(&outSet))

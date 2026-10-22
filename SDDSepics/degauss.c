@@ -46,6 +46,20 @@
 
 #define CA_TIMEOUT 10.0
 
+/**
+ * @brief Read a column only when its storage matches the destination buffer.
+ * @param table Input specification.
+ * @param name Column name.
+ * @param type Required SDDS type.
+ * @return Allocated column data, or NULL for a missing column.
+ */
+static void *getTypedColumn(SDDS_TABLE *table, char *name, int32_t type) {
+  if (SDDS_GetColumnIndex(table, name) >= 0 &&
+      SDDS_CheckColumn(table, name, NULL, type, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("Invalid column type in degaussing specification");
+  return SDDS_GetColumn(table, name);
+}
+
 /* Function Prototypes */
 void sleep_us(unsigned int);
 int validate_time(int32_t min, int32_t sec);
@@ -187,73 +201,73 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  if ((name = SDDS_GetColumn(&table, "ControlName")) == NULL) {
+  if ((name = getTypedColumn(&table, "ControlName", SDDS_STRING)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read controlname column\n", argv[0]);
     exit(1);
   }
-  if ((type = SDDS_GetColumn(&table, "ControlType")) == NULL) {
+  if ((type = getTypedColumn(&table, "ControlType", SDDS_STRING)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read controltype column\n", argv[0]);
     exit(1);
   }
-  if (SDDS_CheckColumn(&table, "SuffixName", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
-    if ((suffix = (char **)SDDS_GetColumn(&table, "SuffixName")) == NULL) {
+  if (SDDS_GetColumnIndex(&table, "SuffixName") >= 0) {
+    if ((suffix = (char **)getTypedColumn(&table, "SuffixName", SDDS_STRING)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read SuffixName column\n", argv[0]);
       exit(1);
     }
   }
   if (apsuTriMode) {
-    if ((imax = SDDS_GetColumn(&table, "FirstPeakCurrent")) == NULL) {
+    if ((imax = getTypedColumn(&table, "FirstPeakCurrent", SDDS_DOUBLE)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read FirstPeakCurrent column\n", argv[0]);
       exit(1);
     }
-    if ((numdecay = SDDS_GetColumn(&table, "NumCycles")) == NULL) {
+    if ((numdecay = getTypedColumn(&table, "NumCycles", SDDS_LONG)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read NumCycles column\n", argv[0]);
       exit(1);
     }
-    if ((imin = SDDS_GetColumn(&table, "LastPeakCurrent")) == NULL) {
+    if ((imin = getTypedColumn(&table, "LastPeakCurrent", SDDS_DOUBLE)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read LastPeakCurrent column\n", argv[0]);
       exit(1);
     }
-    if ((outputInterval = SDDS_GetColumn(&table, "OutputInterval")) == NULL) {
+    if ((outputInterval = getTypedColumn(&table, "OutputInterval", SDDS_DOUBLE)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read OutputInterval column\n", argv[0]);
       exit(1);
     }
-    if ((maxstepsize = SDDS_GetColumn(&table, "MaxStepSize")) == NULL) {
+    if ((maxstepsize = getTypedColumn(&table, "MaxStepSize", SDDS_DOUBLE)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read MaxStepSize column\n", argv[0]);
       exit(1);
     }
-    outb = SDDS_GetColumn(&table, "OUTB");
-    outc = SDDS_GetColumn(&table, "OUTC");
-    outd = SDDS_GetColumn(&table, "OUTD");
+    outb = getTypedColumn(&table, "OUTB", SDDS_STRING);
+    outc = getTypedColumn(&table, "OUTC", SDDS_STRING);
+    outd = getTypedColumn(&table, "OUTD", SDDS_STRING);
   } else {
-    if ((decaymin = SDDS_GetColumn(&table, "DecayMinutes")) == NULL) {
+    if ((decaymin = getTypedColumn(&table, "DecayMinutes", SDDS_LONG)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read DecayMinutes column\n", argv[0]);
       exit(1);
     }
-    if ((decaysec = SDDS_GetColumn(&table, "DecaySeconds")) == NULL) {
+    if ((decaysec = getTypedColumn(&table, "DecaySeconds", SDDS_LONG)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read DecaySeconds column\n", argv[0]);
       exit(1);
     }
-    if ((periodsec = SDDS_GetColumn(&table, "PeriodSeconds")) == NULL) {
+    if ((periodsec = getTypedColumn(&table, "PeriodSeconds", SDDS_LONG)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read PeriodSeconds column\n", argv[0]);
       exit(1);
     }
-    if ((imax = SDDS_GetColumn(&table, "MaxCurrent")) == NULL) {
+    if ((imax = getTypedColumn(&table, "MaxCurrent", SDDS_DOUBLE)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read MaxCurrent column\n", argv[0]);
       exit(1);
     }
-    if ((numdecay = SDDS_GetColumn(&table, "NumDecay")) == NULL) {
+    if ((numdecay = getTypedColumn(&table, "NumDecay", SDDS_LONG)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read NumDecay column\n", argv[0]);
       exit(1);
     }
     if (SDDS_GetColumnIndex(&table, "LastPeakCurrent") == -1) {
       trimode = 0;
     } else {
-      if ((imin = SDDS_GetColumn(&table, "LastPeakCurrent")) == NULL) {
+      if ((imin = getTypedColumn(&table, "LastPeakCurrent", SDDS_DOUBLE)) == NULL) {
         fprintf(stderr, "%s: SDDS error: unable to read LastPeakCurrent column\n", argv[0]);
         exit(1);
       }
-      if ((outputInterval = SDDS_GetColumn(&table, "OutputInterval")) == NULL) {
+      if ((outputInterval = getTypedColumn(&table, "OutputInterval", SDDS_DOUBLE)) == NULL) {
         fprintf(stderr, "%s: SDDS error: unable to read OutputInterval column\n", argv[0]);
         exit(1);
       }

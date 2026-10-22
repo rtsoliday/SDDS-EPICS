@@ -19,6 +19,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <time.h>
 #if !defined(vxWorks)
@@ -318,6 +319,8 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     refRows = SDDS_RowCount(&SDDSref);
     if (refRows > 0) {
+      if (SDDS_CheckColumn(&SDDSref, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+        SDDS_Bomb("Invalid ControlName type in reference file");
       if (!(refName = (char **)SDDS_GetColumn(&SDDSref, "ControlName")) ||
           !(refValue = (double *)SDDS_GetColumnInDoubles(&SDDSref, "Value")) ||
           !SDDS_Terminate(&SDDSref))
@@ -485,7 +488,7 @@ long readwaveformfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveform
   SDDS_TABLE SDDSin;
   short deltaWaveformExist = 0, deviceNameExist = 0, controlNameExist = 0, isCorrector = -1;
   char **DeviceName, **ControlName;
-  int32_t isDelta = 1; /*set default waveform as delta waveform for SR steering*/
+  int32_t pageCode, isDelta = 1; /*set default waveform as delta waveform for SR steering*/
 
   /*waveform isCorrector 
     = 0 -- belongs to bpm; 
@@ -499,6 +502,13 @@ long readwaveformfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveform
   *waveformData = NULL;
   if (!SDDS_InitializeInput(&SDDSin, inputfile))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+
+  {
+    const char *columns[] = {"DeviceName", "ControlName", NULL};
+    const char *parameters[] = {"IsDelta", NULL};
+    if (!checkNonEnumInputs(&SDDSin, columns, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if ((SDDS_CHECK_OKAY != SDDS_CheckParameter(&SDDSin, "WaveformPV", NULL, SDDS_STRING, stderr))) {
     SDDS_SetError("Missing parameter Waveform in input file");
@@ -517,7 +527,7 @@ long readwaveformfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveform
     exit(1);
   }
   pages = 0;
-  while (SDDS_ReadPage(&SDDSin) > 0) {
+  while ((pageCode = SDDS_ReadPage(&SDDSin)) > 0) {
     if (!(data = SDDS_Realloc(data, sizeof(*data) * (pages + 1))))
       SDDS_Bomb("memory allocation failure");
     if ((data[pages].waveformRows = SDDS_RowCount(&SDDSin)) <= 0)
@@ -601,9 +611,8 @@ long readwaveformfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveform
     }
     pages++;
   }
-  if (!SDDS_Terminate(&SDDSin))
+  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-
   *waveformData = data;
   *waveforms = pages;
   return (0);
@@ -679,6 +688,8 @@ long setupCorrectorMatrix(char *filename, CORRBPM_MAT *corr_mat, char **bpm, lon
   /*allocate memory for corr_mat, there are correctors and bpms bpm */
   allocate_corr_bpm_mat_memory(corr_mat, bpms);
   data = malloc(sizeof(*data) * bpms);
+  if (SDDS_CheckColumn(&SDDSin, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("Invalid ControlName type in inverse response matrix");
   if (!(corr_mat->name = (char **)SDDS_GetColumn(&SDDSin, "ControlName")))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   for (i = 0; i < correctors; i++) {
@@ -729,6 +740,8 @@ long setupBPMmatrix(char *filename, CORRBPM_MAT *bpm_mat, CORRBPM_MAT *corr_mat,
       fprintf(stderr, "Error rm matrix file %s is empty \n", filename);
       return 0;
     }
+    if (SDDS_CheckColumn(&SDDSin, "BPMName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+      SDDS_Bomb("Invalid BPMName type in response matrix");
     if (!(bpm_mat->name = (char **)SDDS_GetColumn(&SDDSin, "BPMName")))
       SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     allocate_corr_bpm_mat_memory(bpm_mat, corr_mat->names);
@@ -915,6 +928,8 @@ double computeRFdelta(CORRBPM_MAT *corr_mat, char *twissFile) {
     fprintf(stderr, "Error irm twiss file %s is empty \n", twissFile);
     return 0;
   }
+  if (SDDS_CheckColumn(&SDDSin, "ElementName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("Invalid ElementName type in Twiss file");
   if (!(name = (char **)SDDS_GetColumn(&SDDSin, "ElementName")) ||
       !(etax = SDDS_GetColumnInDoubles(&SDDSin, "etax")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);

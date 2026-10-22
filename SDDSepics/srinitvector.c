@@ -351,7 +351,7 @@ void read_corr_waveform(char *plane, CORR_VECTOR *vector, double pendIOTime, lon
   int32_t rows = 0, configRows = 0;
   char configFile[256], vectorFile[256];
   char **deviceName = NULL, **configPVName = NULL;
-  char pvName[256], *FFPV = NULL, *setpointPV = NULL, Plane[256];
+  char pvName[256], *FFPV = NULL, *setpointPV = NULL, Plane[2];
   short *nonExist = NULL;
   long i, matchj;
 
@@ -381,16 +381,24 @@ void read_corr_waveform(char *plane, CORR_VECTOR *vector, double pendIOTime, lon
     fprintf(stderr, "No data found vector file %s\n", vectorFile);
     exit(1);
   }
-  if (!(configPVName = (char **)SDDS_GetColumn(&SDDSconfig, "DeviceName")) ||
+  if (SDDS_CheckColumn(&SDDSconfig, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(configPVName = (char **)SDDS_GetColumn(&SDDSconfig, "DeviceName")) ||
       !(nonExist = (short *)SDDS_GetColumnInShort(&SDDSconfig, "Nonexistent")) ||
-      !SDDS_Terminate(&SDDSconfig))
+      !SDDS_Terminate(&SDDSconfig)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    exit(1);
+  }
 
-  if (!(SDDS_GetParameter(&SDDSvector, "FeedforwardWaveformPV", &FFPV)) ||
+  if (SDDS_CheckParameter(&SDDSvector, "FeedforwardWaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckParameter(&SDDSvector, "SetpointWaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&SDDSvector, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(SDDS_GetParameter(&SDDSvector, "FeedforwardWaveformPV", &FFPV)) ||
       !(SDDS_GetParameter(&SDDSvector, "SetpointWaveformPV", &setpointPV)) ||
       !(deviceName = (char **)SDDS_GetColumn(&SDDSvector, "DeviceName")) ||
-      !SDDS_Terminate(&SDDSvector))
+      !SDDS_Terminate(&SDDSvector)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    exit(1);
+  }
   vector->waveformRows = rows;
   vector->exist = NULL;
   vector->currentAO = vector->currentAI = vector->dacAI = vector->FFcurrentAO = vector->FFvalue = vector->setpointValue = NULL;
@@ -474,17 +482,21 @@ void readPVvaluesFromFile(char *filename, char ***pvName, char ***valueString, i
   }
   *pvs = rows;
   *pvName = *valueString = NULL;
-  if (!(*pvName = (char **)SDDS_GetColumn(&SDDSin, "ControlName")) ||
+  if (SDDS_CheckColumn(&SDDSin, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&SDDSin, "ValueString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(*pvName = (char **)SDDS_GetColumn(&SDDSin, "ControlName")) ||
       !(*valueString = (char **)SDDS_GetColumn(&SDDSin, "ValueString")) ||
-      !SDDS_Terminate(&SDDSin))
+      !SDDS_Terminate(&SDDSin)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    exit(1);
+  }
 }
 
 void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long *bpmVectors, char *setpointFile, char *offsetFile, char *gainFile, double pendIOTime) {
   SDDS_DATASET SDDSvector;
-  int32_t vectorRows, setpointRows, offsetRows, gainRows;
+  int32_t vectorRows, setpointRows, offsetRows, gainRows, pageCode;
   char **deviceName, **setpointPVName, **offsetPVName, **gainPVName, **setpointValue, **offsetValue, **gainValue;
-  char pvName[256], coord[256];
+  char pvName[256], coord[2];
   long i, matchj, vectors = 0;
   BPM_VECTOR *vector = NULL;
 
@@ -503,7 +515,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   vectors = 0;
   vector = malloc(sizeof(*vector) * 10);
-  while (SDDS_ReadPage(&SDDSvector) > 0) {
+  while ((pageCode = SDDS_ReadPage(&SDDSvector)) > 0) {
     if ((vectorRows = SDDS_RowCount(&SDDSvector)) <= 0)
       continue;
     if (vectors > 9) {
@@ -515,9 +527,13 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     vector[vectors].isValid = NULL;
     vector[vectors].vectorType = -1;
     vector[vectors].waveformRows = vectorRows;
-    if (!(SDDS_GetParameter(&SDDSvector, "WaveformPV", &vector[vectors].waveformPV)) ||
-        !(deviceName = (char **)SDDS_GetColumn(&SDDSvector, "DeviceName")))
+    if (SDDS_CheckParameter(&SDDSvector, "WaveformPV", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckColumn(&SDDSvector, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+        !(SDDS_GetParameter(&SDDSvector, "WaveformPV", &vector[vectors].waveformPV)) ||
+        !(deviceName = (char **)SDDS_GetColumn(&SDDSvector, "DeviceName"))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      exit(1);
+    }
     vector[vectors].waveformValue = malloc(sizeof(double) * vectorRows);
     vector[vectors].isValid = malloc(sizeof(short) * vectorRows);
     if (ca_search(vector[vectors].waveformPV, &vector[vectors].vectorID) != ECA_NORMAL) {
@@ -603,7 +619,7 @@ void read_bpm_vectors(char *filename, char *plane, BPM_VECTOR **bpmVector, long 
     deviceName = NULL;
     vectors++;
   }
-  if (!SDDS_Terminate(&SDDSvector))
+  if (pageCode == 0 || !SDDS_Terminate(&SDDSvector))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   *bpmVector = vector;

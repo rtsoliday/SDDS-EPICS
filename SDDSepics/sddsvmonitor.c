@@ -162,6 +162,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 #ifdef _WIN32
@@ -346,6 +347,7 @@ long readSuffixFile(char *suffixFile, char ***suffix);
 int main(int argc, char **argv) {
   SCANNED_ARG *s_arg;
   SDDS_TABLE inTable, outTable;
+  int32_t pageCode;
   char *inputfile, *outputfile, *PVlistFile, *rootnameFile, *suffixFile, answer[ANSWER_LENGTH];
   long rootnames, suffixes = 0, CAerrors;
   char **rootname = NULL, **suffix = NULL, **readbackName, **readbackUnits = NULL, **list = NULL, *ListType, **outputColumn = NULL;
@@ -621,7 +623,7 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }
-    while (SDDS_ReadTable(&inTable) >= 1) {
+    while ((pageCode = SDDS_ReadTable(&inTable)) > 0) {
       if (!SDDS_GetParameter(&inTable, "ListType", &ListType) ||
           !(list = SDDS_GetColumn(&inTable, "ListData")))
         SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -647,7 +649,7 @@ int main(int argc, char **argv) {
         break;
       }
     }
-    if (!SDDS_Terminate(&inTable))
+    if (pageCode == 0 || !SDDS_Terminate(&inTable))
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
 
@@ -808,6 +810,22 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }
+    {
+      const char *parameters[] = {"Step", "Time", "TimeOfDay", "DayOfMonth", "PageTimeStamp", "CAerrors", NULL};
+      if (!checkNonEnumOutputColumns(&originalTable) ||
+          !checkNonEnumInputs(&originalTable, NULL, parameters))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      for (i = 0; i < scalars; i++) {
+        const char *scalar[] = {scalarName[i], NULL};
+        if (!checkNonEnumInputs(&originalTable, NULL, scalar))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+      for (i = 0; i < comments; i++) {
+        const char *comment[] = {commentParameter[i], NULL};
+        if (!checkNonEnumInputs(&originalTable, NULL, comment))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
+    }
     columnName = (char **)SDDS_GetColumnNames(&originalTable, &columnNames);
     for (i = 0; i < outputColumns; i++) {
       if (-1 == match_string(outputColumn[i], columnName, columnNames, EXACT_MATCH)) {
@@ -835,9 +853,9 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       bomb("unable to get data from existing file", NULL);
     }
-    if (!SDDS_GetParameter(&originalTable, "StartHour", &StartHour) ||
+    if (!SDDS_GetParameterAsDouble(&originalTable, "StartHour", &StartHour) ||
         !SDDS_GetParameterAsDouble(&originalTable, "StartDayOfMonth", &StartDay) ||
-        !SDDS_GetParameter(&originalTable, "StartTime", &StartTime)) {
+        !SDDS_GetParameterAsDouble(&originalTable, "StartTime", &StartTime)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }
@@ -1127,17 +1145,20 @@ long readSuffixFile(char *suffixFile, char ***suffix) {
 
   suffixes = code = 0;
 
-  if (!SDDS_InitializeInput(&inTable, suffixFile) || (code = SDDS_ReadTable(&inTable)) < 0)
+  if (!SDDS_InitializeInput(&inTable, suffixFile) || (code = SDDS_ReadTable(&inTable)) <= 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (code == 0 || (suffixes = SDDS_CountRowsOfInterest(&inTable)) < 1)
     bomb("no data in measurement suffix file", NULL);
-  if (!((*suffix) = SDDS_GetColumn(&inTable, "Suffix"))) {
+  if (SDDS_CheckColumn(&inTable, "Suffix", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !((*suffix) = SDDS_GetColumn(&inTable, "Suffix"))) {
     fprintf(stderr, "error: required column \"Suffix\" not found in file %s\n", suffixFile);
     exit(1);
   }
-  if (SDDS_ReadTable(&inTable) > 1)
+  if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             suffixFile);
+  if (code == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return suffixes;
@@ -1149,17 +1170,20 @@ long readRootnameFile(char *rootnameFile, char ***rootname) {
 
   rootnames = code = 0;
 
-  if (!SDDS_InitializeInput(&inTable, rootnameFile) || (code = SDDS_ReadTable(&inTable)) < 0)
+  if (!SDDS_InitializeInput(&inTable, rootnameFile) || (code = SDDS_ReadTable(&inTable)) <= 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (code == 0 || (rootnames = SDDS_CountRowsOfInterest(&inTable)) < 1)
     bomb("no data in measurement rootname file", NULL);
-  if (!((*rootname) = SDDS_GetColumn(&inTable, "Rootname"))) {
+  if (SDDS_CheckColumn(&inTable, "Rootname", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !((*rootname) = SDDS_GetColumn(&inTable, "Rootname"))) {
     fprintf(stderr, "error: required column \"Rootname\" not found in file %s\n", rootnameFile);
     exit(1);
   }
-  if (SDDS_ReadTable(&inTable) > 1)
+  if ((code = SDDS_ReadTable(&inTable)) > 1)
     fprintf(stderr, "warning: file %s has multiple pages--only the first is used!\n",
             rootnameFile);
+  if (code == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return rootnames;

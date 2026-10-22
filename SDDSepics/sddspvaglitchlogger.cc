@@ -20,6 +20,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 #if (EPICS_VERSION > 3)
@@ -2026,6 +2027,13 @@ long getConditionsDataInfo(LOGGER_DATA *logger) {
   if (!SDDS_InitializeInput(&inSet, logger->CondFile))
     return 0;
 
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName",
+                             "ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+
   if (!(ControlNameColumnName =
         SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
                         "ControlName", "Device", "DeviceName", NULL))) {
@@ -2396,6 +2404,13 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
 
   if (!SDDS_InitializeInput(&inSet, logger->inputfile))
     return 0;
+
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName", NULL};
+    const char *parameters[] = {"GlitchScript", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(ControlNameColumnName =
         SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
@@ -2936,7 +2951,8 @@ long getGlitchLoggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigReque
   if (OutputRootname)
     free(OutputRootname);
 
-  SDDS_Terminate(&inSet);
+  if (page == 0 || !SDDS_Terminate(&inSet))
+    return 0;
   return 1;
 }
 
@@ -3178,6 +3194,11 @@ long getTriggerData(LOGGER_DATA *logger, ALARMTRIG_REQUEST **alarmTrigRequest, l
 
   if (!SDDS_InitializeInput(&inSet, logger->triggerFile))
     return 0;
+  {
+    const char *columns[] = {"GlitchScript", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
   if ((SDDS_CHECK_OKAY != SDDS_CheckColumn(&inSet, (char *)"TriggerControlName", NULL, SDDS_STRING, NULL))) {
     fprintf(stderr, "TriggerControlName column does not exist in %s", logger->triggerFile);
     exit(1);

@@ -32,7 +32,7 @@ void set_source_mode(char *plane, char *sourceModeInput, long dryRun, double pen
   SDDS_DATASET SDDSin;
   int32_t *sector = NULL, *CUflag = NULL, *CUsector = NULL, channels = 0;
   int32_t rows, i, j, CUsectors = 0;
-  char pvName[256], Plane[256];
+  char pvName[256], Plane[2];
   chid *sourceID;
   if (strcmp(plane, "h") == 0)
     sprintf(Plane, "H");

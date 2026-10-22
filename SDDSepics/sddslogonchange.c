@@ -133,6 +133,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <cadef.h>
 #include <alarm.h>
@@ -1702,8 +1703,22 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
   } else {
     char **ColumnName;
     int32_t ColumnNames;
+    SDDS_DATASET original;
 
-    ColumnName = (char **)SDDS_GetColumnNames(logSet, &ColumnNames);
+    if (!SDDS_InitializeInput(&original, output) || !checkNonEnumLogLayout(&original)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      return (0);
+    }
+    ColumnName = (char **)SDDS_GetColumnNames(&original, &ColumnNames);
+    if (!ColumnName) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      SDDS_Terminate(&original);
+      return (0);
+    }
+    if (!SDDS_Terminate(&original)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      return (0);
+    }
     for (i = 0; i < cNames; i++) {
       if (rName) {
         if (-1 == match_string(rName[i], ColumnName, ColumnNames, EXACT_MATCH)) {
@@ -1712,7 +1727,7 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
         }
       } else {
         if (-1 == match_string(cName[i], ColumnName, ColumnNames, EXACT_MATCH)) {
-          printf("ControlName %s doesn't match any columns in output file.\n", rName[i]);
+          printf("ControlName %s doesn't match any columns in output file.\n", cName[i]);
           return (0);
         }
       }
@@ -1734,6 +1749,8 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
         }
       }
     }
+    SDDS_FreeStringArray(ColumnName, ColumnNames);
+    free(ColumnName);
     getTimeBreakdown(NULL, NULL, NULL, NULL, NULL, NULL, &pageTimeStamp);
     if (!CheckLogOnChangeLogFile(output, &startTime, &startDay, &startHour,
                                  &startJulianDay, &startMonth, &startYear,
@@ -1748,10 +1765,10 @@ long SetupSDDSLoggerFile(SDDS_DATASET *logSet, char *output, char *input,
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
         SDDS_Bomb("unable to get data from existing file---try -append=recover (may truncate file)");
       }
-      if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0)) {
-        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
-        return (0);
-      }
+    }
+    if (!SDDS_InitializeAppend(logSet, output) || !SDDS_StartPage(logSet, 0)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      return (0);
     }
   }
   if (!SDDS_SetParameters(logSet, SDDS_PASS_BY_VALUE | SDDS_SET_BY_NAME,
@@ -1964,6 +1981,13 @@ long GetControlNames(char *file, char ***name0,
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (-1);
   }
+  {
+    const char *columns[] = {"ReadbackName", "ReadbackUnits", "Units", "Description",
+                             "RelatedControlName", "Tolerance", "ExpectNumeric",
+                             "ExpectFieldType", "ExpectElements", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 #if DEBUGSDDS
   fprintf(stderr, "Reading file %s\n", file);
 #endif
@@ -2160,6 +2184,15 @@ long CheckForRequiredElements(char *filename, unsigned long mode) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     return (0);
   }
+  if (!checkNonEnumLogLayout(&inSet)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&inSet);
+    return (0);
+  }
+  if (!(mode & NOINDICES) &&
+      ((mode & DESCRIPTIONS && SDDS_CheckArray(&inSet, "DescriptionString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK) ||
+       (mode & RELATEDVALUES && SDDS_CheckArray(&inSet, "RelatedControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK)))
+    return (0);
   if (mode & EXPLICIT) {
     if (mode & LOGALARMS) {
       if (SDDS_CheckColumn(&inSet, "AlarmSeverity", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OK ||

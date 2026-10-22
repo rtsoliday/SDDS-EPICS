@@ -44,7 +44,7 @@ def test_character_waveform_is_terminated_without_scanning_past_input() -> None:
 def test_control_bit_sample_modes_free_the_sample_value() -> None:
   source = _source("SDDSepics/sddsgencontrolbits.c")
   block = source.split('sprintf(tmpBuffer, "SampleMode%ld", i);', 1)[1].split(
-    "if (SDDS_CheckParameter(&ramData, \"BunchPattern\"", 1
+    "if (SDDS_GetParameterIndex(&ramData, \"BunchPattern\"", 1
   )[0]
 
   assert "free(sample);" in block

@@ -46,6 +46,20 @@
 
 #define CA_TIMEOUT 10.0
 
+/**
+ * @brief Read a column only when its storage matches the destination buffer.
+ * @param table Input specification.
+ * @param name Column name.
+ * @param type Required SDDS type.
+ * @return Allocated column data, or NULL for a missing column.
+ */
+static void *getTypedColumn(SDDS_TABLE *table, char *name, int32_t type) {
+  if (SDDS_GetColumnIndex(table, name) >= 0 &&
+      SDDS_CheckColumn(table, name, NULL, type, stderr) != SDDS_CHECK_OKAY)
+    SDDS_Bomb("Invalid column type in standardization specification");
+  return SDDS_GetColumn(table, name);
+}
+
 /* Function Prototypes */
 void sleep_us(unsigned int);
 int validate_time(int32_t min, int32_t sec);
@@ -151,30 +165,30 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  if ((name = SDDS_GetColumn(&table, "ControlName")) == NULL) {
+  if ((name = getTypedColumn(&table, "ControlName", SDDS_STRING)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read ControlName column\n", argv[0]);
     exit(1);
   }
-  if ((type = SDDS_GetColumn(&table, "ControlType")) == NULL) {
+  if ((type = getTypedColumn(&table, "ControlType", SDDS_STRING)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read ControlType column\n", argv[0]);
     exit(1);
   }
-  if ((from = SDDS_GetColumn(&table, "From")) == NULL) {
+  if ((from = getTypedColumn(&table, "From", SDDS_DOUBLE)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read From column\n", argv[0]);
     exit(1);
   }
-  if ((to = SDDS_GetColumn(&table, "To")) == NULL) {
+  if ((to = getTypedColumn(&table, "To", SDDS_DOUBLE)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read To column\n", argv[0]);
     exit(1);
   }
-  min = SDDS_GetColumn(&table, "Minutes");
-  sec = SDDS_GetColumn(&table, "Seconds");
-  rampRate = SDDS_GetColumn(&table, "RampRate");
-  rampTransitionPercentage = SDDS_GetColumn(&table, "RampTransitionPercentage");
-  dwellTime = SDDS_GetColumn(&table, "DwellTime");
-  outb = SDDS_GetColumn(&table, "OUTB");
-  outc = SDDS_GetColumn(&table, "OUTC");
-  outd = SDDS_GetColumn(&table, "OUTD");
+  min = getTypedColumn(&table, "Minutes", SDDS_LONG);
+  sec = getTypedColumn(&table, "Seconds", SDDS_LONG);
+  rampRate = getTypedColumn(&table, "RampRate", SDDS_DOUBLE);
+  rampTransitionPercentage = getTypedColumn(&table, "RampTransitionPercentage", SDDS_DOUBLE);
+  dwellTime = getTypedColumn(&table, "DwellTime", SDDS_DOUBLE);
+  outb = getTypedColumn(&table, "OUTB", SDDS_STRING);
+  outc = getTypedColumn(&table, "OUTC", SDDS_STRING);
+  outd = getTypedColumn(&table, "OUTD", SDDS_STRING);
   if ((rampRate == NULL) || (rampTransitionPercentage == NULL) || (dwellTime == NULL)) {
     dwellMode = 0;
     if ((min == NULL) || (sec == NULL)) {
@@ -184,20 +198,20 @@ int main(int argc, char *argv[]) {
   }
   // fprintf(stderr, "DEBUG1 %lf %lf\n", dwellTime[0], to[0]);
 
-  if ((ncycles = SDDS_GetColumn(&table, "NumCycles")) == NULL) {
+  if ((ncycles = getTypedColumn(&table, "NumCycles", SDDS_LONG)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read ncycles column\n", argv[0]);
     exit(1);
   }
-  if ((finish = SDDS_GetColumn(&table, "Finish")) == NULL) {
+  if ((finish = getTypedColumn(&table, "Finish", SDDS_DOUBLE)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read finish column\n", argv[0]);
     exit(1);
   }
-  if ((approach = SDDS_GetColumn(&table, "Approach")) == NULL) {
+  if ((approach = getTypedColumn(&table, "Approach", SDDS_STRING)) == NULL) {
     fprintf(stderr, "%s: SDDS error: unable to read approach column\n", argv[0]);
     exit(1);
   }
-  if (SDDS_CheckColumn(&table, "SuffixName", NULL, SDDS_STRING, NULL) == SDDS_CHECK_OK) {
-    if ((suffix = (char **)SDDS_GetColumn(&table, "SuffixName")) == NULL) {
+  if (SDDS_GetColumnIndex(&table, "SuffixName") >= 0) {
+    if ((suffix = (char **)getTypedColumn(&table, "SuffixName", SDDS_STRING)) == NULL) {
       fprintf(stderr, "%s: SDDS error: unable to read SuffixName column\n", argv[0]);
       exit(1);
     }

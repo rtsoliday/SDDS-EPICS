@@ -1940,11 +1940,34 @@ int logDaemonWriteSDDSHeader(SDDS_TABLE *table, TYPENODE *typeNode) {
  * PURPOSE  : open logFile in append to page mode (SDDS format)
  ************************************************************************/
 void logDaemonAppendPageToLogFile(TYPENODE *typeNode) {
+  SDDS_DATASET input;
+  int32_t i, pageCode;
   int64_t initialRow = 0;
+
+  /* Messages are appended as primitive ASCII values, bypassing SDDS setters.
+   * Enum columns would interpret those values as dictionary keys or labels.
+   * Check before opening for append, and validate any enum metadata as well. */
+  if (!SDDS_InitializeInput(&input, typeNode->log_file))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  for (i = 0; i < input.layout.n_columns; i++) {
+    if (input.layout.column_definition[i].type == SDDS_ENUM) {
+      fprintf(stderr, "logDaemon: column %s has enum type; log columns require primitive storage\n",
+              input.layout.column_definition[i].name);
+      syslog(LOG_ERR, "cannot append primitive messages to enum column %s in %s",
+             input.layout.column_definition[i].name, typeNode->log_file);
+      SDDS_Terminate(&input);
+      exit(1);
+    }
+  }
+  while ((pageCode = SDDS_ReadPage(&input)) > 0) {
+  }
+  if (pageCode == 0 || !SDDS_Terminate(&input))
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   if (!SDDS_InitializeAppendToPage(&(typeNode->table), typeNode->log_file, 1,
                                    &initialRow)) {
     syslog(LOG_ERR, "cannot append to log file %s: %m", typeNode->log_file);
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   typeNode->log_file_fd = fileno(typeNode->table.layout.fp);
   logDaemonGetSDDSHeaderOffset(&(typeNode->table), &(typeNode->size));

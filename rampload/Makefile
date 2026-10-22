@@ -12,7 +12,7 @@ READLINE_LIBS = $(EPICS_READLINE_LIBS)
 
 #PROD = rampload ramploadnew setbcorr
 PROD = rampload setbcorr
-GSL_PROD = rampload
+GSL_PROD = rampload ramploadnew setbcorr
 
 CFLAGS += -I$(EPICS_BASE)/include  -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DACCESS_SECURITY -D_NO_PROTO
 override CXXFLAGS += -I$(EPICS_BASE)/include -I$(SDDS_REPO)/include -I$(OBJ_DIR) -DACCESS_SECURITY -D_NO_PROTO

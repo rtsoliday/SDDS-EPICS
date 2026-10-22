@@ -215,6 +215,7 @@
 #include "mdb.h"
 #include "scan.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include "match_string.h"
 #include <string.h>
@@ -1123,7 +1124,10 @@ int main(int argc, char **argv) {
       exit(1);
     }
     for (i = 0; i < control->Variables; i++) {
-      dmat0[i] = SDDS_GetColumnInDoubles(&dmatTable, dcolName[i]);
+      if (!(dmat0[i] = SDDS_GetColumnInDoubles(&dmatTable, dcolName[i]))) {
+        fprintf(stderr, "Error: dmatrix column %s must contain numeric data\n", dcolName[i]);
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+      }
     }
     SDDS_FreeStringArray(dcolName, control->Variables);
     if (!SDDS_Terminate(&dmatTable))
@@ -1302,6 +1306,20 @@ long getVariablesData(CONTROL_NAME *control, char *inputFile, char *restartFile,
 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
+
+  {
+    const char *columns[] = {"controlPV", "ControlName", "Device", "DeviceName",
+                             "ReadbackName", "ReadbackUnits", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+
+  {
+    const char *columns[] = {"RelativeLimit", "ReadbackName", "Tolerance", NULL};
+    const char *parameters[] = {"ControlTolerance", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
@@ -1599,6 +1617,12 @@ long getMeasurementData(READBACK_NAME *readback, char *inputFile, unsigned long 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
 
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
                           "ControlName", "Device", "DeviceName", NULL))) {
@@ -1775,7 +1799,7 @@ long getMeasurementData(READBACK_NAME *readback, char *inputFile, unsigned long 
     bomb("Zero rows defined in input file.\n", NULL);
   readback->ControlName = (char **)SDDS_GetColumn(&inSet, ControlNameColumnName);
   if (readbackNameExist)
-    readback->ReadbackName = (char **)SDDS_GetColumn(&inSet, "Readback");
+    readback->ReadbackName = (char **)SDDS_GetColumn(&inSet, "ReadbackName");
   else
     readback->ReadbackName = NULL;
 
@@ -2304,11 +2328,14 @@ void setupOutputFile(SDDS_DATASET *outTable, COMMON_PARAM *param, char *outputFi
       fprintf(stderr, "Error reading extraLogFile\n");
       exit(1);
     }
+    if (SDDS_CheckColumn(&extraLog, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY)
+      SDDS_Bomb("Extra logging ControlName column must have string type");
     if (SDDS_ReadPage(&extraLog) <= 0)
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     names=SDDS_CountRowsOfInterest(&extraLog);
     if (names> 0) {
-      name = (char**)SDDS_GetColumn(&extraLog, "ControlName");
+      if (!(name = (char**)SDDS_GetColumn(&extraLog, "ControlName")))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       column = (char**)SDDS_GetColumnNames(outTable, &cols);
       if (!SDDS_Terminate(&extraLog))
 	SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -2447,6 +2474,7 @@ long SetKnobArray(char **knobFile, long knobFiles, CONTROL_NAME *control) {
   char *knobName;
   double gain, stepSize=0, rampPause=2.0;
   short Weight = 0, Sector = 0;
+  int32_t pageCode;
 
   knobName = NULL;
   variables = 0;
@@ -2458,8 +2486,17 @@ long SetKnobArray(char **knobFile, long knobFiles, CONTROL_NAME *control) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       exit(1);
     }
-    while (SDDS_ReadPage(&inSet) > 0) {
-      if (!(knobName = *(char **)SDDS_GetParameter(&inSet, "ControlName", NULL))) {
+    if (SDDS_CheckParameter(&inSet, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+        SDDS_CheckColumn(&inSet, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+        (SDDS_GetParameterIndex(&inSet, "Gain") >= 0 &&
+         SDDS_CheckParameter(&inSet, "Gain", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY) ||
+        (SDDS_GetParameterIndex(&inSet, "StepSize") >= 0 &&
+         SDDS_CheckParameter(&inSet, "StepSize", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY) ||
+        (SDDS_GetParameterIndex(&inSet, "WaitTime") >= 0 &&
+         SDDS_CheckParameter(&inSet, "WaitTime", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY))
+      SDDS_Bomb("Invalid column or parameter type in knob file");
+    while ((pageCode = SDDS_ReadPage(&inSet)) > 0) {
+      if (!SDDS_GetParameter(&inSet, "ControlName", &knobName)) {
         if (param->verbose)
           fprintf(stderr, "Parameter ControlName does not exist in the knob file %s\n", knobFile[i]);
         break;
@@ -2478,19 +2515,19 @@ long SetKnobArray(char **knobFile, long knobFiles, CONTROL_NAME *control) {
       free(knobName);
       knobName = NULL;
       control->Knobs++;
-      if (!SDDS_GetParameter(&inSet, "Gain", &gain)) {
+      if (!SDDS_GetParameterAsDouble(&inSet, "Gain", &gain)) {
         SDDS_SetError("the Gain parameter is missing, set it to 1");
         gain = 1;
       }
       control->Knob[j].gain = gain;
       if (SDDS_CheckParameter(&inSet, "StepSize", NULL, SDDS_ANY_NUMERIC_TYPE, NULL)==SDDS_CHECK_OKAY) {
-	if (!SDDS_GetParameter(&inSet, "StepSize", &stepSize)) {
+	if (!SDDS_GetParameterAsDouble(&inSet, "StepSize", &stepSize)) {
 	  SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 	}
       }
       control->Knob[j].stepSize = stepSize;
       if (SDDS_CheckParameter(&inSet, "WaitTime", NULL, SDDS_ANY_NUMERIC_TYPE, NULL)==SDDS_CHECK_OKAY) {
-	if (!SDDS_GetParameter(&inSet, "WaitTime", &rampPause)) {
+	if (!SDDS_GetParameterAsDouble(&inSet, "WaitTime", &rampPause)) {
 	  SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 	}
       }
@@ -2553,7 +2590,8 @@ long SetKnobArray(char **knobFile, long knobFiles, CONTROL_NAME *control) {
         }
       }
     }
-    SDDS_Terminate(&inSet);
+    if (pageCode == 0 || !SDDS_Terminate(&inSet))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   }
   return 0;
 }
@@ -2631,7 +2669,7 @@ void setupTestsFile(TESTS *test) {
     exit(1);
   }
 
-  if (SDDS_ReadTable(&testValuesPage) < 0)
+  if (SDDS_ReadTable(&testValuesPage) <= 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   test->n = SDDS_CountRowsOfInterest(&testValuesPage);
   test->value = (double *)malloc(sizeof(double) * (test->n));

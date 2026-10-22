@@ -2994,7 +2994,7 @@ void setupReadbackLimitFile(LIMITS *readbackLimits) {
       }
     }
 
-    if (SDDS_ReadTable(&readbackLimitPage) < 0) {
+    if (SDDS_ReadTable(&readbackLimitPage) <= 0) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3060,7 +3060,7 @@ void setupDeltaLimitFile(LIMITS *delta) {
       }
     }
 
-    if (SDDS_ReadTable(&deltaLimitPage) < 0) {
+    if (SDDS_ReadTable(&deltaLimitPage) <= 0) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3115,7 +3115,7 @@ void setupActionLimitFile(LIMITS *action) {
       }
     }
 
-    if (SDDS_ReadTable(&actionLimitPage) < 0) {
+    if (SDDS_ReadTable(&actionLimitPage) <= 0) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3197,7 +3197,7 @@ void setupInputFile(CORRECTION *correction) {
     exit(1);
   }
 
-  if (0 > SDDS_ReadTable(&inputPage)) {
+  if (0 >= SDDS_ReadTable(&inputPage)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -3247,7 +3247,13 @@ void setupInputFile(CORRECTION *correction) {
       FreeEverything();
       exit(1);
     }
-    if (SDDS_NUMERIC_TYPE(columnType = SDDS_GetColumnType(&inputPage, index))) {
+    columnType = SDDS_GetColumnType(&inputPage, index);
+    if (columnType == SDDS_ENUM) {
+      fprintf(stderr, "Matrix column %s has enum type; use sddscast to convert explicitly to numeric data\n", name[i]);
+      FreeEverything();
+      exit(1);
+    }
+    if (SDDS_NUMERIC_TYPE(columnType)) {
       doubleColumnIndex[readback->n] = i;
       SDDS_CopyString(&readback->symbolicName[readback->n], name[i]);
       if (!SDDS_AssertColumnFlags(&inputPage, SDDS_INDEX_LIMITS, index, index, 1L)) {
@@ -3316,13 +3322,14 @@ void setupInputFile(CORRECTION *correction) {
       }
     }
     coefName = (char **)SDDS_GetColumnNames(&coefPage, &columns);
-    if (0 > SDDS_ReadTable(&coefPage)) {
+    if (0 >= SDDS_ReadTable(&coefPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
     }
     coefRows = SDDS_CountRowsOfInterest(&coefPage);
-    if (!(coefDeviceNames = (char **)SDDS_GetColumn(&coefPage, "DeviceName"))) {
+    if (SDDS_CheckColumn(&coefPage, "DeviceName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+        !(coefDeviceNames = (char **)SDDS_GetColumn(&coefPage, "DeviceName"))) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3333,7 +3340,15 @@ void setupInputFile(CORRECTION *correction) {
     /* find columns that start with letter "a" and determine the order of the filter */
     aorder = 0;
     for (i = 0; i < columns; i++) {
-      if (SDDS_NUMERIC_TYPE(columnType = SDDS_GetColumnType(&coefPage, i))) {
+      columnType = SDDS_GetColumnType(&coefPage, i);
+      if (columnType == SDDS_ENUM &&
+          (sscanf(coefName[i], "a%ld", &subscript) == 1 ||
+           sscanf(coefName[i], "b%ld", &subscript) == 1)) {
+        fprintf(stderr, "Filter coefficient column %s must contain numeric data\n", coefName[i]);
+        FreeEverything();
+        exit(1);
+      }
+      if (SDDS_NUMERIC_TYPE(columnType)) {
         if (sscanf(coefName[i], "a%ld", &subscript)) {
           if (aorder < subscript)
             aorder = subscript;
@@ -3477,7 +3492,7 @@ void setupCompensationFiles(CORRECTION *compensation) {
     exit(1);
   }
 
-  if (0 > SDDS_ReadTable(&inputPage)) {
+  if (0 >= SDDS_ReadTable(&inputPage)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -3520,7 +3535,13 @@ void setupCompensationFiles(CORRECTION *compensation) {
   }
   readback->n = 0;
   for (i = 0; i < columns; i++) {
-    if (SDDS_NUMERIC_TYPE(columnType = SDDS_GetColumnType(&inputPage, i))) {
+    columnType = SDDS_GetColumnType(&inputPage, i);
+    if (columnType == SDDS_ENUM) {
+      fprintf(stderr, "Matrix column %s has enum type; use sddscast to convert explicitly to numeric data\n", name[i]);
+      FreeEverything();
+      exit(1);
+    }
+    if (SDDS_NUMERIC_TYPE(columnType)) {
       doubleColumnIndex[readback->n] = i;
       SDDS_CopyString(&readback->symbolicName[readback->n], name[i]);
       SDDS_SetColumnsOfInterest(&inputPage, SDDS_MATCH_STRING, name[i], SDDS_OR);
@@ -3573,7 +3594,7 @@ void setupCompensationFiles(CORRECTION *compensation) {
     }
 
     coefName = (char **)SDDS_GetColumnNames(&coefPage, &columns);
-    if (0 > SDDS_ReadTable(&coefPage)) {
+    if (0 >= SDDS_ReadTable(&coefPage)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3589,7 +3610,15 @@ void setupCompensationFiles(CORRECTION *compensation) {
     /* find columns that start with letter "a" and determine the order of the filter */
     aorder = 0;
     for (i = 0; i < columns; i++) {
-      if (SDDS_NUMERIC_TYPE(columnType = SDDS_GetColumnType(&coefPage, i))) {
+      columnType = SDDS_GetColumnType(&coefPage, i);
+      if (columnType == SDDS_ENUM &&
+          (sscanf(coefName[i], "a%ld", &subscript) == 1 ||
+           sscanf(coefName[i], "b%ld", &subscript) == 1)) {
+        fprintf(stderr, "Filter coefficient column %s must contain numeric data\n", coefName[i]);
+        FreeEverything();
+        exit(1);
+      }
+      if (SDDS_NUMERIC_TYPE(columnType)) {
         if (sscanf(coefName[i], "a%ld", &subscript)) {
           if (aorder < subscript)
             aorder = subscript;
@@ -3699,7 +3728,7 @@ void assignControlName(CORRECTION *correction, char *definitionFile) {
       }
     }
 
-    if (SDDS_ReadPage(&definitionPage) < 0) {
+    if (SDDS_ReadPage(&definitionPage) <= 0) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -3953,7 +3982,7 @@ void setupTestsFile(TESTS *test, double interval, long verbose, double pendIOTim
     exit(1);
   }
 
-  if (SDDS_ReadTable(&testValuesPage) < 0) {
+  if (SDDS_ReadTable(&testValuesPage) <= 0) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -4095,7 +4124,7 @@ void setupDespikeFile(DESPIKE_PARAM *despikeParam, CONTROL_NAME *readback, long 
     FreeEverything();
     exit(1);
   }
-  if (SDDS_ReadTable(&despikePage) < 0) {
+  if (SDDS_ReadTable(&despikePage) <= 0) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     FreeEverything();
     exit(1);
@@ -7393,7 +7422,9 @@ void readOffsetValues(double *offset, long n, char **controlName, char *offsetFi
     }
   }
 
-  if (SDDS_ReadPage(&SDDSin) < 0 || (rows = SDDS_CountRowsOfInterest(&SDDSin)) <= 0 ||
+  if (SDDS_CheckColumn(&SDDSin, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&SDDSin, "Offset", NULL, SDDS_DOUBLE, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_ReadPage(&SDDSin) <= 0 || (rows = SDDS_CountRowsOfInterest(&SDDSin)) <= 0 ||
       !(inputName = SDDS_GetInternalColumn(&SDDSin, "ControlName")) ||
       !(inputOffset = SDDS_GetInternalColumn(&SDDSin, "Offset"))) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -7452,7 +7483,9 @@ void readOffsetPV(char **offsetPVs, long n, char **controlName, char *PVOffsetFi
     }
   }
 
-  if (SDDS_ReadPage(&SDDSin) < 0 || (rows = SDDS_CountRowsOfInterest(&SDDSin)) <= 0 ||
+  if (SDDS_CheckColumn(&SDDSin, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&SDDSin, "OffsetControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_ReadPage(&SDDSin) <= 0 || (rows = SDDS_CountRowsOfInterest(&SDDSin)) <= 0 ||
       !(inputOffsetPV = SDDS_GetInternalColumn(&SDDSin, "OffsetControlName")) ||
       !(inputName = SDDS_GetInternalColumn(&SDDSin, "ControlName"))) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
@@ -7502,7 +7535,7 @@ void setupWaveforms(WAVE_FORMS *wave_forms, CONTROL_NAME *CONTROL, long verbose,
   char **DeviceNames, **readback, **controlName;
   int32_t *index;
   SDDS_DATASET dataset;
-  int32_t rows;
+  int32_t rows, pageCode;
 
   rows = 0;
   DeviceNames = readback = NULL;
@@ -7571,7 +7604,7 @@ void setupWaveforms(WAVE_FORMS *wave_forms, CONTROL_NAME *CONTROL, long verbose,
       exit(1);
     }
 
-    while (SDDS_ReadPage(&dataset) > 0) {
+    while ((pageCode = SDDS_ReadPage(&dataset)) > 0) {
       m = wave_forms->waveforms;
       if ((wave_forms->waveformPV = SDDS_Realloc(wave_forms->waveformPV, sizeof(*wave_forms->waveformPV) * (m + 1))) == NULL) {
         fprintf(stderr, "memory allocation failure\n");
@@ -7666,7 +7699,7 @@ void setupWaveforms(WAVE_FORMS *wave_forms, CONTROL_NAME *CONTROL, long verbose,
       free(index);
       wave_forms->waveforms++;
     }
-    if (!SDDS_Terminate(&dataset)) {
+    if (pageCode == 0 || !SDDS_Terminate(&dataset)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       FreeEverything();
       exit(1);
@@ -7822,6 +7855,7 @@ void setupWaveformTests(WAVEFORM_TESTS *waveform_tests, CONTROL_NAME *readback, 
   SDDS_DATASET dataset;
   int32_t *index;
   int32_t *despike;
+  int32_t pageCode;
   short *ignore;
   char **DeviceName;
   double *max, *min, *sleep, *holdOff;
@@ -7968,7 +8002,7 @@ void setupWaveformTests(WAVEFORM_TESTS *waveform_tests, CONTROL_NAME *readback, 
       FreeEverything();
       exit(1);
     }
-    while (SDDS_ReadPage(&dataset) > 0) {
+    while ((pageCode = SDDS_ReadPage(&dataset)) > 0) {
       k = waveform_tests->waveformTests;
       if ((waveform_tests->DeviceName = SDDS_Realloc(waveform_tests->DeviceName, sizeof(*waveform_tests->DeviceName) * (k + 1))) == NULL) {
         fprintf(stderr, "memory allocation failure\n");
@@ -8151,6 +8185,11 @@ void setupWaveformTests(WAVEFORM_TESTS *waveform_tests, CONTROL_NAME *readback, 
         waveform_tests->sleep[k] = sleep;
       if (holdOffTimeColumnPresent || holdOffIntervalColumnPresent)
         waveform_tests->holdOff[k] = holdOff;
+    }
+    if (pageCode == 0) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+      FreeEverything();
+      exit(1);
     }
     if ((waveform_tests->outOfRange[k] = calloc(rows, sizeof(long))) == NULL) {
       fprintf(stderr, "memory allocation failure\n");

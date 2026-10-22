@@ -2620,11 +2620,12 @@ long readMeasurementFile(char *MeasurementFile, char ***ControlName, char ***Col
   SDDS_TABLE inTable;
   long code = 0, names = 0, i;
 
-  if (!SDDS_InitializeInput(&inTable, MeasurementFile) || (code = SDDS_ReadTable(&inTable)) < 0)
+  if (!SDDS_InitializeInput(&inTable, MeasurementFile) || (code = SDDS_ReadTable(&inTable)) <= 0)
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (code == 0 || (names = SDDS_CountRowsOfInterest(&inTable)) < 1)
     SDDS_Bomb("no data in measurement file");
-  if (!((*ControlName) = SDDS_GetColumn(&inTable, "ControlName"))) {
+  if (SDDS_CheckColumn(&inTable, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !((*ControlName) = SDDS_GetColumn(&inTable, "ControlName"))) {
     fprintf(stderr, "error: required column \"ControlName\" not found in file %s\n", MeasurementFile);
     exit(1);
   }
@@ -2728,11 +2729,13 @@ long readMeasurementFile(char *MeasurementFile, char ***ControlName, char ***Col
   if ((LowerLimit && !UpperLimit) || (!LowerLimit && UpperLimit))
     SDDS_Bomb("file contains one of LowerLimit and UpperLimit columns--must have both or neither");
 
-  if (SDDS_ReadPage(&inTable) > 1) {
+  if ((code = SDDS_ReadPage(&inTable)) > 1) {
     fprintf(FPINFO, "warning: file %s has multiple pages--only the first is used!\n",
             MeasurementFile);
     fflush(FPINFO);
   }
+  if (code == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   return names;
@@ -2742,6 +2745,7 @@ void read_knob_file(VARIABLE_DATA *variable, VARIABLESPEC *NewVariable, double p
    
   SDDS_TABLE knobTable;
   char *knobName=NULL;
+  int32_t pageCode;
   long found=0, gainIndex=-1, lowerIndex=-1, upperIndex=-1, readbackIndex=-1, i;
   if (!SDDS_InitializeInput(&knobTable, NewVariable->knob_file_name)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -2751,12 +2755,18 @@ void read_knob_file(VARIABLE_DATA *variable, VARIABLESPEC *NewVariable, double p
   lowerIndex = SDDS_GetColumnIndex(&knobTable, "LowerLimit");
   upperIndex = SDDS_GetColumnIndex(&knobTable, "UpperLimit");
   readbackIndex = SDDS_GetColumnIndex(&knobTable, "ReadbackName");
+  if (SDDS_CheckParameter(&knobTable, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&knobTable, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      SDDS_CheckColumn(&knobTable, "Weight", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY ||
+      (gainIndex >= 0 && SDDS_CheckParameter(&knobTable, "Gain", NULL, SDDS_ANY_NUMERIC_TYPE, stderr) != SDDS_CHECK_OKAY) ||
+      (readbackIndex >= 0 && SDDS_CheckColumn(&knobTable, "ReadbackName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY))
+    SDDS_Bomb("Invalid column or parameter type in knob file");
   variable->knob.lower_limit = NULL;
   variable->knob.upper_limit = NULL;
   variable->knob.ReadbackName = NULL;
   variable->knob.RBPVchid=NULL;
   variable->knob.units=NULL;
-  while (SDDS_ReadTable(&knobTable)>0) {
+  while ((pageCode = SDDS_ReadTable(&knobTable)) > 0) {
     if (!SDDS_GetParameter(&knobTable, "ControlName", &knobName))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (strcmp(NewVariable->control_name, knobName)!=0) {
@@ -2768,12 +2778,13 @@ void read_knob_file(VARIABLE_DATA *variable, VARIABLESPEC *NewVariable, double p
       exit(1);
     }
     variable->knob.ControlName=(char **)SDDS_GetColumn(&knobTable, "ControlName");
-    variable->knob.weight = SDDS_GetColumnInDoubles(&knobTable, "Weight");
+    if (!(variable->knob.weight = SDDS_GetColumnInDoubles(&knobTable, "Weight")))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (lowerIndex>=0 && !(variable->knob.lower_limit = SDDS_GetColumnInDoubles(&knobTable,"LowerLimit")))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (upperIndex>=0 && !(variable->knob.upper_limit = SDDS_GetColumnInDoubles(&knobTable, "UpperLimit")))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
-    if (gainIndex>=0 && !SDDS_GetParameter(&knobTable, "Gain", &variable->knob.gain))
+    if (gainIndex>=0 && !SDDS_GetParameterAsDouble(&knobTable, "Gain", &variable->knob.gain))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (readbackIndex>=0 && !(variable->knob.ReadbackName=(char **)SDDS_GetColumn(&knobTable, "ReadbackName")))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -2810,7 +2821,7 @@ void read_knob_file(VARIABLE_DATA *variable, VARIABLESPEC *NewVariable, double p
     found=1;
     break;
   }
-  if (!SDDS_Terminate(&knobTable))
+  if (pageCode == 0 || !SDDS_Terminate(&knobTable))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   if (!found) {
     fprintf(stderr,"Error knob %s not found in knob file %s.\n", NewVariable->control_name, NewVariable->knob_file_name);

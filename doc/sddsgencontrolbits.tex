@@ -1,6 +1,16 @@
 % sddsgencontrolbits: create BPM acquisition control bits or send RAM data.
 \begin{sddsprog}{sddsgencontrolbits}
 \item \textbf{description:}
+SDDS6 enum columns in the preset and bunch-pattern tables are resolved to
+dictionary labels for categorical fields, including labels and mode names.
+Textual parameters in input RAM files also accept enum dictionaries, including
+the per-receiver mode and bunch-pattern parameters. Timing and count parameters
+in RAM files retain their required long type.
+Timing and count columns must contain numeric data; the input RAM
+\verb+Waveform+ column must have unsigned-long type. Enum codes are not
+interpreted as counts or bit masks. Use \verb+sddscast+ for an explicit
+conversion when numeric codes are intended.
+
 \verb+sddsgencontrolbits+ creates a file of BPM acquisition control
 bits from unsigned-long RAM data or from command line
 parameters. There is an option to send the RAM data to EPICS,

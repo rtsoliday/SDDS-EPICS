@@ -149,6 +149,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #include <alarm.h>
 /* If you get an error compiling this next few lines it
@@ -1934,6 +1935,13 @@ long getGlitchLoggerData(DATASETS **datasets, long *numDatasets, GLITCH_REQUEST 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
 
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName", NULL};
+    const char *parameters[] = {"GlitchScript", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
+
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
                           "ControlName", "Device", "DeviceName", NULL))) {
@@ -2386,7 +2394,8 @@ long getGlitchLoggerData(DATASETS **datasets, long *numDatasets, GLITCH_REQUEST 
   if (OutputRootname)
     free(OutputRootname);
 
-  SDDS_Terminate(&inSet);
+  if (page == 0 || !SDDS_Terminate(&inSet))
+    return 0;
   return 1;
 }
 
@@ -2714,6 +2723,11 @@ long getTriggerData(GLITCH_REQUEST **glitchRequest, long *glitchChannels,
 
   if (!SDDS_InitializeInput(&inSet, triggerFile))
     return 0;
+  {
+    const char *columns[] = {"GlitchScript", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
   if ((SDDS_CHECK_OKAY != SDDS_CheckColumn(&inSet, "TriggerControlName", NULL, SDDS_STRING, NULL))) {
     fprintf(stderr, "TriggerControlName column does not exist in %s", triggerFile);
     exit(1);

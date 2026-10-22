@@ -28,6 +28,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 #define CLO_VERBOSE 0
@@ -382,7 +383,7 @@ int main(int argc, char **argv) {
                                 &waveformReadbackUnits, NULL,
                                 NULL, NULL, &waveformDataType, &waveformControlNames,
                                 &waveformLength, NULL, waveformDataFile, SDDS_FLOAT)) {
-      SDDS_Bomb("problem reading data from waveform input file");
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     }
     if (waveformLength <= 0)
       SDDS_Bomb("problem with WaveformLength in waveform input file: long parameter must exist and value must be positive");
@@ -1100,6 +1101,7 @@ long getScalarMonitorDataModifiedWithOffset(char ***DeviceName, char ***ReadMess
   SDDS_DATASET inSet;
   char *ControlNameColumnName, *MessageColumnName = NULL;
   short UnitsDefined, MessageDefined, ScaleFactorDefined, DeadBandDefined, TimeOffsetDefined;
+  int32_t pageCode;
   long i, noReadbackName, type;
   INFOBUF *info;
   *DeviceName = NULL;
@@ -1121,6 +1123,13 @@ long getScalarMonitorDataModifiedWithOffset(char ***DeviceName, char ***ReadMess
 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
+
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName",
+                             "ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
@@ -1360,8 +1369,10 @@ long getScalarMonitorDataModifiedWithOffset(char ***DeviceName, char ***ReadMess
       !(*timeOffset = SDDS_GetColumnInDoubles(&inSet, "TimeOffset")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
-  if (SDDS_ReadPage(&inSet) > 0)
+  if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
+  if (pageCode == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);
   return 1;

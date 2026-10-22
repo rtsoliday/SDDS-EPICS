@@ -342,6 +342,7 @@
 
 #include "mdb.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 
 /*** Replace the ca_client_context::vSignal exception procedure in 
@@ -663,6 +664,7 @@ long SizeOfDataType(long dataType) {
     result = sizeof(short);
     break;
   case SDDS_LONG:
+  case SDDS_ENUM:
     result = sizeof(int32_t);
     break;
   case SDDS_LONG64:
@@ -726,6 +728,9 @@ long DataTypeToCaType(long dataType) {
     break;
   case SDDS_STRING:
     result = DBR_STRING;
+    break;
+  case SDDS_ENUM:
+    bomb("Convert SDDS enum codes to dictionary labels before Channel Access writes.", NULL);
     break;
   default:
     bomb("Bad data type passed to DataTypeToCaType.", NULL);
@@ -867,6 +872,7 @@ long getScalarMonitorData(char ***DeviceName, char ***ReadMessage,
   SDDS_DATASET inSet;
   char *ControlNameColumnName, *MessageColumnName = NULL;
   short UnitsDefined, MessageDefined, ScaleFactorDefined, DeadBandDefined;
+  int32_t pageCode;
   long i, noReadbackName, type;
   INFOBUF *info;
   *DeviceName = NULL;
@@ -886,6 +892,13 @@ long getScalarMonitorData(char ***DeviceName, char ***ReadMessage,
 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
+
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName",
+                             "ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
@@ -1104,8 +1117,10 @@ long getScalarMonitorData(char ***DeviceName, char ***ReadMessage,
       !(*DeadBands = SDDS_GetColumnInDoubles(&inSet, "DeadBand")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
-  if (SDDS_ReadPage(&inSet) > 0)
+  if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
+  if (pageCode == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);
   return 1;
@@ -1116,6 +1131,7 @@ long getConditionsData(char ***DeviceName, char ***ReadMessage,
                        double **UpperLimit, double **HoldoffTime,
                        long *variables, char *inputFile) {
   SDDS_DATASET inSet;
+  int32_t pageCode;
   char *ControlNameColumnName = NULL, *MessageColumnName = NULL;
   short MessageDefined, ScaleFactorDefined, HoldoffDefined;
   long i;
@@ -1127,6 +1143,13 @@ long getConditionsData(char ***DeviceName, char ***ReadMessage,
 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
+
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName",
+                             "ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
@@ -1231,7 +1254,17 @@ long getConditionsData(char ***DeviceName, char ***ReadMessage,
       !(*HoldoffTime = SDDS_GetColumnInDoubles(&inSet, "HoldoffTime")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
-  SDDS_Terminate(&inSet);
+  /* Conditions use the first page; reject a failed extra-page read just as
+   * the scalar and waveform configuration readers do. */
+  pageCode = SDDS_ReadPage(&inSet);
+  if (pageCode > 0)
+    fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
+  if (pageCode == 0) {
+    SDDS_Terminate(&inSet);
+    return 0;
+  }
+  if (!SDDS_Terminate(&inSet))
+    return 0;
   if (ControlNameColumnName)
     free(ControlNameColumnName);
   if (MessageColumnName)
@@ -1245,6 +1278,7 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
                             int32_t **readbackDataType, long *readbacks,
                             long *waveformLength, int32_t **waveformOffset, char *inputFile, long desiredDataType) {
   SDDS_DATASET inSet;
+  int32_t pageCode;
   long code, dataTypeColumnGiven, pvIndex;
 
   *readbacks = 0;
@@ -1266,6 +1300,13 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
+
+  {
+    const char *columns[] = {"rmsPVPrefix", "ReadbackOffset", "ReadbackScale", NULL};
+    const char *parameters[] = {"WaveformLength", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, parameters))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if ((SDDS_CHECK_OKAY != SDDS_CheckColumn(&inSet, "WaveformPV", NULL, SDDS_STRING, stderr)) ||
       (SDDS_CHECK_OKAY != SDDS_CheckColumn(&inSet, "WaveformName", NULL, SDDS_STRING, stderr))) {
@@ -1342,6 +1383,10 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
       return 0;
     }
     if (!dataTypeColumnGiven) {
+      if (desiredDataType == SDDS_ENUM) {
+        SDDS_SetError("Enum waveform storage requires a dictionary and is not supported");
+        return 0;
+      }
       if (!SDDS_VALID_TYPE(desiredDataType))
         desiredDataType = SDDS_FLOAT;
       if (!(*readbackDataType = (int32_t *)malloc(sizeof(int32_t) * (*readbacks)))) {
@@ -1362,8 +1407,15 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
       }
       for (pvIndex = 0; pvIndex < *readbacks; pvIndex++) {
         (*readbackDataType)[pvIndex] = SDDS_IdentifyType(readbackDataTypeStrings[pvIndex]);
-        free(readbackDataTypeStrings[pvIndex]);
+        if (!SDDS_VALID_TYPE((*readbackDataType)[pvIndex]) ||
+            (*readbackDataType)[pvIndex] == SDDS_ENUM) {
+          SDDS_SetError("Invalid waveform DataType: use a primitive SDDS type; enum storage requires a dictionary");
+          SDDS_FreeStringArray(readbackDataTypeStrings, *readbacks);
+          free(readbackDataTypeStrings);
+          return 0;
+        }
       }
+      SDDS_FreeStringArray(readbackDataTypeStrings, *readbacks);
       free(readbackDataTypeStrings);
     }
   }
@@ -1381,6 +1433,15 @@ long getWaveformMonitorData(char ***readbackPV, char ***readbackName, char ***re
     }
   }
 
+  /* The configuration comes from the first page, but a failed read of an
+   * extra page must not be mistaken for the end of a valid SDDS6 file. */
+  pageCode = SDDS_ReadPage(&inSet);
+  if (pageCode > 0)
+    fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
+  if (pageCode == 0) {
+    SDDS_Terminate(&inSet);
+    return 0;
+  }
   if (!SDDS_Terminate(&inSet)) {
     SDDS_SetError("problem termining input file");
     return 0;
@@ -1446,9 +1507,16 @@ void addScalarParameters(SDDS_TABLE *outTable, char ***processVariable,
   long i, rows;
   char **PVname, **readbackName = NULL, *controlColumn, *readbackColumn = NULL;
   char **unitsBuffer;
+  int32_t pageCode;
 
   if (!SDDS_InitializeInput(&inTable, file))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+
+  {
+    const char *columns[] = {"ControlName", "DeviceName", NULL};
+    if (!checkNonEnumInputs(&inTable, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(controlColumn = SDDS_FindColumn(&inTable, FIND_SPECIFIED_TYPE, SDDS_STRING, "ControlName", "DeviceName", NULL)) ||
       !(readbackColumn = SDDS_FindColumn(&inTable, FIND_SPECIFIED_TYPE, SDDS_STRING, "ReadbackName", NULL)))
@@ -1457,7 +1525,7 @@ void addScalarParameters(SDDS_TABLE *outTable, char ***processVariable,
   *parameter = *processVariable = NULL;
   *PVchid = NULL;
   *parameters = 0;
-  while (SDDS_ReadTable(&inTable) >= 1) {
+  while ((pageCode = SDDS_ReadTable(&inTable)) > 0) {
     if ((rows = SDDS_CountRowsOfInterest(&inTable)) == 0)
       continue;
     if (!(PVname = (char **)SDDS_GetColumn(&inTable, controlColumn)) ||
@@ -1475,6 +1543,8 @@ void addScalarParameters(SDDS_TABLE *outTable, char ***processVariable,
     free(PVname);
     free(readbackName);
   }
+  if (pageCode == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
   unitsBuffer = tmalloc(sizeof(*unitsBuffer) * (*parameters));
   getUnits(*processVariable, unitsBuffer, *parameters, *PVchid, pendIOtime);
   for (i = 0; i < *parameters; i++)
@@ -1565,6 +1635,7 @@ long getUnits(char **PVname, char **buffer, long PVs, chid *PVchid, double pendI
 CHANNEL_ASSIGNMENT *makeAssignments(char *assignmentFile, long *assignments) {
   SDDS_TABLE inTable;
   long i, rows;
+  int32_t pageCode;
   static CHANNEL_ASSIGNMENT default_assignment[4] = {
     {"destWF0", "channel0", NULL, NULL, 0, 1, NULL},
     {"destWF1", "channel1", NULL, NULL, 0, 1, NULL},
@@ -1581,6 +1652,13 @@ CHANNEL_ASSIGNMENT *makeAssignments(char *assignmentFile, long *assignments) {
 
   if (!SDDS_InitializeInput(&inTable, assignmentFile))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+
+  {
+    const char *columns[] = {"ControlName", "DeviceName", "ReadbackUnits", "ConversionOffset", "Offset", "ReadbackOffset",
+                             "ConversionFactor", "Factor", "ReadbackFactor", "Analyses", "analyses", NULL};
+    if (!checkNonEnumInputs(&inTable, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(controlColumn = SDDS_FindColumn(&inTable, FIND_SPECIFIED_TYPE, SDDS_STRING, "ControlName", "DeviceName", NULL)) ||
       !(readbackColumn = SDDS_FindColumn(&inTable, FIND_SPECIFIED_TYPE, SDDS_STRING, "ReadbackName", NULL)))
@@ -1599,7 +1677,7 @@ CHANNEL_ASSIGNMENT *makeAssignments(char *assignmentFile, long *assignments) {
   units = analyses = NULL;
   offset = NULL;
   factor = NULL;
-  while (SDDS_ReadTable(&inTable) > 0) {
+  while ((pageCode = SDDS_ReadTable(&inTable)) > 0) {
     if (!(rows = SDDS_CountRowsOfInterest(&inTable)))
       continue;
     if (!(PV = SDDS_GetColumn(&inTable, controlColumn)) ||
@@ -1644,6 +1722,8 @@ CHANNEL_ASSIGNMENT *makeAssignments(char *assignmentFile, long *assignments) {
       free(analyses);
     *assignments += rows;
   }
+  if (pageCode == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   free(controlColumn);
   free(readbackColumn);
@@ -1654,8 +1734,6 @@ CHANNEL_ASSIGNMENT *makeAssignments(char *assignmentFile, long *assignments) {
   if (analysesColumn)
     free(analysesColumn);
 
-  if (SDDS_ReadTable(&inTable) > 1)
-    fprintf(stderr, "warning: assignments file has more than one page---only the first is used\n");
   if (!SDDS_Terminate(&inTable))
     SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
@@ -1977,9 +2055,11 @@ long DefineLoggingTimeDetail(SDDS_DATASET *dataset, unsigned long mode) {
 
 double *ReadValuesFileData(long *values, char *filename, char *column) {
   SDDS_DATASET dataset;
-  double *data, *buffer;
+  double *data, *buffer, *newBuffer;
   long i, rows, totalRows;
+  int32_t pageCode;
 
+  *values = 0;
   if (!filename) {
     SDDS_SetError("NULL filename in ReadValuesFileData");
     return NULL;
@@ -1993,27 +2073,38 @@ double *ReadValuesFileData(long *values, char *filename, char *column) {
 
   buffer = NULL;
   totalRows = 0;
-  while (SDDS_ReadPage(&dataset) > 0) {
+  while ((pageCode = SDDS_ReadPage(&dataset)) > 0) {
     if (!(rows = SDDS_CountRowsOfInterest(&dataset)))
       continue;
     if (!(data = SDDS_GetColumnInDoubles(&dataset, column)))
-      return NULL;
-    if (!(buffer = SDDS_Realloc(buffer, sizeof(*buffer) * (rows + totalRows)))) {
+      goto failure;
+    if (!(newBuffer = SDDS_Realloc(buffer, sizeof(*buffer) * (rows + totalRows)))) {
+      free(data);
       SDDS_SetError("Memory allocation failure");
-      return NULL;
+      goto failure;
     }
+    buffer = newBuffer;
     for (i = 0; i < rows; i++)
       buffer[i + totalRows] = data[i];
     totalRows += rows;
     free(data);
   }
+  if (pageCode == 0)
+    goto failure;
   if (!totalRows) {
     SDDS_SetError("No data in file");
   }
-  *values = totalRows;
-  if (!SDDS_Terminate(&dataset))
+  if (!SDDS_Terminate(&dataset)) {
+    free(buffer);
     return NULL;
+  }
+  *values = totalRows;
   return buffer;
+
+failure:
+  free(buffer);
+  SDDS_Terminate(&dataset);
+  return NULL;
 }
 
 long WriteScalarValues(char **PVs, double *value,
@@ -2149,6 +2240,7 @@ long getScalarMonitorDataModified(char ***DeviceName, char ***ReadMessage,
   SDDS_DATASET inSet;
   char *ControlNameColumnName, *MessageColumnName = NULL, **UnitsPV = NULL;
   short hasUnits = 0, hasMessage = 0, hasFactor = 0, hasDeadBands = 0, hasSymbol = 0, unitsPVDefined = 0, hasReadback = 0;
+  int32_t pageCode;
   long i, type;
   INFOBUF *info = NULL;
   chid *unitsCHID = NULL;
@@ -2175,6 +2267,14 @@ long getScalarMonitorDataModified(char ***DeviceName, char ***ReadMessage,
 
   if (!SDDS_InitializeInput(&inSet, inputFile))
     return 0;
+
+  {
+    const char *columns[] = {"ControlName", "Device", "DeviceName", "ReadbackName", "ReadbackSymbol", "ReadbackUnits",
+                             "ScaleFactor", "DeadBand", "UnitsPV",
+                             "ReadMessage", "Message", "ReadMsg", NULL};
+    if (!checkNonEnumInputs(&inSet, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
 
   if (!(ControlNameColumnName =
           SDDS_FindColumn(&inSet, FIND_SPECIFIED_TYPE, SDDS_STRING,
@@ -2363,8 +2463,10 @@ long getScalarMonitorDataModified(char ***DeviceName, char ***ReadMessage,
       !(*DeadBands = SDDS_GetColumnInDoubles(&inSet, (char *)"DeadBand")))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
-  if (SDDS_ReadPage(&inSet) > 0)
+  if ((pageCode = SDDS_ReadPage(&inSet)) > 0)
     fprintf(stderr, "Warning: extra pages in input file %s---they are ignored\n", inputFile);
+  if (pageCode == 0)
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   SDDS_Terminate(&inSet);
   if (unitsCHID)

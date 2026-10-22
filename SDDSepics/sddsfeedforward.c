@@ -60,6 +60,7 @@
 #include "match_string.h"
 #include "matlib.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 #include "SDDSepics.h"
 #if !defined(vxWorks)
 #  include <sys/timeb.h>
@@ -1465,6 +1466,11 @@ void readTestsFile(TESTS *test, CONTROL_DATA *readbackData, CONTROL_DATA *actuat
     return;
   if (!SDDS_InitializeInput(&testValuesPage, test->file))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+  {
+    const char *columns[] = {"ExitOnFailure", NULL};
+    if (!checkNonEnumInputs(&testValuesPage, columns, NULL))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+  }
   switch (SDDS_CheckColumn(&testValuesPage, "ControlName", NULL, SDDS_STRING, stderr)) {
   case SDDS_CHECK_OKAY:
     break;
@@ -1516,7 +1522,7 @@ void readTestsFile(TESTS *test, CONTROL_DATA *readbackData, CONTROL_DATA *actuat
     SDDS_Terminate(&testValuesPage);
     SDDS_Bomb("");
   }
-  if (SDDS_ReadPage(&testValuesPage) < 0) {
+  if (SDDS_ReadPage(&testValuesPage) <= 0) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
     SDDS_Terminate(&testValuesPage);
     exit(1);

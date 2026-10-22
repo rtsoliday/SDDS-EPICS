@@ -102,6 +102,7 @@ static char *shuntCoefFile = "/home/helios/oagData/booster/ramps/correctors/corr
 
 int main(int argc, char *argv[]) {
   SDDS_TABLE outTable, refTable, templateTable, shuntTable;
+  int32_t pageCode;
   char *configFile = NULL, *refFile = NULL, *templateFile = NULL, *logFile = NULL, *dailyFileDir, *dailyFileRootname, *dailyFileExt;
   char **corrList = NULL, *corrName, **shuntCorr = NULL;
   double *templateTime = NULL, *templateSetpoint = NULL, temp_value, maxsetpoint, *rampsetpoint = NULL, *shuntCoef = NULL;
@@ -257,16 +258,18 @@ int main(int argc, char *argv[]) {
     readConfigFile(configFile, &corrList, &correctors);
   }
   /*read shunt coefficients */
-  if (!SDDS_InitializeInput(&shuntTable, shuntCoefFile) || SDDS_ReadTable(&shuntTable) < 0)
+  if (!SDDS_InitializeInput(&shuntTable, shuntCoefFile) || SDDS_ReadTable(&shuntTable) <= 0)
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if (!(shuntRows = SDDS_CountRowsOfInterest(&shuntTable))) {
     fprintf(stderr, "Error: no data found in shunt coeff file\n");
     exit(1);
   }
-  if (!(shuntCorr = (char **)SDDS_GetColumn(&shuntTable, "CorrName")) ||
+  if (SDDS_CheckColumn(&shuntTable, "CorrName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(shuntCorr = (char **)SDDS_GetColumn(&shuntTable, "CorrName")) ||
       !(shuntCoef = (double *)SDDS_GetColumnInDoubles(&shuntTable, "ShuntCoeff")) ||
       !(SDDS_Terminate(&shuntTable))) {
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
+    exit(1);
   }
 
   if (!(corrRamp = SDDS_Malloc(sizeof(*corrRamp) * correctors)))
@@ -289,7 +292,7 @@ int main(int argc, char *argv[]) {
   /*read template file */
   if (verbose)
     fprintf(stdout, "Reading template file...\n");
-  if (!SDDS_InitializeInput(&templateTable, templateFile) || SDDS_ReadTable(&templateTable) < 0)
+  if (!SDDS_InitializeInput(&templateTable, templateFile) || SDDS_ReadTable(&templateTable) <= 0)
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
 
   if (!(template_rows = SDDS_CountRowsOfInterest(&templateTable))) {
@@ -352,7 +355,7 @@ int main(int argc, char *argv[]) {
     corrName = NULL;
     if (!SDDS_InitializeInput(&refTable, refFile))
       SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-    while (SDDS_ReadTable(&refTable) > 0) {
+    while ((pageCode = SDDS_ReadTable(&refTable)) > 0) {
       if (!(rows = SDDS_CountRowsOfInterest(&refTable)))
         continue;
       if (!ramp_rows) {
@@ -383,7 +386,7 @@ int main(int argc, char *argv[]) {
       if (pageUsed == correctors) /*all needed corrector have reference setpoint */
         break;
     }
-    if (!SDDS_Terminate(&refTable))
+    if (pageCode == 0 || !SDDS_Terminate(&refTable))
       SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     for (i = 0; i < correctors; i++) {
       if (!corrRamp[i].foundmatch) {
@@ -607,14 +610,14 @@ int main(int argc, char *argv[]) {
 
 void readConfigFile(char *configFile, char ***corrList, long *correctors) {
   SDDS_DATASET configData;
-  int32_t rows = 0;
+  int32_t rows = 0, pageCode;
   char *parName = NULL;
   *corrList = NULL;
   *correctors = 0;
 
   if (!SDDS_InitializeInput(&configData, configFile))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
-  while (SDDS_ReadTable(&configData) > 0) {
+  while ((pageCode = SDDS_ReadTable(&configData)) > 0) {
     if (!(parName = SDDS_GetParameterAsString(&configData, "NameType", NULL)))
       SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
     if (strcmp(parName, "CorrectorNames") == 0) {
@@ -624,14 +627,15 @@ void readConfigFile(char *configFile, char ***corrList, long *correctors) {
         exit(1);
       }
       *correctors = rows;
-      if (!(*corrList = (char **)SDDS_GetColumn(&configData, "Name"))) {
+      if (SDDS_CheckColumn(&configData, "Name", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+          !(*corrList = (char **)SDDS_GetColumn(&configData, "Name"))) {
         fprintf(stderr, "readConfigFile error2: error reading corrector names in config file %s\n", configFile);
         exit(1);
       }
       break;
     }
   }
-  if (!SDDS_Terminate(&configData))
+  if (pageCode == 0 || !SDDS_Terminate(&configData))
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   if (!(*correctors)) {
     fprintf(stderr, "readConfigFile error1: no correctors found in config file %s\n", configFile);
@@ -653,16 +657,19 @@ char *generateDailyFilename(char *dir, char *rootname, char *ext, long hoursOnly
   else
     strftime(buffer, 1024, "%Y-%j-%m%d-%H%M%S", now1);
   if (rootname && strlen(rootname)) {
-    sprintf(filename, "%s-%s", rootname, buffer);
-    sprintf(buffer, filename);
+    if ((size_t)snprintf(filename, sizeof(filename), "%s-%s", rootname, buffer) >= sizeof(filename))
+      SDDS_Bomb("Daily filename exceeds the supported length");
+    strcpy(buffer, filename);
   }
   if (dir && strlen(dir)) {
-    sprintf(filename, "%s/%s", dir, buffer);
-    sprintf(buffer, filename);
+    if ((size_t)snprintf(filename, sizeof(filename), "%s/%s", dir, buffer) >= sizeof(filename))
+      SDDS_Bomb("Daily filename exceeds the supported length");
+    strcpy(buffer, filename);
   }
   if (ext && strlen(ext)) {
-    sprintf(filename, "%s%s", buffer, ext);
-    sprintf(buffer, filename);
+    if ((size_t)snprintf(filename, sizeof(filename), "%s%s", buffer, ext) >= sizeof(filename))
+      SDDS_Bomb("Daily filename exceeds the supported length");
+    strcpy(buffer, filename);
   }
 
   if (!(name = malloc(sizeof(*name) * (strlen(buffer) + 1)))) {

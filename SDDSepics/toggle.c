@@ -477,7 +477,7 @@ int main(int argc, char **argv) {
   }
 
   if (SnapshotFile1) {
-    if (SDDS_ReadTable(&Snapshot1Table) < 0)
+    if (SDDS_ReadTable(&Snapshot1Table) <= 0)
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     Snap1Rows = SDDS_CountRowsOfInterest(&Snapshot1Table);
     if (Snap2Rows == Snap1Rows && warning)
@@ -501,7 +501,7 @@ int main(int argc, char **argv) {
   }
 
   if (SnapshotFile2) {
-    if (SDDS_ReadTable(&Snapshot2Table) < 0)
+    if (SDDS_ReadTable(&Snapshot2Table) <= 0)
       SDDS_PrintErrors(stdout, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     Snap2Rows = SDDS_CountRowsOfInterest(&Snapshot2Table);
     Snap2ControlName = (char **)SDDS_GetColumn(&Snapshot2Table, "ControlName");

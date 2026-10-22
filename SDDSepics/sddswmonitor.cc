@@ -89,6 +89,7 @@
 #include "scan.h"
 #include "match_string.h"
 #include "SDDS.h"
+#include "sddsInput.h"
 
 #include "fftpackC.h"
 #include "SDDSepics.h"
@@ -457,8 +458,10 @@ int main(int argc, char **argv) {
         if (s_arg[i_arg].n_items < 2 ||
             !(datatype_string = s_arg[i_arg].list[1]))
           bomb((char *)"no value given for option -dataType", NULL);
-        if ((DataType = SDDS_IdentifyType(datatype_string)) < 0)
+        if ((DataType = SDDS_IdentifyType(datatype_string)) <= 0)
           bomb((char *)"invalid -dataType value", NULL);
+        if (DataType == SDDS_ENUM)
+          bomb((char *)"enum output requires a dictionary and is not supported by -dataType", NULL);
         dataTypeCLOGiven = 1;
         break;
       case CLO_TIME:
@@ -720,7 +723,7 @@ int main(int argc, char **argv) {
                                 &readbackOffset, &readbackScale, &readbackDataType,
                                 &readbacks, &waveformLength, &waveformOffset, inputfile,
                                 DataType))
-      SDDS_Bomb((char *)"problem getting waveform monitor input data");
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     if (readbackUnits)
       unitsFromFile = 1;
     if (rmsPVPrefix)
@@ -980,6 +983,8 @@ int main(int argc, char **argv) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }
+    if (!checkNonEnumOutputColumns(&originalfile_page))
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     /* compare columns of output file to ReadbackNames column in input file */
     ColumnNames = (char **)SDDS_GetColumnNames(&originalfile_page, &NColumnNames);
     if (-1 == match_string((char *)"Index", ColumnNames, NColumnNames, EXACT_MATCH)) {
@@ -1017,6 +1022,9 @@ int main(int argc, char **argv) {
     /* compare parameters of output file to scalarName in input file */
     ParameterNames = (char **)SDDS_GetParameterNames(&originalfile_page, &NParameters);
     for (i = 0; i < scalars; i++) {
+      const char *parameters[] = {scalarName[i], NULL};
+      if (!checkNonEnumInputs(&originalfile_page, NULL, parameters))
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       if (-1 == match_string(scalarName[i], ParameterNames, NParameters, EXACT_MATCH)) {
         printf("ScalarName %s doesn't match any parameters in output file.\n", scalarName[i]);
         exit(1);
@@ -1025,6 +1033,9 @@ int main(int argc, char **argv) {
     for (j = 0; j < bandwidthLimitedRMSCount; j++) {
       for (i = 0; i < readbacks; i++) {
         snprintf(buffer, sizeof(buffer), "%s:RMS:%ldHz:%ldHz:BW", readbackName[i], (long)(bandwidthLimitedRMS_MIN[j]), (long)(bandwidthLimitedRMS_MAX[j]));
+        const char *parameters[] = {buffer, NULL};
+        if (!checkNonEnumInputs(&originalfile_page, NULL, parameters))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
         if (-1 == match_string(buffer, ParameterNames, NParameters, EXACT_MATCH)) {
           printf("%s doesn't match any columns in output file.\n", buffer);
           exit(1);
@@ -1034,6 +1045,9 @@ int main(int argc, char **argv) {
     if (rms) {
       for (i = 0; i < readbacks; i++) {
         snprintf(buffer, sizeof(buffer), "%s:RMS", readbackName[i]);
+        const char *parameters[] = {buffer, NULL};
+        if (!checkNonEnumInputs(&originalfile_page, NULL, parameters))
+          SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
         if (-1 == match_string(buffer, ParameterNames, NParameters, EXACT_MATCH)) {
           printf("%s doesn't match any columns in output file.\n", buffer);
           exit(1);
@@ -1059,9 +1073,9 @@ int main(int argc, char **argv) {
       SDDS_Bomb((char *)"unable to get auxiliary parameters from existing file.");
     }
 
-    if (!SDDS_GetParameter(&originalfile_page, (char *)"StartHour", &StartHour) ||
+    if (!SDDS_GetParameterAsDouble(&originalfile_page, (char *)"StartHour", &StartHour) ||
         !SDDS_GetParameterAsDouble(&originalfile_page, (char *)"StartDayOfMonth", &StartDay) ||
-        !SDDS_GetParameter(&originalfile_page, (char *)"StartTime", &StartTime)) {
+        !SDDS_GetParameterAsDouble(&originalfile_page, (char *)"StartTime", &StartTime)) {
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       exit(1);
     }

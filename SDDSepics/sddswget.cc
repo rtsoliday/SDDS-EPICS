@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
                                     &SDDSin, &SDDSout, &columnSource, &columnSources,
                                     &parameterSource, &parameterSources,
                                     inputfile, outputfile))
-        SDDS_Bomb((char *)"problem reading waveform input file");
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       if (!waveforms)
         SDDS_Bomb((char *)"no waveform data in input file");
       if (!(data = (void **)SDDS_Malloc(sizeof(*data) * columnSources)))
@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
                                 &SDDSin, &SDDSout, &columnSource, &columnSources,
                                 &parameterSource, &parameterSources,
                                 &rows, inputfile, outputfile))
-        SDDS_Bomb((char *)"problem reading waveform input file");
+        SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
       if (!waveforms)
         SDDS_Bomb((char *)"no waveform data in input file");
     }
@@ -1296,6 +1296,26 @@ long ProcessWmonitorInputData(
     SDDS_SetError((char *)"Unable to find WaveformPV or WaveformName columns");
     return 0;
   }
+  /* Keep the first page's metadata while checking the extra page, including
+   * enum codes that SDDS validates only when the page is read. The memory copy
+   * also works with stdin, where rewinding the input is not possible. */
+  SDDS_DATASET firstPage;
+  if (!SDDS_InitializeCopy(&firstPage, SDDSin, NULL, (char *)"m"))
+    return 0;
+  if (!SDDS_CopyPage(&firstPage, SDDSin)) {
+    SDDS_Terminate(&firstPage);
+    return 0;
+  }
+  int32_t pageCode = SDDS_ReadPage(SDDSin);
+  if (pageCode == 0) {
+    SDDS_Terminate(&firstPage);
+    return 0;
+  }
+  if (pageCode > 0)
+    fprintf(stderr, "Warning: extra pages in waveform input---they are ignored\n");
+  int32_t copied = SDDS_CopyPage(SDDSin, &firstPage);
+  if (!SDDS_Terminate(&firstPage) || !copied)
+    return 0;
   return 1;
 }
 
@@ -1308,7 +1328,7 @@ long ProcessWgetInputData(
   char **name;
   long i, pages;
   SOURCE_DATA *columnSource = NULL, *parameterSource = NULL;
-  int32_t columnSources, parameterSources;
+  int32_t columnSources, parameterSources, pageCode;
 
   *readbacks = 0;
   *readbackPV = NULL;
@@ -1362,7 +1382,7 @@ long ProcessWgetInputData(
   pages = 0;
   *readbackPV = NULL;
   *rows = NULL;
-  while (SDDS_ReadPage(SDDSin) > 0) {
+  while ((pageCode = SDDS_ReadPage(SDDSin)) > 0) {
     if (!(*readbackPV = (char **)SDDS_Realloc(*readbackPV, sizeof(**readbackPV) * (pages + 1))) ||
         !(*rows = (long *)SDDS_Realloc(*rows, sizeof(**rows) * (pages + 1))))
       SDDS_Bomb((char *)"memory allocation failure");
@@ -1370,6 +1390,10 @@ long ProcessWgetInputData(
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     (*rows)[pages] = SDDS_CountRowsOfInterest(SDDSin);
     pages++;
+  }
+  if (pageCode == 0) {
+    SDDS_SetError((char *)"Unable to read waveform input page");
+    return 0;
   }
 
   *readbacks = pages;

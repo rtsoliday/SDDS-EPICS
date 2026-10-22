@@ -658,7 +658,7 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
   WAVEFORM_DATA *data = NULL;
   SDDS_TABLE SDDSin, SDDSscr;
   char **scrPVName = NULL, **valueString = NULL;
-  int32_t scrRows = 0;
+  int32_t scrRows = 0, pageCode;
 
   *waveforms = 0;
   pages = 0;
@@ -673,9 +673,13 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
     }
     scrRows = SDDS_RowCount(&SDDSscr);
     if (scrRows > 0) {
-      if (!(scrPVName = (char **)SDDS_GetColumn(&SDDSscr, "ControlName")) ||
-          !(valueString = (char **)SDDS_GetColumn(&SDDSscr, "ValueString")))
+      if (SDDS_CheckColumn(&SDDSscr, "ControlName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+          SDDS_CheckColumn(&SDDSscr, "ValueString", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+          !(scrPVName = (char **)SDDS_GetColumn(&SDDSscr, "ControlName")) ||
+          !(valueString = (char **)SDDS_GetColumn(&SDDSscr, "ValueString"))) {
         SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+        exit(1);
+      }
     }
     if (!SDDS_Terminate(&SDDSscr))
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
@@ -692,7 +696,7 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
     SDDS_PrintErrors(stderr, SDDS_EXIT_PrintErrors | SDDS_VERBOSE_PrintErrors);
   }
   pages = 0;
-  while (SDDS_ReadPage(&SDDSin) > 0) {
+  while ((pageCode = SDDS_ReadPage(&SDDSin)) > 0) {
 #ifdef USE_RUNCONTROL
     if (rcParam.PV) {
       if (getTimeInSecs() >= lastRCPingTime + 2) {
@@ -751,7 +755,7 @@ long readinputfile(char *inputfile, long *waveforms, WAVEFORM_DATA **waveformDat
     }
     pages++;
   }
-  if (!SDDS_Terminate(&SDDSin))
+  if (pageCode == 0 || !SDDS_Terminate(&SDDSin))
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
 
   if (SCRFile) {
@@ -890,8 +894,11 @@ void readResponseDataAndIDsectorFile(char *respFile, char *IDsectorFile, RESPONS
   resp_matrix->resp_rows = respRows;
   resp_matrix->resp_data = malloc(sizeof(*resp_matrix->resp_data) * respRows);
   resp_matrix->delta_setpoint = malloc(sizeof(double) * respRows);
-  if (!(resp_matrix->bpmName = (char **)SDDS_GetColumn(&SDDSresp, "ElementName")))
+  if (SDDS_CheckColumn(&SDDSresp, "ElementName", NULL, SDDS_STRING, stderr) != SDDS_CHECK_OKAY ||
+      !(resp_matrix->bpmName = (char **)SDDS_GetColumn(&SDDSresp, "ElementName"))) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
+    exit(1);
+  }
 
   resp_matrix->energyID = malloc(sizeof(chid) * IDrows * 2);
   resp_matrix->totalPower = malloc(sizeof(double) * IDrows * 2);

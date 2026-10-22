@@ -16,6 +16,7 @@
 #include "fdManager.h"
 #include <signal.h>
 #include "SDDS.h"
+#include "sddsPVInput.h"
 #include "scan.h"
 
 #ifndef _WIN32
@@ -227,6 +228,9 @@ static std::vector<SddspcasPvDef> readPvDefsFromInputFiles(char **input, long in
       fprintf(stderr, "error: Unable to read SDDS input file %s\n", input[i]);
       SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
       exit(1);
+    }
+    if (!checkPVInputEnums(&SDDS_input)) {
+      SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors | SDDS_EXIT_PrintErrors);
     }
     if (SDDS_VerifyColumnExists(&SDDS_input, FIND_SPECIFIED_TYPE, SDDS_STRING, "ControlName") == -1) {
       fprintf(stderr, "error: string column ControlName does not exist in %s\n", input[i]);
@@ -911,6 +915,11 @@ extern "C" void CleanMasterSDDSpcasPVFile() {
 
   if (!SDDS_InitializeInput(&SDDS_masterlist, PVFile2)) {
     SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    return;
+  }
+  if (!checkPVRegistryInput(&SDDS_masterlist, 1)) {
+    SDDS_PrintErrors(stderr, SDDS_VERBOSE_PrintErrors);
+    SDDS_Terminate(&SDDS_masterlist);
     return;
   }
   if (SDDS_ReadPage(&SDDS_masterlist) != 1) {
